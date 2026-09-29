@@ -37,7 +37,7 @@ model Host {
   about       String? @db.Text
 
   // PRIVATE. Never selected into anything that reaches a page.
-  contactEmail String
+  contactEmail String @unique
   contactPhone String?
 
   respondsInHours Int?      // self-reported, shown as a rough signal
