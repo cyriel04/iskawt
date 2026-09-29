@@ -1,0 +1,28 @@
+@use "../_styles/tokens" as *;
+
+.page {
+	@include page;
+}
+
+.header {
+	display: flex;
+	flex-direction: column;
+	gap: space(2);
+}
+
+// loading.tsx
+.skeletonTitle {
+	width: 60%;
+	font: var(--mui-font-displayLg);
+}
+
+.skeletonGrid {
+	display: grid;
+	gap: space(6);
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+}
+
+.skeletonCard {
+	height: auto;
+	aspect-ratio: 4 / 3;
+}
