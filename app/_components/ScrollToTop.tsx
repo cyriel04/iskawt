@@ -22,13 +22,13 @@ export default function ScrollToTop() {
 
 	return (
 		<Fab
-			size="medium"
+			size="small"
 			color="primary"
 			aria-label="Back to top"
 			className={styles.button}
 			onClick={() => window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? "auto" : "smooth" })}
 		>
-			<span aria-hidden="true">↑</span>
+			<span aria-hidden="true" className={styles.glyph}>↑</span>
 		</Fab>
 	);
 }
