@@ -1,0 +1,20 @@
+@use "../_styles/tokens" as *;
+
+// Floating in the viewport corner, the standard spot for a floating action button:
+// $gutter from the screen edge (16px phone → 40px desktop), lifted clear of the
+// iPhone home indicator.
+.button {
+	position: fixed;
+	inset-inline-end: $gutter;
+	inset-block-end: calc(#{$gutter} + env(safe-area-inset-bottom, 0px));
+	z-index: 1;
+	// Small, but not below the 44px touch minimum (CLAUDE.md). MUI's small Fab is 40px.
+	width: 44px;
+	min-height: 44px;
+	height: 44px;
+}
+
+.glyph {
+	font: var(--mui-font-label);
+	line-height: 1;
+}

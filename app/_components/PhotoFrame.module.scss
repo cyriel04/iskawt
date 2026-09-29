@@ -1,0 +1,27 @@
+@use "../_styles/tokens" as *;
+
+.frame {
+	position: relative;
+	width: 100%;
+	background: $color-canvas;
+
+	img {
+		object-fit: cover;
+	}
+}
+
+// 132px on a 390px phone, capped at 176px on desktop (docs/mockups).
+.card {
+	height: clamp(132px, 34vw, 176px);
+}
+
+.gallery {
+	aspect-ratio: 2 / 1;
+}
+
+.empty {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+}

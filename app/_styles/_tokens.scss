@@ -1,0 +1,49 @@
+// SCSS access to design tokens. Values live in app/_lib/theme.ts only. MUI emits
+// them as CSS custom properties (cssVariables: true), and this file just names
+// the references. Never put a literal colour, gap, radius or font here.
+
+// theme.spacing(n): 4px × n
+@function space($n) {
+	@return calc(var(--mui-spacing) * #{$n});
+}
+
+// --mui-radius-* exist because theme.ts defines a custom top-level `radius` key.
+$radius-sm: var(--mui-radius-sm);
+$radius-md: var(--mui-radius-md);
+$radius-lg: var(--mui-radius-lg);
+
+$color-ink: var(--mui-palette-text-primary);
+$color-ink-muted: var(--mui-palette-text-secondary);
+$color-paper: var(--mui-palette-background-paper);
+$color-canvas: var(--mui-palette-background-default);
+$color-hairline: var(--mui-palette-divider);
+$color-stamp: var(--mui-palette-primary-main);
+$color-verified: var(--mui-palette-verified-main);
+
+// Page gutter and vertical rhythm, scaled to the viewport: 16px / 12px on a
+// 390px phone, 40px / 24px on desktop (docs/mockups). No media queries.
+$gutter: clamp(#{space(4)}, 4vw, #{space(10)});
+$stack: clamp(#{space(3)}, 2vw, #{space(6)});
+
+// Content width at the 1280px mockup (1280 − 2 × 40). A layout measure.
+$content-max: 1200px;
+
+// Distance from the viewport edge to the content edge, at any width.
+$edge: max(#{$gutter}, calc((100% - #{$content-max}) / 2));
+
+// Horizontal padding shared by the header, footer and every page, so their
+// edges line up: $gutter on small screens, a centred $content-max column on
+// wide ones.
+@mixin gutter-inline {
+	padding-inline: $edge;
+}
+
+// A route's main column. Width and gutter both come from this mixin, so the
+// route's <Container> must use `disableGutters` and `maxWidth={false}`.
+@mixin page {
+	display: flex;
+	flex-direction: column;
+	gap: $stack;
+	padding-block: $gutter;
+	@include gutter-inline;
+}

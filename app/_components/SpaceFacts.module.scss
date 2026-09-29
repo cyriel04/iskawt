@@ -1,0 +1,26 @@
+@use "../_styles/tokens" as *;
+
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: space(4);
+}
+
+// One term/detail pair per row. The detail column can shrink to zero and wrap,
+// so the list never forces the page wider than a phone.
+.facts {
+	margin: 0;
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	column-gap: space(6);
+	row-gap: space(2);
+}
+
+.detail {
+	margin: 0;
+}
+
+.credits {
+	margin: 0;
+	padding-inline-start: space(5);
+}

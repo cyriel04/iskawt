@@ -1,0 +1,40 @@
+@use "../_styles/tokens" as *;
+
+.card {
+	height: 100%;
+	overflow: hidden;
+}
+
+// The whole card is one link. Reset link styling; show focus on the card itself.
+.link {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	color: inherit;
+	text-decoration: none;
+
+	&:focus-visible {
+		outline: 2px solid $color-stamp;
+		outline-offset: -2px;
+		border-radius: $radius-lg;
+	}
+
+	&:hover .title {
+		text-decoration: underline;
+	}
+}
+
+.body {
+	display: flex;
+	flex-direction: column;
+	gap: space(2);
+	padding: space(4);
+}
+
+.verified {
+	color: $color-verified;
+}
+
+.title {
+	margin: 0;
+}
