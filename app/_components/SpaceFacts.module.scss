@@ -1,0 +1,25 @@
+@use "../_styles/tokens" as *;
+
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: space(4);
+}
+
+// Term above detail on narrow screens, side by side once there is room.
+.facts {
+	margin: 0;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), max-content) minmax(min(100%, 200px), 1fr));
+	column-gap: space(6);
+	row-gap: space(2);
+}
+
+.detail {
+	margin: 0;
+}
+
+.credits {
+	margin: 0;
+	padding-inline-start: space(5);
+}
