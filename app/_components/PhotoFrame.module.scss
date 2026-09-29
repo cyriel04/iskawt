@@ -1,0 +1,19 @@
+@use "../_styles/tokens" as *;
+
+.frame {
+	position: relative;
+	width: 100%;
+	aspect-ratio: 2 / 1;
+	background: $color-canvas;
+
+	img {
+		object-fit: cover;
+	}
+}
+
+.empty {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+}
