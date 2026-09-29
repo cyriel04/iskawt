@@ -1,0 +1,59 @@
+@use "../../_styles/tokens" as *;
+
+.page {
+	@include page;
+}
+
+.crumb a {
+	color: inherit;
+}
+
+.header,
+.where {
+	display: flex;
+	flex-direction: column;
+	gap: space(2);
+}
+
+.gallery {
+	display: grid;
+	gap: space(2);
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+	border-radius: $radius-lg;
+	overflow: hidden;
+}
+
+// Main column and rate panel side by side when there is room, stacked otherwise.
+.columns {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: space(10);
+}
+
+.main {
+	flex: 2 1 480px;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: space(8);
+}
+
+.aside {
+	flex: 1 1 280px;
+}
+
+.about {
+	display: flex;
+	flex-direction: column;
+	gap: space(4);
+}
+
+.tags {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: space(2);
+}
