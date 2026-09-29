@@ -67,8 +67,10 @@ These bite on every fresh clone and every new machine. Do not work around them.
 - **Next.js 16 error boundaries receive `retry`, not `reset`.** Check
   `node_modules/next/dist/docs/` before trusting an example from memory.
 - **A `loading.tsx` above a route that calls `notFound()` turns its 404 into a 200**,
-  because the page shell streams first. Scope loading states with a route group
-  (`app/(browse)/loading.tsx`); never put one at `app/loading.tsx`.
+  because the page shell streams first. Don't use `loading.tsx` at all: put the
+  data-dependent part of a page in its own async component inside a `<Suspense>`
+  boundary in that page (see `app/page.tsx` and `BrowseList`). No route-group
+  folders just to scope loading states.
 - **`@mui/material-nextjs` has a per-version entry.** Import from
   `@mui/material-nextjs/v16-appRouter`.
 - **pnpm blocks dependency build scripts.** Approvals live in `pnpm-workspace.yaml`
@@ -114,7 +116,7 @@ pnpm db:studio
 
 | Area | Owner | Off limits to |
 | --- | --- | --- |
-| `page.tsx` / `layout.tsx` / `loading.tsx` / `error.tsx` / `not-found.tsx` anywhere in `app/`, `app/_components/**`, `app/_styles/**`, any `*.module.scss`, `app/_lib/theme.ts` | frontend-dev | backend-dev |
+| `page.tsx` / `layout.tsx` / `error.tsx` / `not-found.tsx` anywhere in `app/`, `app/_components/**`, `app/_styles/**`, any `*.module.scss`, `app/_lib/theme.ts` | frontend-dev | backend-dev |
 | `app/api/**`, `app/_lib/server/**`, `app/_lib/db.ts`, `prisma/**` | backend-dev | frontend-dev |
 | `app/_lib/types.ts` | **nobody without approval** | both |
 | `prisma/migrations/**`, `generated/**` | generated only | both |

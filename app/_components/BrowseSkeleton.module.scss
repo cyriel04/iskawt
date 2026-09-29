@@ -1,21 +1,5 @@
 @use "../_styles/tokens" as *;
 
-.page {
-	@include page;
-}
-
-.header {
-	display: flex;
-	flex-direction: column;
-	gap: space(2);
-}
-
-// loading.tsx
-.skeletonTitle {
-	width: 60%;
-	font: var(--mui-font-displayLg);
-}
-
 .skeletonGrid {
 	display: grid;
 	gap: $stack;
