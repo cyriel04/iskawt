@@ -55,8 +55,8 @@ compiler rather than express something true.
 **7. Theme discipline.** Any `sx`, `styled()` or `style={{}}` (styling is SCSS
 modules only). Raw hex, raw pixel gaps, radii or font stacks in a component or a
 `.module.scss` instead of `app/_styles/_tokens.scss` references. Inline styles
-copied out of `docs/mockups/`. Any `loading.tsx` (it breaks 404 status
-codes; loading states are an in-page `<Suspense>`).
+copied out of `docs/mockups/`. A new `app/loading.tsx` at the root, which breaks
+404 status codes.
 
 **8. Scope.** Anything in the diff the task did not ask for.
 

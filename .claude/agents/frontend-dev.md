@@ -57,10 +57,9 @@ A listing is someone's home or business.
   measures (aspect ratios, percentages, min column widths) may be literal. See
   the Styling section of `CLAUDE.md`.
 - MUI's semantic props (`variant`, `color`, `size`, `component`) are fine.
-- Next.js 16: error boundaries get `retry`, not `reset`. Never add a
-  `loading.tsx`, because it turns 404s into 200s. Loading states are an in-page
-  `<Suspense>` around an async component (see `app/page.tsx` + `BrowseList`).
-  Check `node_modules/next/dist/docs/` before trusting memory.
+- Next.js 16: error boundaries get `retry`, not `reset`. Never add
+  `app/loading.tsx`, because it turns 404s into 200s. Scope loading states with a
+  route group. Check `node_modules/next/dist/docs/` before trusting memory.
 - Filter and search state lives in URL search params, never React state — a
   filtered view has to survive being pasted into another tab.
 - Loading, empty and error states are required, not polish. The empty state after

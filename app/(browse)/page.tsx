@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { connection } from "next/server";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
-import BrowseList from "@/app/_components/BrowseList";
-import BrowseSkeleton from "@/app/_components/BrowseSkeleton";
+import BrowseResults from "@/app/_components/BrowseResults";
 import { INDICATIVE_RATES_NOTE } from "@/app/_components/labels";
+import { listPublishedSpaces } from "@/app/_lib/server/spaces";
 import styles from "./page.module.scss";
 
 export const metadata: Metadata = {
@@ -12,16 +12,18 @@ export const metadata: Metadata = {
 	description: "Private spaces across Metro Manila for film and photo shoots.",
 };
 
-export default function BrowsePage() {
+export default async function BrowsePage() {
+	// Listings change without a deploy, so never prerender this page at build time.
+	await connection();
+	const spaces = await listPublishedSpaces();
+
 	return (
 		<Container component="main" disableGutters maxWidth={false} className={styles.page}>
 			<header className={styles.header}>
 				<Typography variant="displayLg">Shoot spaces in Metro Manila</Typography>
 				<Typography color="text.secondary">{INDICATIVE_RATES_NOTE}</Typography>
 			</header>
-			<Suspense fallback={<BrowseSkeleton />}>
-				<BrowseList />
-			</Suspense>
+			<BrowseResults spaces={spaces} />
 		</Container>
 	);
 }
