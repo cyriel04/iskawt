@@ -9,7 +9,7 @@ import styles from "@/app/_styles/message.module.scss";
 // carry query details, and the server has already logged it.
 export default function ErrorPage({ retry }: { error: Error & { digest?: string }; retry: () => void }) {
 	return (
-		<Container component="main" maxWidth="sm" className={styles.screen}>
+		<Container component="main" disableGutters maxWidth={false} className={styles.screen}>
 			<Typography variant="displayLg">Something went wrong</Typography>
 			<Typography color="text.secondary">
 				We couldn&apos;t load this page just now. The problem is on our side, not yours.

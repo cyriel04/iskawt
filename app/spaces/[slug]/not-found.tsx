@@ -5,7 +5,7 @@ import styles from "@/app/_styles/message.module.scss";
 
 export default function SpaceNotFound() {
 	return (
-		<Container component="main" maxWidth="sm" className={styles.screen}>
+		<Container component="main" disableGutters maxWidth={false} className={styles.screen}>
 			<Typography variant="displayLg">This space isn&apos;t listed</Typography>
 			<Typography color="text.secondary">It may have been paused by its host, or the link is wrong.</Typography>
 			<Typography className={styles.link}>

@@ -25,10 +25,22 @@ $color-verified: var(--mui-palette-verified-main);
 $gutter: clamp(#{space(4)}, 4vw, #{space(10)});
 $stack: clamp(#{space(3)}, 2vw, #{space(6)});
 
-// Vertical rhythm for a route's main column. Gutter and max width come from MUI <Container>.
+// Content width at the 1280px mockup (1280 − 2 × 40). A layout measure.
+$content-max: 1200px;
+
+// Horizontal padding shared by the header, footer and every page, so their
+// edges line up: $gutter on small screens, a centred $content-max column on
+// wide ones.
+@mixin gutter-inline {
+	padding-inline: max(#{$gutter}, calc((100% - #{$content-max}) / 2));
+}
+
+// A route's main column. Width and gutter both come from this mixin, so the
+// route's <Container> must use `disableGutters` and `maxWidth={false}`.
 @mixin page {
 	display: flex;
 	flex-direction: column;
-	gap: space(8);
-	padding-block: space(10);
+	gap: $stack;
+	padding-block: $gutter;
+	@include gutter-inline;
 }

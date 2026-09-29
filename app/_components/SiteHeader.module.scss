@@ -4,7 +4,7 @@
 	display: flex;
 	align-items: center;
 	min-height: clamp(56px, 5.6vw, 72px);
-	padding-inline: $gutter;
+	@include gutter-inline;
 	background: $color-paper;
 	border-bottom: 1px solid $color-hairline;
 }

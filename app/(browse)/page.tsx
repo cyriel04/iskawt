@@ -18,7 +18,7 @@ export default async function BrowsePage() {
 	const spaces = await listPublishedSpaces();
 
 	return (
-		<Container component="main" maxWidth="lg" className={styles.page}>
+		<Container component="main" disableGutters maxWidth={false} className={styles.page}>
 			<header className={styles.header}>
 				<Typography variant="displayLg">Shoot spaces in Metro Manila</Typography>
 				<Typography color="text.secondary">{INDICATIVE_RATES_NOTE}</Typography>

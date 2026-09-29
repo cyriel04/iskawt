@@ -5,9 +5,17 @@ import styles from "./PhotoFrame.module.scss";
 
 // `unoptimized` until we decide where host photos are hosted — optimized
 // next/image needs that origin listed in next.config.ts remotePatterns.
-export default function PhotoFrame({ photo, sizes }: { photo: PublicPhoto | null; sizes: string }) {
+export default function PhotoFrame({
+	photo,
+	sizes,
+	shape,
+}: {
+	photo: PublicPhoto | null;
+	sizes: string;
+	shape: "card" | "gallery";
+}) {
 	return (
-		<div className={styles.frame}>
+		<div className={`${styles.frame} ${styles[shape]}`}>
 			{photo ? (
 				<Image src={photo.url} alt={photo.alt} fill sizes={sizes} unoptimized />
 			) : (

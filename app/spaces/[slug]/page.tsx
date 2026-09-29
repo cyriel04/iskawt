@@ -27,7 +27,7 @@ export default async function SpacePage({ params }: Props) {
 	const location = locationLine(space.areaName, space.city);
 
 	return (
-		<Container component="main" maxWidth="lg" className={styles.page}>
+		<Container component="main" disableGutters maxWidth={false} className={styles.page}>
 			<Typography variant="caption" color="text.secondary" className={styles.crumb}>
 				<Link href="/">All spaces</Link>
 			</Typography>
@@ -42,10 +42,10 @@ export default async function SpacePage({ params }: Props) {
 			<div className={styles.gallery}>
 				{space.photos.length > 0 ? (
 					space.photos.map((photo) => (
-						<PhotoFrame key={photo.url} photo={photo} sizes="(min-width: 900px) 50vw, 100vw" />
+						<PhotoFrame shape="gallery" key={photo.url} photo={photo} sizes="(min-width: 900px) 50vw, 100vw" />
 					))
 				) : (
-					<PhotoFrame photo={null} sizes="100vw" />
+					<PhotoFrame shape="gallery" photo={null} sizes="100vw" />
 				)}
 			</div>
 
