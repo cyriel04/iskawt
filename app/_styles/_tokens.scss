@@ -28,11 +28,14 @@ $stack: clamp(#{space(3)}, 2vw, #{space(6)});
 // Content width at the 1280px mockup (1280 − 2 × 40). A layout measure.
 $content-max: 1200px;
 
+// Distance from the viewport edge to the content edge, at any width.
+$edge: max(#{$gutter}, calc((100% - #{$content-max}) / 2));
+
 // Horizontal padding shared by the header, footer and every page, so their
 // edges line up: $gutter on small screens, a centred $content-max column on
 // wide ones.
 @mixin gutter-inline {
-	padding-inline: max(#{$gutter}, calc((100% - #{$content-max}) / 2));
+	padding-inline: $edge;
 }
 
 // A route's main column. Width and gutter both come from this mixin, so the

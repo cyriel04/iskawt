@@ -16,6 +16,16 @@
 	font: var(--mui-font-displayLg);
 }
 
+.skeletonNote {
+	width: min(100%, 520px);
+	font: var(--mui-font-body1);
+}
+
+.skeletonCount {
+	width: 80px;
+	font: var(--mui-font-caption);
+}
+
 .skeletonGrid {
 	display: grid;
 	gap: $stack;

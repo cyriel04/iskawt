@@ -1,7 +1,8 @@
 @use "../_styles/tokens" as *;
 
-// Anchored to the page gutter so it lines up with the content edge, and
-// lifted clear of the iPhone home indicator.
+// Floating in the viewport corner, the standard spot for a floating action button:
+// $gutter from the screen edge (16px phone → 40px desktop), lifted clear of the
+// iPhone home indicator.
 .button {
 	position: fixed;
 	inset-inline-end: $gutter;

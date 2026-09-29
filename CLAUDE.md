@@ -205,7 +205,8 @@ be listed, so brackets are the default and removing them is a deliberate act.
 - Styling via SCSS modules — see **Styling** below. No `sx`, no raw hex, no inline
   style objects.
 - Loading, empty, and error states are required, not polish.
-- Accessible by default: labelled inputs, keyboard reachable, semantic elements.
+- Accessible by default: labelled inputs, keyboard reachable, semantic elements,
+  touch targets at least 44px.
 - Filter state lives in the URL as search params, not in React state.
 
 ## Styling
