@@ -6,11 +6,12 @@
 	gap: space(4);
 }
 
-// Term above detail on narrow screens, side by side once there is room.
+// One term/detail pair per row. The detail column can shrink to zero and wrap,
+// so the list never forces the page wider than a phone.
 .facts {
 	margin: 0;
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), max-content) minmax(min(100%, 200px), 1fr));
+	grid-template-columns: auto minmax(0, 1fr);
 	column-gap: space(6);
 	row-gap: space(2);
 }
