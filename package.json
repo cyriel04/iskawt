@@ -3,11 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
+		"dev": "next dev",
+		"build": "next build",
+		"start": "next start",
+		"lint": "next lint",
+		"typecheck": "tsc --noEmit",
+		"test": "jest",
+		"test:watch": "jest --watch",
+		"db:migrate": "prisma migrate dev",
+		"db:push": "prisma db push",
+		"db:seed": "tsx prisma/seed.ts",
+		"db:studio": "prisma studio"
+	},
   "dependencies": {
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
