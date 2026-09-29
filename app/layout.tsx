@@ -1,6 +1,9 @@
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import { ThemeProvider, CssBaseline, InitColorSchemeScript } from "@mui/material";
 import theme from "@/app/_lib/theme";
+import SiteHeader from "@/app/_components/SiteHeader";
+import SiteFooter from "@/app/_components/SiteFooter";
+import shell from "@/app/_styles/shell.module.scss";
 import { Archivo, Inter, JetBrains_Mono } from "next/font/google";
 
 const archivo = Archivo({
@@ -24,12 +27,14 @@ const jetbrainsMono = JetBrains_Mono({
 export default function RootLayout({ children }: { children: React.ReactNode }) {
 	return (
 		<html lang="en" className={`${archivo.variable} ${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
-			<body>
+			<body className={shell.body}>
 				<InitColorSchemeScript attribute="class" />
 				<AppRouterCacheProvider>
 					<ThemeProvider theme={theme}>
 						<CssBaseline />
-						{children}
+						<SiteHeader />
+						<div className={shell.content}>{children}</div>
+						<SiteFooter />
 					</ThemeProvider>
 				</AppRouterCacheProvider>
 			</body>

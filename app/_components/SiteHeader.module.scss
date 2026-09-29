@@ -1,0 +1,24 @@
+@use "../_styles/tokens" as *;
+
+.header {
+	display: flex;
+	align-items: center;
+	min-height: clamp(56px, 5.6vw, 72px);
+	padding-inline: $gutter;
+	background: $color-paper;
+	border-bottom: 1px solid $color-hairline;
+}
+
+.link {
+	display: inline-flex;
+	align-items: center;
+	min-height: 44px;
+	color: inherit;
+	text-decoration: none;
+
+	&:focus-visible {
+		outline: 2px solid $color-stamp;
+		outline-offset: 2px;
+		border-radius: $radius-sm;
+	}
+}

@@ -20,6 +20,11 @@ $color-hairline: var(--mui-palette-divider);
 $color-stamp: var(--mui-palette-primary-main);
 $color-verified: var(--mui-palette-verified-main);
 
+// Page gutter and vertical rhythm, scaled to the viewport: 16px / 12px on a
+// 390px phone, 40px / 24px on desktop (docs/mockups). No media queries.
+$gutter: clamp(#{space(4)}, 4vw, #{space(10)});
+$stack: clamp(#{space(3)}, 2vw, #{space(6)});
+
 // Vertical rhythm for a route's main column. Gutter and max width come from MUI <Container>.
 @mixin page {
 	display: flex;
