@@ -58,7 +58,7 @@ These bite on every fresh clone and every new machine. Do not work around them.
 - **Next.js 16 removed `next lint`.** Lint with `eslint .` and a flat
   `eslint.config.mjs`. `next build` no longer runs a lint pass, so lint is part of
   the definition of done rather than something the build enforces.
-- **The `eslint` key in `next.config.mjs` is ignored**, including
+- **The `eslint` key in `next.config.ts` is ignored**, including
   `ignoreDuringBuilds`. Do not add it.
 - **pnpm blocks dependency build scripts.** Approvals live in `pnpm-workspace.yaml`
   at the repo root, never in a `"pnpm"` block in `package.json` — current pnpm does
