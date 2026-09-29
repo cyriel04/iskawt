@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Iskawt — Browse</title>
+<!--
+  Static mockup. Not application code — a visual target for slice 3.
+  Colours, type, spacing and radii come from the Iskawt design system.
+  Photos are illustrated placeholders. Addresses are bracketed by convention.
+
+  Fixed-width by design: this is a mockup of one viewport, not a responsive
+  page. Narrow windows scroll sideways rather than reflow.
+-->
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:"Inter",system-ui,sans-serif;background:#f7f3ec;color:#1b1915}
+a{color:#b8400d}a:hover{color:#8f3209}
+</style>
+<style>
+html { background: #f7f3ec; }
+body { padding: 24px; }
+.mock-frame {
+  width: max-content;
+  margin: 0 auto;
+  border: 1px solid #8e8578;
+  border-radius: 16px;
+  overflow: hidden;
+}
+</style>
+</head>
+<body>
+<div class="mock-frame">
+<div style="width: 1280px; height: 1580px; box-sizing: border-box; background: #f7f3ec; display: flex; flex-direction: column;">
+
+  <header style="height: 72px; flex: none; box-sizing: border-box; padding: 0 40px; background: #ffffff; border-bottom: 1px solid #8e8578; display: flex; align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 40px;">
+      <span style="font-family: 'Archivo', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: #1b1915;">Iskawt</span>
+      <nav style="display: flex; align-items: center; gap: 24px;">
+        <a href="Main.dc.html" style="font-size: 15px; font-weight: 600; color: #1b1915; text-decoration: none; border-bottom: 2px solid #b8400d; padding-bottom: 2px;">Spaces</a>
+        <a href="Main.dc.html" style="font-size: 15px; color: #5c554a; text-decoration: none;">Cities</a>
+        <a href="Main.dc.html" style="font-size: 15px; color: #5c554a; text-decoration: none;">How it works</a>
+        <a href="Main.dc.html" style="font-size: 15px; color: #5c554a; text-decoration: none;">About</a>
+      </nav>
+    </div>
+    <button type="button" style="height: 44px; padding: 0 20px; background: #b8400d; color: #ffffff; border: none; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer;">List your space</button>
+  </header>
+
+  <main style="flex: 1; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 24px;">
+
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-size: 34px; line-height: 36px; font-weight: 600; letter-spacing: -0.01em; color: #1b1915;">Shoot spaces in Metro Manila</h1>
+      <p style="margin: 0; font-size: 15px; line-height: 23px; color: #5c554a;">Rates are indicative and agreed directly with the host. Iskawt takes no payment.</p>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; align-items: flex-end; gap: 16px;">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+          <label for="q" style="font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #5c554a;">Search spaces</label>
+          <input id="q" type="search" placeholder="Rooftop, white walls, high ceilings, Poblacion&hellip;" style="box-sizing: border-box; width: 100%; height: 48px; padding: 0 16px; background: #ffffff; border: 1px solid #8e8578; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 15px; color: #1b1915;">
+        </div>
+        <button type="button" style="height: 48px; padding: 0 20px; background: #ffffff; color: #1b1915; border: 1px solid #8e8578; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer;">All filters</button>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <button type="button" style="height: 36px; padding: 0 14px; background: #b8400d; color: #ffffff; border: 1px solid #b8400d; border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer;">Makati &times;</button>
+        <button type="button" style="height: 36px; padding: 0 14px; background: #b8400d; color: #ffffff; border: 1px solid #b8400d; border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer;">Crew of 10+ &times;</button>
+        <button type="button" style="height: 36px; padding: 0 14px; background: #ffffff; color: #1b1915; border: 1px solid #8e8578; border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 13px; cursor: pointer;">Space type</button>
+        <button type="button" style="height: 36px; padding: 0 14px; background: #ffffff; color: #1b1915; border: 1px solid #8e8578; border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 13px; cursor: pointer;">Natural light</button>
+        <button type="button" style="height: 36px; padding: 0 14px; background: #ffffff; color: #1b1915; border: 1px solid #8e8578; border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 13px; cursor: pointer;">Hourly rate</button>
+        <button type="button" style="height: 36px; padding: 0 14px; background: #ffffff; color: #1b1915; border: 1px solid #8e8578; border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 13px; cursor: pointer;">Power &amp; load-in</button>
+        <span style="flex: 1;"></span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #5c554a;">[N] spaces</span>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">
+
+      <article style="background: #ffffff; border: 1px solid #8e8578; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;">
+        <div style="height: 176px; background: #f7f3ec; border-bottom: 1px solid #8e8578; overflow: hidden;"><svg width="100%" height="100%" viewBox="0 0 368 176" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Illustrated placeholder &mdash; open loft with a window wall"><rect width="368" height="176" fill="#f7f3ec"></rect><path d="M0 132h368" stroke="#8e8578" stroke-width="1.5"></path><path d="M200 24 L336 24 L300 132 L200 132 Z" fill="#1b1915" fill-opacity="0.05"></path><g fill="none" stroke="#8e8578" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="204" y="24" width="132" height="100" rx="2"></rect><path d="M270 24v100M204 74h132"></path><path d="M40 132v-26h56v26"></path><path d="M44 106v-18h48v18"></path><path d="M132 132v-40M124 92h16M132 92c0-10 8-16 8-16M132 100c0-8-7-13-7-13"></path><path d="M0 30h60"></path></g><text x="184" y="164" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="600" letter-spacing="1.2" fill="#8e8578">[PHOTO]</text></svg></div>
+        <div style="padding: 16px; display: flex; flex-direction: column; gap: 8px;">
+          <span style="display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; font-size: 12px; font-weight: 600; color: #2c6640;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2c6640" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"></polyline></svg>Verified host</span>
+          <h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-size: 19px; line-height: 24px; font-weight: 600; color: #1b1915;">Corner loft with afternoon light</h2>
+          <p style="margin: 0; font-size: 13px; line-height: 19px; color: #5c554a;">Poblacion, Makati &middot; Apartment</p>
+          <p style="margin: 0; display: flex; align-items: baseline; gap: 6px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 18px; line-height: 24px; font-weight: 500; color: #1b1915;">&#8369;1,800</span><span style="font-size: 13px; color: #5c554a;">/hour &middot; 3hr min</span></p>
+          <p style="margin: 0; font-size: 13px; line-height: 19px; color: #5c554a;">68 sqm &middot; 12 crew &middot; Abundant light</p>
+        </div>
+      </article>
+
+      <article style="background: #ffffff; border: 1px solid #8e8578; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;">
+        <div style="height: 176px; background: #f7f3ec; border-bottom: 1px solid #8e8578; overflow: hidden;"><svg width="100%" height="100%" viewBox="0 0 368 176" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Illustrated placeholder &mdash; two-storey rowhouse with planting"><rect width="368" height="176" fill="#f7f3ec"></rect><path d="M0 148h368" stroke="#8e8578" stroke-width="1.5"></path><g fill="none" stroke="#8e8578" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M108 148V56l76-28 76 28v92"></path><rect x="132" y="70" width="34" height="28" rx="2"></rect><rect x="202" y="70" width="34" height="28" rx="2"></rect><path d="M132 84h34M202 84h34"></path><path d="M162 148v-34h44v34"></path><path d="M184 114v34"></path><path d="M62 148v-18M54 130c0-10 8-14 8-14s8 4 8 14z"></path><path d="M296 148v-22M286 126c0-12 10-17 10-17s10 5 10 17z"></path><path d="M40 148h288" stroke-width="1"></path></g><text x="184" y="164" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="600" letter-spacing="1.2" fill="#8e8578">[PHOTO]</text></svg></div>
+        <div style="padding: 16px; display: flex; flex-direction: column; gap: 8px;">
+          <span style="display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; font-size: 12px; font-weight: 600; color: #2c6640;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2c6640" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"></polyline></svg>Verified host</span>
+          <h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-size: 19px; line-height: 24px; font-weight: 600; color: #1b1915;">Two-storey rowhouse with a back garden</h2>
+          <p style="margin: 0; font-size: 13px; line-height: 19px; color: #5c554a;">Kapitolyo, Pasig &middot; House</p>
+          <p style="margin: 0; display: flex; align-items: baseline; gap: 6px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 18px; line-height: 24px; font-weight: 500; color: #1b1915;">&#8369;1,500</span><span style="font-size: 13px; color: #5c554a;">/hour &middot; 4hr min</span></p>
+          <p style="margin: 0; font-size: 13px; line-height: 19px; color: #5c554a;">120 sqm &middot; 15 crew &middot; Moderate light</p>
+        </div>
+      </article>
+
+      <article style="background: #ffffff; border: 1px solid #8e8578; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;">
+        <div style="height: 176px; background: #f7f3ec; border-bottom: 1px solid #8e8578; overflow: hidden;"><svg width="100%" height="100%" viewBox="0 0 368 176" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Illustrated placeholder &mdash; tall casement windows in a pre-war office"><rect width="368" height="176" fill="#f7f3ec"></rect><path d="M0 138h368" stroke="#8e8578" stroke-width="1.5"></path><path d="M48 22h72v116h-72z" fill="#1b1915" fill-opacity="0.05"></path><path d="M148 22h72v116h-72z" fill="#1b1915" fill-opacity="0.05"></path><path d="M248 22h72v116h-72z" fill="#1b1915" fill-opacity="0.05"></path><g fill="none" stroke="#8e8578" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M48 138V40a36 36 0 0 1 72 0v98"></path><path d="M148 138V40a36 36 0 0 1 72 0v98"></path><path d="M248 138V40a36 36 0 0 1 72 0v98"></path><path d="M84 16v122M184 16v122M284 16v122"></path><path d="M48 88h72M148 88h72M248 88h72"></path><path d="M0 150h368" stroke-width="1"></path></g><text x="184" y="164" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="600" letter-spacing="1.2" fill="#8e8578">[PHOTO]</text></svg></div>
+        <div style="padding: 16px; display: flex; flex-direction: column; gap: 8px;">
+          <span style="align-self: flex-start; font-size: 12px; line-height: 16px; color: #5c554a;">Verification pending</span>
+          <h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-size: 19px; line-height: 24px; font-weight: 600; color: #1b1915;">Pre-war office floor, unrenovated</h2>
+          <p style="margin: 0; font-size: 13px; line-height: 19px; color: #5c554a;">Escolta, Manila &middot; Office</p>
+          <p style="margin: 0; display: flex; align-items: baseline; gap: 6px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 18px; line-height: 24px; font-weight: 500; color: #1b1915;">&#8369;2,500</span><span style="font-size: 13px; color: #5c554a;">/hour &middot; 4hr min</span></p>
+          <p style="margin: 0; font-size: 13px; line-height: 19px; color: #5c554a;">180 sqm &middot; 20 crew &middot; Abundant light</p>
+        </div>
+      </article>
+
+      <article style="background: #ffffff; border: 1px solid #8e8578; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;">
+        <div style="height: 176px; background: #f7f3ec; border-bottom: 1px solid #8e8578; overflow: hidden;"><svg width="100%" height="100%" viewBox="0 0 368 176" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Illustrated placeholder &mdash; warehouse bay with a roller door"><rect width="368" height="176" fill="#f7f3ec"></rect><path d="M0 146h368" stroke="#8e8578" stroke-width="1.5"></path><g fill="none" stroke="#8e8578" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M24 60 L184 14 L344 60"></path><path d="M24 60h320"></path><path d="M40 60l32 -22 32 22 32 -22 32 22 32 -22 32 22 32 -22 32 22" stroke-width="1"></path><rect x="112" y="76" width="144" height="70" rx="2"></rect><path d="M112 92h144M112 106h144M112 120h144M112 134h144" stroke-width="1"></path><path d="M36 146v-34h44v34M288 146v-34h44v34" stroke-width="1"></path></g><text x="184" y="164" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="600" letter-spacing="1.2" fill="#8e8578">[PHOTO]</text></svg></div>
+        <div style="padding: 16px; display: flex; flex-direction: column; gap: 8px;">
+          <span style="display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; font-size: 12px; font-weight: 600; color: #2c6640;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2c6640" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"></polyline></svg>Verified host</span>
+          <h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-size: 19px; line-height: 24px; font-weight: 600; color: #1b1915;">Bare warehouse bay with roller door</h2>
+          <p style="margin: 0; font-size: 13px; line-height: 19px; color: #5c554a;">Cubao, Quezon City &middot; Warehouse</p>
+          <p style="margin: 0; display: flex; align-items: baseline; gap: 6px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 18px; line-height: 24px; font-weight: 500; color: #1b1915;">&#8369;2,000</span><span style="font-size: 13px; color: #5c554a;">/hour &middot; 4hr min</span></p>
+          <p style="margin: 0; font-size: 13px; line-height: 19px; color: #5c554a;">320 sqm &middot; 35 crew &middot; Minimal light</p>
+        </div>
+      </article>
+
+      <article style="background: #ffffff; border: 1px solid #8e8578; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;">
+        <div style="height: 176px; background: #f7f3ec; border-bottom: 1px solid #8e8578; overflow: hidden;"><svg width="100%" height="100%" viewBox="0 0 368 176" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Illustrated placeholder &mdash; apartment with balcony doors and tiled floor"><rect width="368" height="176" fill="#f7f3ec"></rect><path d="M0 136h368" stroke="#8e8578" stroke-width="1.5"></path><path d="M212 26h104v110H212z" fill="#1b1915" fill-opacity="0.05"></path><g fill="none" stroke="#8e8578" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="212" y="26" width="104" height="110" rx="2"></rect><path d="M264 26v110"></path><path d="M212 92h104" stroke-width="1"></path><path d="M196 136V96h140" stroke-width="1"></path><path d="M52 136V84h72v52"></path><path d="M52 104h72M88 84v52"></path><path d="M0 152l24 -16M40 152l24 -16M80 152l24 -16M120 152l24 -16M160 152l24 -16" stroke-width="1"></path></g><text x="184" y="164" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="600" letter-spacing="1.2" fill="#8e8578">[PHOTO]</text></svg></div>
+        <div style="padding: 16px; display: flex; flex-direction: column; gap: 8px;">
+          <span style="align-self: flex-start; font-size: 12px; line-height: 16px; color: #5c554a;">Verification pending</span>
+          <h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-size: 19px; line-height: 24px; font-weight: 600; color: #1b1915;">Lived-in apartment, period fittings</h2>
+          <p style="margin: 0; font-size: 13px; line-height: 19px; color: #5c554a;">Malate, Manila &middot; Apartment</p>
+          <p style="margin: 0; display: flex; align-items: baseline; gap: 6px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 18px; line-height: 24px; font-weight: 500; color: #1b1915;">&#8369;1,200</span><span style="font-size: 13px; color: #5c554a;">/hour &middot; 3hr min</span></p>
+          <p style="margin: 0; font-size: 13px; line-height: 19px; color: #5c554a;">54 sqm &middot; 8 crew &middot; Moderate light</p>
+        </div>
+      </article>
+
+      <article style="background: #ffffff; border: 1px solid #8e8578; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;">
+        <div style="height: 176px; background: #f7f3ec; border-bottom: 1px solid #8e8578; overflow: hidden;"><svg width="100%" height="100%" viewBox="0 0 368 176" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Illustrated placeholder &mdash; cafe shopfront with awning and counter"><rect width="368" height="176" fill="#f7f3ec"></rect><path d="M0 142h368" stroke="#8e8578" stroke-width="1.5"></path><path d="M36 46h296v96H36z" fill="#1b1915" fill-opacity="0.04"></path><g fill="none" stroke="#8e8578" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M28 46h312"></path><path d="M36 46v96M332 46v96"></path><path d="M36 46l16 -22h264l16 22"></path><path d="M68 24v22M116 24v22M164 24v22M212 24v22M260 24v22M308 24v22" stroke-width="1"></path><path d="M124 46v96M244 46v96" stroke-width="1"></path><path d="M60 142v-34h96v34"></path><path d="M196 142v-24M186 118h20M216 142v-24M206 118h20"></path><path d="M76 108v-14h12v14" stroke-width="1"></path></g><text x="184" y="164" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="600" letter-spacing="1.2" fill="#8e8578">[PHOTO]</text></svg></div>
+        <div style="padding: 16px; display: flex; flex-direction: column; gap: 8px;">
+          <span style="display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; font-size: 12px; font-weight: 600; color: #2c6640;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2c6640" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"></polyline></svg>Verified host</span>
+          <h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-size: 19px; line-height: 24px; font-weight: 600; color: #1b1915;">Caf&eacute; with street frontage, before opening</h2>
+          <p style="margin: 0; font-size: 13px; line-height: 19px; color: #5c554a;">Lilac Street, Marikina &middot; Caf&eacute;</p>
+          <p style="margin: 0; display: flex; align-items: baseline; gap: 6px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 18px; line-height: 24px; font-weight: 500; color: #1b1915;">&#8369;2,200</span><span style="font-size: 13px; color: #5c554a;">/hour &middot; 2hr min</span></p>
+          <p style="margin: 0; font-size: 13px; line-height: 19px; color: #5c554a;">72 sqm &middot; 10 crew &middot; Mornings only</p>
+        </div>
+      </article>
+
+      <article style="background: #ffffff; border: 1px solid #8e8578; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;">
+        <div style="height: 176px; background: #f7f3ec; border-bottom: 1px solid #8e8578; overflow: hidden;"><svg width="100%" height="100%" viewBox="0 0 368 176" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Illustrated placeholder &mdash; rooftop deck with a skyline beyond"><rect width="368" height="176" fill="#f7f3ec"></rect><path d="M0 128h368" stroke="#8e8578" stroke-width="1.5"></path><path d="M24 92h28v36H24zM64 70h24v58H64zM100 84h32v44h-32zM144 56h26v72h-26zM182 78h30v50h-30zM224 64h22v64h-22zM258 88h34v40h-34zM304 74h26v54h-26z" fill="#1b1915" fill-opacity="0.07"></path><g fill="none" stroke="#8e8578" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="292" cy="40" r="16"></circle><path d="M24 92h28v36M64 70h24v58M100 84h32v44M144 56h26v72M182 78h30v50M224 64h22v64M258 88h34v40M304 74h26v54" stroke-width="1"></path><path d="M0 128v20h368v-20"></path><path d="M0 140h368" stroke-width="1"></path><path d="M52 128v-8M132 128v-8M212 128v-8M292 128v-8" stroke-width="1"></path></g><text x="184" y="164" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="600" letter-spacing="1.2" fill="#8e8578">[PHOTO]</text></svg></div>
+        <div style="padding: 16px; display: flex; flex-direction: column; gap: 8px;">
+          <span style="display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; font-size: 12px; font-weight: 600; color: #2c6640;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2c6640" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"></polyline></svg>Verified host</span>
+          <h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-size: 19px; line-height: 24px; font-weight: 600; color: #1b1915;">Rooftop deck with skyline view</h2>
+          <p style="margin: 0; font-size: 13px; line-height: 19px; color: #5c554a;">Plainview, Mandaluyong &middot; Rooftop</p>
+          <p style="margin: 0; display: flex; align-items: baseline; gap: 6px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 18px; line-height: 24px; font-weight: 500; color: #1b1915;">&#8369;1,600</span><span style="font-size: 13px; color: #5c554a;">/hour &middot; 3hr min</span></p>
+          <p style="margin: 0; font-size: 13px; line-height: 19px; color: #5c554a;">140 sqm &middot; 18 crew &middot; No shade</p>
+        </div>
+      </article>
+
+      <article style="background: #ffffff; border: 1px solid #8e8578; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;">
+        <div style="height: 176px; background: #f7f3ec; border-bottom: 1px solid #8e8578; overflow: hidden;"><svg width="100%" height="100%" viewBox="0 0 368 176" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Illustrated placeholder &mdash; studio with a white cyclorama and light stands"><rect width="368" height="176" fill="#f7f3ec"></rect><path d="M0 138h368" stroke="#8e8578" stroke-width="1.5"></path><path d="M96 16h176v122H96z" fill="#ffffff"></path><g fill="none" stroke="#8e8578" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M96 16v82a40 40 0 0 0 40 40h136"></path><path d="M272 16v122"></path><path d="M44 138v-72M30 138h28M44 66h-16M44 66h16M32 54l12 12 12 -12"></path><path d="M324 138v-62M310 138h28M324 76h-14M324 76h14M312 64l12 12 12 -12"></path><path d="M140 138v-10h88v10" stroke-width="1"></path></g><text x="184" y="164" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="600" letter-spacing="1.2" fill="#8e8578">[PHOTO]</text></svg></div>
+        <div style="padding: 16px; display: flex; flex-direction: column; gap: 8px;">
+          <span style="display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; font-size: 12px; font-weight: 600; color: #2c6640;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2c6640" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"></polyline></svg>Verified host</span>
+          <h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-size: 19px; line-height: 24px; font-weight: 600; color: #1b1915;">White cyc studio, small format</h2>
+          <p style="margin: 0; font-size: 13px; line-height: 19px; color: #5c554a;">Greenhills, San Juan &middot; Studio</p>
+          <p style="margin: 0; display: flex; align-items: baseline; gap: 6px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 18px; line-height: 24px; font-weight: 500; color: #1b1915;">&#8369;2,800</span><span style="font-size: 13px; color: #5c554a;">/hour &middot; 2hr min</span></p>
+          <p style="margin: 0; font-size: 13px; line-height: 19px; color: #5c554a;">95 sqm &middot; 14 crew &middot; Blacked out</p>
+        </div>
+      </article>
+
+    </div>
+
+  </main>
+</div>
+</div>
+</body>
+</html>

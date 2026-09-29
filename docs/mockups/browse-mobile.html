@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Iskawt — Browse (mobile)</title>
+<!--
+  Static mockup. Not application code — a visual target for slice 3.
+  Colours, type, spacing and radii come from the Iskawt design system.
+  Photos are illustrated placeholders. Addresses are bracketed by convention.
+
+  Fixed-width by design: this is a mockup of one viewport, not a responsive
+  page. Narrow windows scroll sideways rather than reflow.
+-->
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:"Inter",system-ui,sans-serif;background:#f7f3ec;color:#1b1915}
+a{color:#b8400d}a:hover{color:#8f3209}
+</style>
+<style>
+html { background: #f7f3ec; }
+body { padding: 24px; }
+.mock-frame {
+  width: max-content;
+  margin: 0 auto;
+  border: 1px solid #8e8578;
+  border-radius: 16px;
+  overflow: hidden;
+}
+</style>
+</head>
+<body>
+<div class="mock-frame">
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #f7f3ec; display: flex; flex-direction: column;">
+
+  <header style="height: 56px; flex: none; box-sizing: border-box; padding: 0 16px; background: #ffffff; border-bottom: 1px solid #8e8578; display: flex; align-items: center; justify-content: space-between;">
+    <span style="font-family: 'Archivo', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: #1b1915;">Iskawt</span>
+    <button type="button" aria-label="Open filters" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: #ffffff; border: 1px solid #8e8578; border-radius: 8px; cursor: pointer;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1b1915" stroke-width="2" stroke-linecap="round"><line x1="3" y1="7" x2="21" y2="7"></line><line x1="6" y1="12" x2="18" y2="12"></line><line x1="10" y1="17" x2="14" y2="17"></line></svg>
+    </button>
+  </header>
+
+  <div style="flex: 1; box-sizing: border-box; padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow: hidden;">
+
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <label for="mq" style="font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #5c554a;">Search spaces</label>
+      <input id="mq" type="search" placeholder="Rooftop, white walls, Poblacion&hellip;" style="box-sizing: border-box; width: 100%; height: 48px; padding: 0 14px; background: #ffffff; border: 1px solid #8e8578; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 15px; color: #1b1915;">
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
+      <button type="button" style="height: 44px; flex: none; padding: 0 14px; background: #b8400d; color: #ffffff; border: 1px solid #b8400d; border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer;">Makati &times;</button>
+      <button type="button" style="height: 44px; flex: none; padding: 0 14px; background: #ffffff; color: #1b1915; border: 1px solid #8e8578; border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 13px; cursor: pointer;">Space type</button>
+      <button type="button" style="height: 44px; flex: none; padding: 0 14px; background: #ffffff; color: #1b1915; border: 1px solid #8e8578; border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 13px; cursor: pointer;">Rate</button>
+    </div>
+
+    <p style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 20px; color: #5c554a;">[N] spaces</p>
+
+    <article style="flex: none; background: #ffffff; border: 1px solid #8e8578; border-radius: 16px; overflow: hidden;">
+      <div style="height: 132px; background: #f7f3ec; border-bottom: 1px solid #8e8578; overflow: hidden;"><svg width="100%" height="100%" viewBox="0 0 368 176" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Illustrated placeholder &mdash; open loft with a window wall"><rect width="368" height="176" fill="#f7f3ec"></rect><path d="M0 132h368" stroke="#8e8578" stroke-width="1.5"></path><path d="M200 24 L336 24 L300 132 L200 132 Z" fill="#1b1915" fill-opacity="0.05"></path><g fill="none" stroke="#8e8578" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="204" y="24" width="132" height="100" rx="2"></rect><path d="M270 24v100M204 74h132"></path><path d="M40 132v-26h56v26"></path><path d="M44 106v-18h48v18"></path><path d="M132 132v-40M124 92h16M132 92c0-10 8-16 8-16M132 100c0-8-7-13-7-13"></path><path d="M0 30h60"></path></g><text x="184" y="164" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="600" letter-spacing="1.2" fill="#8e8578">[PHOTO]</text></svg></div>
+      <div style="padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+        <span style="display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; font-size: 12px; font-weight: 600; color: #2c6640;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2c6640" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"></polyline></svg>Verified host</span>
+        <h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-size: 18px; line-height: 23px; font-weight: 600; color: #1b1915;">Corner loft with afternoon light</h2>
+        <p style="margin: 0; font-size: 13px; line-height: 19px; color: #5c554a;">Poblacion, Makati &middot; Apartment</p>
+        <p style="margin: 0; display: flex; align-items: baseline; gap: 6px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 18px; line-height: 24px; font-weight: 500; color: #1b1915;">&#8369;1,800</span><span style="font-size: 13px; color: #5c554a;">/hour &middot; 12 crew</span></p>
+      </div>
+    </article>
+
+    <article style="flex: none; background: #ffffff; border: 1px solid #8e8578; border-radius: 16px; overflow: hidden;">
+      <div style="height: 132px; background: #f7f3ec; border-bottom: 1px solid #8e8578; overflow: hidden;"><svg width="100%" height="100%" viewBox="0 0 368 176" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Illustrated placeholder &mdash; tall casement windows in a pre-war office"><rect width="368" height="176" fill="#f7f3ec"></rect><path d="M0 138h368" stroke="#8e8578" stroke-width="1.5"></path><path d="M48 22h72v116h-72z" fill="#1b1915" fill-opacity="0.05"></path><path d="M148 22h72v116h-72z" fill="#1b1915" fill-opacity="0.05"></path><path d="M248 22h72v116h-72z" fill="#1b1915" fill-opacity="0.05"></path><g fill="none" stroke="#8e8578" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M48 138V40a36 36 0 0 1 72 0v98"></path><path d="M148 138V40a36 36 0 0 1 72 0v98"></path><path d="M248 138V40a36 36 0 0 1 72 0v98"></path><path d="M84 16v122M184 16v122M284 16v122"></path><path d="M48 88h72M148 88h72M248 88h72"></path><path d="M0 150h368" stroke-width="1"></path></g><text x="184" y="164" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="600" letter-spacing="1.2" fill="#8e8578">[PHOTO]</text></svg></div>
+      <div style="padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+        <span style="align-self: flex-start; font-size: 12px; line-height: 16px; color: #5c554a;">Verification pending</span>
+        <h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-size: 18px; line-height: 23px; font-weight: 600; color: #1b1915;">Pre-war office floor, unrenovated</h2>
+        <p style="margin: 0; font-size: 13px; line-height: 19px; color: #5c554a;">Escolta, Manila &middot; Office</p>
+        <p style="margin: 0; display: flex; align-items: baseline; gap: 6px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 18px; line-height: 24px; font-weight: 500; color: #1b1915;">&#8369;2,500</span><span style="font-size: 13px; color: #5c554a;">/hour &middot; 20 crew</span></p>
+      </div>
+    </article>
+
+  </div>
+</div>
+</div>
+</body>
+</html>
