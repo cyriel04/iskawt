@@ -1,12 +1,13 @@
 {
-  "name": "iskawt",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
+	"name": "iskawt",
+	"version": "0.1.0",
+	"private": true,
+	"scripts": {
 		"dev": "next dev",
 		"build": "next build",
 		"start": "next start",
-		"lint": "next lint",
+		"lint": "eslint .",
+		"lint:fix": "eslint . --fix",
 		"typecheck": "tsc --noEmit",
 		"test": "jest",
 		"test:watch": "jest --watch",
@@ -15,29 +16,37 @@
 		"db:seed": "tsx prisma/seed.ts",
 		"db:studio": "prisma studio"
 	},
-  "dependencies": {
-    "@emotion/cache": "^11.14.0",
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
-    "@mui/material": "^9.4.0",
-    "@mui/material-nextjs": "^9.4.0",
-    "@prisma/adapter-pg": "^7.10.0",
-    "@prisma/client": "^7.10.0",
-    "next": "16.3.6",
-    "react": "19.2.8",
-    "react-dom": "19.2.8"
-  },
-  "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "babel-plugin-react-compiler": "1.0.0",
-    "dotenv": "^18.0.4",
-    "eslint": "^9",
-    "eslint-config-next": "16.3.6",
-    "prisma": "7.10.0",
-    "tsx": "^4.23.15",
-    "typescript": "^5"
-  },
-  "packageManager": "pnpm@12.6.0"
+	"dependencies": {
+		"@emotion/cache": "^11.14.0",
+		"@emotion/react": "^11.14.0",
+		"@emotion/styled": "^11.14.1",
+		"@mui/material": "^9.4.0",
+		"@mui/material-nextjs": "^9.4.0",
+		"@prisma/adapter-pg": "^7.10.0",
+		"@prisma/client": "^7.10.0",
+		"next": "16.3.6",
+		"react": "19.2.8",
+		"react-dom": "19.2.8"
+	},
+	"devDependencies": {
+		"@testing-library/dom": "^10.4.2",
+		"@testing-library/jest-dom": "^7.0.1",
+		"@testing-library/react": "^16.3.3",
+		"@testing-library/user-event": "^14.6.7",
+		"@types/jest": "^30.0.0",
+		"@types/node": "^20",
+		"@types/react": "^19",
+		"@types/react-dom": "^19",
+		"babel-plugin-react-compiler": "1.0.0",
+		"dotenv": "^18.0.4",
+		"eslint": "^9",
+		"eslint-config-next": "16.3.6",
+		"jest": "^30.5.2",
+		"jest-environment-jsdom": "^30.5.2",
+		"prisma": "7.10.0",
+		"ts-node": "^10.9.2",
+		"tsx": "^4.23.15",
+		"typescript": "^5"
+	},
+	"packageManager": "pnpm@12.6.0"
 }
