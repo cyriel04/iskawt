@@ -66,12 +66,18 @@ describe("SpacePage", () => {
 		expect(screen.getByRole("img", { name: "Second demo photo" })).toBeInTheDocument();
 	});
 
-	it("links back to browse", async () => {
+	it("has a breadcrumb back to browse, through the city, to the current space", async () => {
 		mockGet.mockResolvedValue(demoDetail);
 
 		renderWithTheme(await SpacePage({ params }));
 
-		expect(screen.getByRole("link", { name: "All spaces" })).toHaveAttribute("href", "/");
+		const nav = screen.getByRole("navigation", { name: "Breadcrumb" });
+		expect(within(nav).getByRole("link", { name: "Spaces" })).toHaveAttribute("href", "/");
+		expect(within(nav).getByText("Makati")).toBeInTheDocument();
+		expect(within(nav).queryByRole("link", { name: "Makati" })).toBeNull();
+		const current = nav.querySelector('[aria-current="page"]');
+		expect(current).not.toBeNull();
+		expect(current).toHaveTextContent("[DEMO] Corner loft with afternoon light");
 	});
 
 	it("is a 404 when no published space has the slug", async () => {

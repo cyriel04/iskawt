@@ -4,8 +4,12 @@
 	@include page;
 }
 
-.crumb a {
+.breadcrumb a {
 	color: inherit;
+
+	&:hover {
+		text-decoration: underline;
+	}
 }
 
 .header,

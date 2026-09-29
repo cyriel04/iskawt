@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import Breadcrumbs from "@mui/material/Breadcrumbs";
 import Chip from "@mui/material/Chip";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 import PhotoFrame from "@/app/_components/PhotoFrame";
 import RatePanel from "@/app/_components/RatePanel";
 import SpaceFacts from "@/app/_components/SpaceFacts";
-import { locationLine, settingLabels, spaceTypeLabels } from "@/app/_components/labels";
+import { cityLabels, locationLine, settingLabels, spaceTypeLabels } from "@/app/_components/labels";
 import { getPublishedSpaceBySlug } from "@/app/_lib/server/spaces";
 import styles from "./page.module.scss";
 
@@ -28,9 +29,14 @@ export default async function SpacePage({ params }: Props) {
 
 	return (
 		<Container component="main" disableGutters maxWidth={false} className={styles.page}>
-			<Typography variant="caption" color="text.secondary" className={styles.crumb}>
-				<Link href="/">All spaces</Link>
-			</Typography>
+			<Breadcrumbs aria-label="Breadcrumb" color="text.secondary" className={styles.breadcrumb}>
+				<Link href="/">Spaces</Link>
+				{/* Plain text until slice 4 adds a city filter URL to link to. */}
+				<span>{cityLabels[space.city]}</span>
+				<Typography component="span" aria-current="page">
+					{space.title}
+				</Typography>
+			</Breadcrumbs>
 
 			<header className={styles.header}>
 				<Typography variant="displayLg">{space.title}</Typography>

@@ -84,6 +84,8 @@ page. Check this by reading the query, not by looking at the rendered output.
   filter and for combinations.
 - **frontend-dev:** filter panel, active-filter chips, results count, empty state.
   All state in URL search params.
+  Also link the city in the detail page's breadcrumb (`Spaces › <city> › <title>`,
+  plain text since slice 3) to the browse view filtered by that city.
 
 Settle the filter params in `app/_lib/types.ts` first, in the main session, before
 either agent starts.
