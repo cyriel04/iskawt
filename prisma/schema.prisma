@@ -1,0 +1,309 @@
+// Iskawt — data model
+//
+// A listing directory of private spaces in Metro Manila available for film and
+// photo shoots. Inquiry-only: renters send a request, hosts reply. No payments,
+// no calendar, no bookings in v1.
+//
+// Host contact details are NEVER public. A renter reaches a host through an
+// Inquiry; the platform relays. This is the single most important rule in the
+// model and the reason Host is a separate table rather than fields on Space.
+//
+// Lat/lng are approximate on purpose — a listing shows an area, not a doorstep.
+// The exact address is disclosed by the host after they accept an inquiry.
+
+// PRISMA 7: the datasource block no longer takes `url`. The connection string
+// lives in prisma.config.ts at the repo root. Keep whatever `generator` block
+// `prisma init` wrote for you — v7 generates to a custom output path and the
+// provider is `prisma-client`, not `prisma-client-js`.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Postgres on Neon in production, Docker locally. Switching to MySQL later means
+// changing the provider here, the adapter in lib/db.ts, and @db.Text to
+// @db.LongText — nothing in lib/server/ changes.
+
+// ---------------------------------------------------------------- hosts
+
+model Host {
+  id          String  @id @default(cuid())
+  displayName String // shown publicly, e.g. "Marco R." or a studio name
+  about       String? @db.Text
+
+  // PRIVATE. Never selected into anything that reaches a page.
+  contactEmail String
+  contactPhone String?
+
+  respondsInHours Int?      // self-reported, shown as a rough signal
+  verifiedAt      DateTime? // a human spoke to them and confirmed the space is theirs
+
+  spaces Space[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([verifiedAt])
+}
+
+// ---------------------------------------------------------------- spaces
+
+model Space {
+  id          String @id @default(cuid())
+  slug        String @unique
+  title       String
+  description String @db.Text
+
+  hostId String
+  host   Host   @relation(fields: [hostId], references: [id], onDelete: Cascade)
+
+  // where — area only, never the street address
+  city        City
+  areaName    String // "Poblacion", "Kapitolyo", "Cubao" — how people say it
+  barangay    String?
+  latitude    Decimal @db.Decimal(10, 7) // jittered to ~300m for the public map
+  longitude   Decimal @db.Decimal(10, 7)
+  exactAddress String? @db.Text // PRIVATE. Released by the host, not by the listing.
+
+  // what it is
+  type    SpaceType
+  setting Setting
+  tags    Tag[]
+  photos  Photo[]
+
+  // size and capacity
+  floorAreaSqm   Int?
+  ceilingHeightM Decimal? @db.Decimal(4, 2)
+  maxCrew        Int? // people the space comfortably holds, crew and talent
+
+  // indicative rates — PHP, whole pesos. Shown as "from", never charged here.
+  hourlyRate    Int?
+  halfDayRate   Int?
+  fullDayRate   Int?
+  minimumHours  Int?
+  rateNotes     String? @db.Text // overtime, weekend, equipment, cleaning
+
+  // production practicalities — the reason a filmmaker picks one space over another
+  naturalLight    NaturalLight @default(UNKNOWN)
+  windowDirection String?      // "east-facing", "north light"
+  powerOutlets    Int?
+  powerAccess     PowerAccess  @default(UNKNOWN)
+  blackoutCapable Boolean      @default(false) // can the space be made fully dark
+  noiseLevel      Level?
+  soundproofed    Boolean      @default(false)
+  hasWifi         Boolean      @default(false)
+  hasElevator     Boolean      @default(false)
+  parkingSpaces   Int?
+  restrooms       Int?
+  loadInNotes     String?      @db.Text // stairs, gates, service lift, truck access
+  accessNotes     String?      @db.Text // security desk, building clearance, curfew
+
+  houseRules        String? @db.Text // no smoke machines, no shoes, no open flame
+  availabilityNotes String? @db.Text // "weekdays only", "not before 9am" — free text, no calendar in v1
+
+  // editorial state
+  status     SpaceStatus @default(DRAFT)
+  verifiedAt DateTime?
+  listedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  inquiries   Inquiry[]
+  filmCredits FilmCredit[]
+
+  @@index([city, status])
+  @@index([type, status])
+  @@index([status, listedAt])
+  @@index([hostId])
+}
+
+model Photo {
+  id      String @id @default(cuid())
+  spaceId String
+  space   Space  @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  url       String
+  alt       String // required — accessibility is not optional
+  isCover   Boolean @default(false)
+  sortOrder Int     @default(0)
+
+  @@index([spaceId, sortOrder])
+}
+
+model Tag {
+  id     String  @id @default(cuid())
+  slug   String  @unique
+  label  String  // "brick wall", "rooftop view", "vintage furniture", "white cyc"
+  spaces Space[]
+}
+
+// ---------------------------------------------------------------- inquiries
+
+model Inquiry {
+  id      String @id @default(cuid())
+  spaceId String
+  space   Space  @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  // who is asking
+  requesterName    String
+  requesterEmail   String
+  requesterPhone   String?
+  requesterCompany String?
+
+  // what they want
+  shootDate      DateTime?
+  durationHours  Int?
+  crewSize       Int?
+  productionType ProductionType @default(FILM)
+  message        String         @db.Text
+  budgetNote     String?        @db.Text
+
+  status      InquiryStatus @default(NEW)
+  sentAt      DateTime? // when it was relayed to the host
+  respondedAt DateTime?
+  internalNote String?  @db.Text // never shown to either party
+
+  createdAt DateTime @default(now())
+
+  @@index([spaceId, createdAt])
+  @@index([status, createdAt])
+}
+
+// Hosts apply to list; a human reviews and creates the Host and Space rows.
+// Kept separate so nothing unreviewed ever appears as a listing.
+model HostApplication {
+  id      String            @id @default(cuid())
+  status  ApplicationStatus @default(PENDING)
+  payload Json // the form as submitted
+  notes   String?           @db.Text
+
+  applicantName  String
+  applicantEmail String
+
+  createdAt  DateTime  @default(now())
+  reviewedAt DateTime?
+
+  @@index([status, createdAt])
+}
+
+// ---------------------------------------------------------------- credits
+
+// "Shot here before" — a credibility signal for a space, not a tourism feature.
+model FilmCredit {
+  id      String @id @default(cuid())
+  spaceId String
+  space   Space  @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  title          String
+  year           Int?
+  productionType ProductionType @default(FILM)
+  sourceUrl      String? // no unsourced credits
+
+  @@index([spaceId])
+}
+
+// ---------------------------------------------------------------- enums
+
+/// 16 cities plus Pateros. Nothing outside Metro Manila.
+enum City {
+  CALOOCAN
+  LAS_PINAS
+  MAKATI
+  MALABON
+  MANDALUYONG
+  MANILA
+  MARIKINA
+  MUNTINLUPA
+  NAVOTAS
+  PARANAQUE
+  PASAY
+  PASIG
+  PATEROS
+  QUEZON_CITY
+  SAN_JUAN
+  TAGUIG
+  VALENZUELA
+}
+
+enum SpaceType {
+  APARTMENT
+  HOUSE
+  STUDIO
+  OFFICE
+  COWORKING
+  WAREHOUSE
+  RETAIL
+  CAFE
+  RESTAURANT
+  BAR
+  ROOFTOP
+  GARDEN
+  POOL
+  EVENT_SPACE
+  GYM
+  OTHER
+}
+
+enum Setting {
+  INDOOR
+  OUTDOOR
+  BOTH
+}
+
+enum NaturalLight {
+  ABUNDANT
+  MODERATE
+  MINIMAL
+  NONE
+  UNKNOWN
+}
+
+enum PowerAccess {
+  ON_SITE
+  LIMITED
+  GENERATOR_REQUIRED
+  UNKNOWN
+}
+
+enum Level {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum SpaceStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  ARCHIVED
+}
+
+enum InquiryStatus {
+  NEW
+  SENT
+  RESPONDED
+  DECLINED
+  CLOSED
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ProductionType {
+  FILM
+  TV
+  MUSIC_VIDEO
+  COMMERCIAL
+  DOCUMENTARY
+  PHOTOSHOOT
+  EVENT
+}

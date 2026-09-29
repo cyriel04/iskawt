@@ -1,0 +1,16 @@
+services:
+    db:
+        image: postgres:16
+        container_name: iskawt-db
+        restart: unless-stopped
+        environment:
+            POSTGRES_USER: iskawt
+            POSTGRES_PASSWORD: devpassword
+            POSTGRES_DB: iskawt
+        ports:
+            - "5432:5432"
+        volumes:
+            - iskawt-pgdata:/var/lib/postgresql/data
+
+volumes:
+    iskawt-pgdata:
