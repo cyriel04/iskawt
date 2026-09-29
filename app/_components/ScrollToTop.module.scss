@@ -1,0 +1,8 @@
+@use "../_styles/tokens" as *;
+
+.button {
+	position: fixed;
+	inset-block-end: space(6);
+	inset-inline-end: space(6);
+	z-index: 1;
+}

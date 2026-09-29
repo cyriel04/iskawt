@@ -3,6 +3,7 @@ import { ThemeProvider, CssBaseline, InitColorSchemeScript } from "@mui/material
 import theme from "@/app/_lib/theme";
 import SiteHeader from "@/app/_components/SiteHeader";
 import SiteFooter from "@/app/_components/SiteFooter";
+import ScrollToTop from "@/app/_components/ScrollToTop";
 import shell from "@/app/_styles/shell.module.scss";
 import { Archivo, Inter, JetBrains_Mono } from "next/font/google";
 
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 						<SiteHeader />
 						<div className={shell.content}>{children}</div>
 						<SiteFooter />
+						<ScrollToTop />
 					</ThemeProvider>
 				</AppRouterCacheProvider>
 			</body>
