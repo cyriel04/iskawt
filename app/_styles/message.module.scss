@@ -1,0 +1,14 @@
+@use "./tokens" as *;
+
+// Full-page message: error boundary, not-found.
+.screen {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: space(4);
+	padding-block: space(16);
+}
+
+.link a {
+	color: $color-stamp;
+}

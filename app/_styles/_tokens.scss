@@ -1,0 +1,29 @@
+// SCSS access to design tokens. Values live in app/_lib/theme.ts only. MUI emits
+// them as CSS custom properties (cssVariables: true), and this file just names
+// the references. Never put a literal colour, gap, radius or font here.
+
+// theme.spacing(n): 4px × n
+@function space($n) {
+	@return calc(var(--mui-spacing) * #{$n});
+}
+
+// --mui-radius-* exist because theme.ts defines a custom top-level `radius` key.
+$radius-sm: var(--mui-radius-sm);
+$radius-md: var(--mui-radius-md);
+$radius-lg: var(--mui-radius-lg);
+
+$color-ink: var(--mui-palette-text-primary);
+$color-ink-muted: var(--mui-palette-text-secondary);
+$color-paper: var(--mui-palette-background-paper);
+$color-canvas: var(--mui-palette-background-default);
+$color-hairline: var(--mui-palette-divider);
+$color-stamp: var(--mui-palette-primary-main);
+$color-verified: var(--mui-palette-verified-main);
+
+// Vertical rhythm for a route's main column. Gutter and max width come from MUI <Container>.
+@mixin page {
+	display: flex;
+	flex-direction: column;
+	gap: space(8);
+	padding-block: space(10);
+}

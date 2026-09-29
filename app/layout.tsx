@@ -1,4 +1,4 @@
-import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import { ThemeProvider, CssBaseline, InitColorSchemeScript } from "@mui/material";
 import theme from "@/app/_lib/theme";
 import { Archivo, Inter, JetBrains_Mono } from "next/font/google";
