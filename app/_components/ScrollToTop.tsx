@@ -12,7 +12,8 @@ export default function ScrollToTop() {
 	const [visible, setVisible] = useState(false);
 
 	useEffect(() => {
-		const update = () => setVisible(window.scrollY > window.innerHeight);
+		// Half a screen: short pages (like browse on desktop) never scroll a full screen.
+		const update = () => setVisible(window.scrollY > window.innerHeight / 2);
 		update();
 		window.addEventListener("scroll", update, { passive: true });
 		return () => window.removeEventListener("scroll", update);

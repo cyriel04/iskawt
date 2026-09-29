@@ -52,28 +52,34 @@ describe("ScrollToTop", () => {
 		expect(screen.queryByRole("button")).not.toBeInTheDocument();
 	});
 
-	it("appears after scrolling past one viewport height", () => {
+	it("appears after scrolling past half a viewport height", () => {
 		renderWithTheme(<ScrollToTop />);
-		scrollTo(window.innerHeight + 1);
+		scrollTo(window.innerHeight / 2 + 1);
+		expect(screen.getByRole("button", { name: "Back to top" })).toBeInTheDocument();
+	});
+
+	it("is visible at three quarters of a viewport height", () => {
+		renderWithTheme(<ScrollToTop />);
+		scrollTo(window.innerHeight * 0.75);
 		expect(screen.getByRole("button", { name: "Back to top" })).toBeInTheDocument();
 	});
 
 	it("shows straight away when mounted mid-page", () => {
-		Object.defineProperty(window, "scrollY", { value: window.innerHeight + 50, configurable: true });
+		Object.defineProperty(window, "scrollY", { value: window.innerHeight / 2 + 50, configurable: true });
 		renderWithTheme(<ScrollToTop />);
 		expect(screen.getByRole("button", { name: "Back to top" })).toBeInTheDocument();
 	});
 
-	it("hides again at or below one viewport height", () => {
+	it("hides again at or below half a viewport height", () => {
 		renderWithTheme(<ScrollToTop />);
-		scrollTo(window.innerHeight + 1);
-		scrollTo(window.innerHeight);
+		scrollTo(window.innerHeight / 2 + 1);
+		scrollTo(window.innerHeight / 2);
 		expect(screen.queryByRole("button")).not.toBeInTheDocument();
 	});
 
 	it("scrolls smoothly to the top on click", async () => {
 		renderWithTheme(<ScrollToTop />);
-		scrollTo(window.innerHeight + 1);
+		scrollTo(window.innerHeight / 2 + 1);
 		await userEvent.click(screen.getByRole("button", { name: "Back to top" }));
 		expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "smooth" });
 	});
@@ -81,7 +87,7 @@ describe("ScrollToTop", () => {
 	it("does not animate when the user prefers reduced motion", async () => {
 		mockReducedMotion(true);
 		renderWithTheme(<ScrollToTop />);
-		scrollTo(window.innerHeight + 1);
+		scrollTo(window.innerHeight / 2 + 1);
 		await userEvent.click(screen.getByRole("button", { name: "Back to top" }));
 		expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "auto" });
 	});
@@ -89,7 +95,7 @@ describe("ScrollToTop", () => {
 	it("treats a missing matchMedia as no preference", async () => {
 		Object.defineProperty(window, "matchMedia", { value: undefined, configurable: true, writable: true });
 		renderWithTheme(<ScrollToTop />);
-		scrollTo(window.innerHeight + 1);
+		scrollTo(window.innerHeight / 2 + 1);
 		await userEvent.click(screen.getByRole("button", { name: "Back to top" }));
 		expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "smooth" });
 	});
