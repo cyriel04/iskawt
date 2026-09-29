@@ -16,11 +16,11 @@ mentions permits, LGU rules, or barangay clearances, stop and ask.
 
 ## Stack
 
-- Next.js 15, App Router, TypeScript strict
-- MUI + Emotion, theme tokens only
+- Next.js 16 (16.3.x), App Router, Turbopack, TypeScript strict
+- MUI + Emotion for components; **SCSS modules for styling**; theme tokens only
 - Prisma 7 + PostgreSQL (Neon in production, Docker locally)
 - Server components for reads, route handlers for writes. **No GraphQL, no Apollo.**
-- Jest + React Testing Library, Cypress for e2e
+- Jest + React Testing Library. Cypress for e2e — **deferred to v2, not installed yet**
 
 ## Layout
 
@@ -33,13 +33,17 @@ app/
   page.tsx, layout.tsx      routes and layouts
   spaces/[slug]/page.tsx    listing detail
   api/                      route handlers — the only write paths
-  _components/              presentational + client components
+  _components/              presentational + client components, each with
+                            its colocated Name.module.scss
+  _styles/
+    _tokens.scss            SCSS names for theme tokens (CSS variable refs only)
+    *.module.scss           styles shared by several routes
   _lib/
     types.ts                shared types — THE CONTRACT
     db.ts                   the one PrismaClient, with its driver adapter
     server/                 queries, business logic
-    theme.ts                design tokens → MUI theme. The only place
-                            tokens become code.
+    theme.ts                design tokens → MUI theme + CSS variables.
+                            The only place token values are written.
 prisma/                     schema.prisma, migrations, seed.ts
 prisma.config.ts            repo root — connection URL for the Prisma CLI
 docs/mockups/               static HTML mockups. Visual reference only.
@@ -60,6 +64,13 @@ These bite on every fresh clone and every new machine. Do not work around them.
   the definition of done rather than something the build enforces.
 - **The `eslint` key in `next.config.ts` is ignored**, including
   `ignoreDuringBuilds`. Do not add it.
+- **Next.js 16 error boundaries receive `retry`, not `reset`.** Check
+  `node_modules/next/dist/docs/` before trusting an example from memory.
+- **A `loading.tsx` above a route that calls `notFound()` turns its 404 into a 200**,
+  because the page shell streams first. Scope loading states with a route group
+  (`app/(browse)/loading.tsx`); never put one at `app/loading.tsx`.
+- **`@mui/material-nextjs` has a per-version entry.** Import from
+  `@mui/material-nextjs/v16-appRouter`.
 - **pnpm blocks dependency build scripts.** Approvals live in `pnpm-workspace.yaml`
   at the repo root, never in a `"pnpm"` block in `package.json` — current pnpm does
   not read that field. Use `pnpm approve-builds`; never
@@ -103,7 +114,7 @@ pnpm db:studio
 
 | Area | Owner | Off limits to |
 | --- | --- | --- |
-| `page.tsx` / `layout.tsx` anywhere in `app/`, `app/_components/**`, `app/_lib/theme.ts` | frontend-dev | backend-dev |
+| `page.tsx` / `layout.tsx` / `loading.tsx` / `error.tsx` / `not-found.tsx` anywhere in `app/`, `app/_components/**`, `app/_styles/**`, any `*.module.scss`, `app/_lib/theme.ts` | frontend-dev | backend-dev |
 | `app/api/**`, `app/_lib/server/**`, `app/_lib/db.ts`, `prisma/**` | backend-dev | frontend-dev |
 | `app/_lib/types.ts` | **nobody without approval** | both |
 | `prisma/migrations/**`, `generated/**` | generated only | both |
@@ -187,10 +198,38 @@ be listed, so brackets are the default and removing them is a deliberate act.
 - Data access lives in `app/_lib/server/`. Components never call Prisma directly.
 - Public queries use explicit `select`, never `include` on `Host`. This is a
   privacy rule wearing a convention's clothes.
-- Styling via MUI `sx` and theme tokens. No raw hex, no inline style objects.
+- Styling via SCSS modules — see **Styling** below. No `sx`, no raw hex, no inline
+  style objects.
 - Loading, empty, and error states are required, not polish.
 - Accessible by default: labelled inputs, keyboard reachable, semantic elements.
 - Filter state lives in the URL as search params, not in React state.
+
+## Styling
+
+SCSS modules, not `sx`. Decided for slice 3 onward.
+
+- Every component or route that needs styles gets a colocated `Name.module.scss`
+  (`page.module.scss` for a route). Styles shared across routes go in
+  `app/_styles/`.
+- Tokens come from `app/_lib/theme.ts` only. MUI emits them as CSS custom
+  properties (`cssVariables: true`), and SCSS reads those through
+  `app/_styles/_tokens.scss`: `@use "../_styles/tokens" as *;` then `space(4)`,
+  `$radius-lg`, `$color-verified`, `var(--mui-font-label)`. Never write a colour,
+  spacing, radius or font value in SCSS. Add it to `theme.ts`, then name it in
+  `_tokens.scss`.
+- Literal values are fine only for layout measures: aspect ratios, percentages,
+  and minimum column widths like `minmax(min(100%, 280px), 1fr)`.
+- Prefer intrinsic layouts (`auto-fill`, `flex-wrap`) to media queries. Breakpoint
+  values aren't exported as CSS variables, and CSS variables can't be used in
+  media queries.
+- MUI components stay. Their semantic props stay too: `variant`, `color`, `size`,
+  `component`, `maxWidth`. Anything else visual goes in the module and is
+  passed as `className`.
+- **No `sx`, no `styled()`, no `style={{}}`, no CSS-in-JS for layout.** One
+  benefit: server components stay server components. `sx` callbacks and
+  `component={Link}` can't cross into MUI's client components.
+- Theme-level overrides (the `components` key in `theme.ts`) stay where they are.
+  That's the brand applied once, not per-component styling.
 
 ## Definition of done
 

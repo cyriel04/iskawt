@@ -52,8 +52,11 @@ path, no length cap on free text, unparameterised SQL if any raw query appears.
 **6. Type honesty.** `any`, `@ts-ignore`, non-null `!`, or casts used to silence the
 compiler rather than express something true.
 
-**7. Theme discipline.** Raw hex values, raw pixel gaps, or font stacks inside a
-component instead of theme tokens. Inline styles copied out of `docs/mockups/`.
+**7. Theme discipline.** Any `sx`, `styled()` or `style={{}}` (styling is SCSS
+modules only). Raw hex, raw pixel gaps, radii or font stacks in a component or a
+`.module.scss` instead of `app/_styles/_tokens.scss` references. Inline styles
+copied out of `docs/mockups/`. A new `app/loading.tsx` at the root, which breaks
+404 status codes.
 
 **8. Scope.** Anything in the diff the task did not ask for.
 
