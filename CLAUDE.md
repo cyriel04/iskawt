@@ -71,6 +71,10 @@ These bite on every fresh clone and every new machine. Do not work around them.
   (`app/(browse)/loading.tsx`); never put one at `app/loading.tsx`.
 - **`@mui/material-nextjs` has a per-version entry.** Import from
   `@mui/material-nextjs/v16-appRouter`.
+- **MUI styles must sit in a CSS layer.** `AppRouterCacheProvider` takes
+  `options={{ enableCssLayer: true }}`. Without it, MUI's styles load after the
+  SCSS modules and win every tie, so a `className` on an MUI component silently
+  loses (e.g. `position: fixed` on a `Fab`). Never remove that option.
 - **pnpm blocks dependency build scripts.** Approvals live in `pnpm-workspace.yaml`
   at the repo root, never in a `"pnpm"` block in `package.json` — current pnpm does
   not read that field. Use `pnpm approve-builds`; never

@@ -30,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 		<html lang="en" className={`${archivo.variable} ${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
 			<body className={shell.body}>
 				<InitColorSchemeScript attribute="class" />
-				<AppRouterCacheProvider>
+				<AppRouterCacheProvider options={{ enableCssLayer: true }}>
 					<ThemeProvider theme={theme}>
 						<CssBaseline />
 						<SiteHeader />
