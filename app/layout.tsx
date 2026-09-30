@@ -5,23 +5,29 @@ import SiteHeader from "@/app/_components/SiteHeader";
 import SiteFooter from "@/app/_components/SiteFooter";
 import ScrollToTop from "@/app/_components/ScrollToTop";
 import shell from "@/app/_styles/shell.module.scss";
-import { Archivo, Inter, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 
-const archivo = Archivo({
-	subsets: ["latin"],
-	weight: ["400", "600", "700"],
+// Self-hosted, so a build never downloads fonts. Fetching them from Google at
+// build time failed CI intermittently. Variable woff2, latin subset, from
+// Google Fonts; SIL Open Font License, texts alongside in app/_fonts/.
+const archivo = localFont({
+	src: "./_fonts/archivo-latin.woff2",
+	weight: "400 700",
+	display: "swap",
 	variable: "--font-archivo",
 });
 
-const inter = Inter({
-	subsets: ["latin"],
-	weight: ["400", "500", "600"],
+const inter = localFont({
+	src: "./_fonts/inter-latin.woff2",
+	weight: "400 600",
+	display: "swap",
 	variable: "--font-inter",
 });
 
-const jetbrainsMono = JetBrains_Mono({
-	subsets: ["latin"],
-	weight: ["400", "500"],
+const jetbrainsMono = localFont({
+	src: "./_fonts/jetbrains-mono-latin.woff2",
+	weight: "400 500",
+	display: "swap",
 	variable: "--font-jetbrains-mono",
 });
 
