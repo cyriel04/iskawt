@@ -5,7 +5,13 @@
 import { cache } from "react";
 import { prisma } from "@/app/_lib/db";
 import type { Prisma } from "@/generated/prisma/client";
-import type { PublicPhoto, SpaceCard, SpaceDetail } from "@/app/_lib/types";
+import type {
+	PublicPhoto,
+	SpaceCard,
+	SpaceDetail,
+	SpaceFilters,
+	SpaceSearchResult,
+} from "@/app/_lib/types";
 
 // A space is public only when it is published AND a human has verified its host.
 export const publishedWhere = {
@@ -131,13 +137,89 @@ export function toSpaceDetail(row: DetailRow): SpaceDetail {
 	};
 }
 
+// Most recently listed first, then slug so ties page stably.
+const listOrder = [
+	{ listedAt: { sort: "desc", nulls: "last" } },
+	{ slug: "asc" },
+] satisfies Prisma.SpaceOrderByWithRelationInput[];
+
 export async function listPublishedSpaces(): Promise<SpaceCard[]> {
 	const rows = await prisma.space.findMany({
 		where: publishedWhere,
 		select: cardSelect,
-		orderBy: [{ listedAt: { sort: "desc", nulls: "last" } }, { slug: "asc" }],
+		orderBy: listOrder,
 	});
 	return rows.map(toSpaceCard);
+}
+
+export const PAGE_SIZE = 12;
+
+// Pure: the filters as a where clause, always ANDed with publishedWhere.
+// Only set filters add a clause, so no filters is exactly publishedWhere.
+export function buildSpaceWhere(filters: SpaceFilters): Prisma.SpaceWhereInput {
+	const clauses: Prisma.SpaceWhereInput[] = [];
+
+	if (filters.q !== null) {
+		const contains = { contains: filters.q, mode: "insensitive" } as const;
+		clauses.push({
+			OR: [
+				{ title: contains },
+				{ description: contains },
+				{ areaName: contains },
+				{ tags: { some: { label: contains } } },
+			],
+		});
+	}
+	if (filters.cities.length > 0) {
+		clauses.push({ city: { in: filters.cities } });
+	}
+	if (filters.types.length > 0) {
+		clauses.push({ type: { in: filters.types } });
+	}
+	if (filters.setting !== null) {
+		// A BOTH space suits an indoor shoot and an outdoor one alike.
+		clauses.push({ setting: { in: [filters.setting, "BOTH"] } });
+	}
+	if (filters.naturalLight.length > 0) {
+		clauses.push({ naturalLight: { in: filters.naturalLight } });
+	}
+	if (filters.minCrew !== null) {
+		// gte never matches NULL, so a space with no maxCrew drops out.
+		clauses.push({ maxCrew: { gte: filters.minCrew } });
+	}
+	const { min, max } = filters.hourlyRate;
+	if (min !== null || max !== null) {
+		// Either bound drops spaces with a null hourlyRate, for the same reason.
+		clauses.push({
+			hourlyRate: {
+				...(min !== null && { gte: min }),
+				...(max !== null && { lte: max }),
+			},
+		});
+	}
+
+	return clauses.length === 0 ? { ...publishedWhere } : { ...publishedWhere, AND: clauses };
+}
+
+export async function searchPublishedSpaces(filters: SpaceFilters): Promise<SpaceSearchResult> {
+	const where = buildSpaceWhere(filters);
+	const [rows, total] = await Promise.all([
+		prisma.space.findMany({
+			where,
+			select: cardSelect,
+			orderBy: listOrder,
+			skip: (filters.page - 1) * PAGE_SIZE,
+			take: PAGE_SIZE,
+		}),
+		prisma.space.count({ where }),
+	]);
+	return {
+		spaces: rows.map(toSpaceCard),
+		total,
+		page: filters.page,
+		pageSize: PAGE_SIZE,
+		pageCount: Math.ceil(total / PAGE_SIZE),
+	};
 }
 
 // cache() lets generateMetadata and the page share one query per request.
