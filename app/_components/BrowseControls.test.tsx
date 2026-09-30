@@ -62,6 +62,26 @@ describe("SearchBox", () => {
 });
 
 describe("FilterPanel", () => {
+	it("follows a URL change while open, without MUI's uncontrolled-default warning", async () => {
+		const error = jest.spyOn(console, "error").mockImplementation(() => {});
+		const { rerender } = renderWithTheme(<BrowseControls filters={EMPTY_FILTERS} />);
+		await userEvent.click(screen.getByRole("button", { name: "All filters" }));
+		const dialog = screen.getByRole("dialog", { name: "Filters" });
+		expect(within(dialog).getByRole("checkbox", { name: "Makati" })).not.toBeChecked();
+
+		// The URL moves on (e.g. after "Show spaces") while the dialog is still mounted.
+		rerender(
+			<ThemeProvider theme={theme}>
+				<BrowseControls filters={{ ...EMPTY_FILTERS, cities: ["MAKATI"], minCrew: 10 }} />
+			</ThemeProvider>,
+		);
+
+		expect(within(dialog).getByRole("checkbox", { name: "Makati" })).toBeChecked();
+		expect(within(dialog).getByRole("spinbutton", { name: /crew/i })).toHaveValue(10);
+		expect(error).not.toHaveBeenCalledWith(expect.stringContaining("changing the default"));
+		error.mockRestore();
+	});
+
 	async function open(filters: SpaceFilters = filtered) {
 		renderWithTheme(<BrowseControls filters={filters} />);
 		await userEvent.click(screen.getByRole("button", { name: "All filters" }));

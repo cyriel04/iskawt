@@ -157,7 +157,10 @@ function FilterPanel({ filters, searchRef }: { filters: SpaceFilters; searchRef:
 				All filters
 			</Button>
 			<Dialog open={open} onClose={() => setOpen(false)} aria-labelledby={titleId} scroll="paper" fullWidth>
-				<form onSubmit={submit} className={styles.form}>
+				{/* Keyed on the URL: the fields are uncontrolled, so when the filters
+				    change (e.g. during the close fade after "Show spaces") the form
+				    remounts with fresh defaults instead of MUI warning about them. */}
+				<form key={spacesHref(filters)} onSubmit={submit} className={styles.form}>
 					<div className={styles.titleBar}>
 						<DialogTitle id={titleId} variant="displaySm">
 							Filters
