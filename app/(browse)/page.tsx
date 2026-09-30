@@ -10,7 +10,6 @@ import { parseSpaceFilters } from "@/app/_lib/spaceFilters";
 import type { RawSearchParams, SpaceFilters } from "@/app/_lib/types";
 import styles from "./page.module.scss";
 
-
 // "Studios in Makati", "Spaces in Makati", "Studios", or null when the filters
 // are not exactly one city and/or one type. Other filters do not change it.
 function filteredTitle({ cities, types }: SpaceFilters): string | null {

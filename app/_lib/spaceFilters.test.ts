@@ -1,4 +1,15 @@
-import { EMPTY_FILTERS, CITY_VALUES, LIGHT_VALUES, SETTING_VALUES, SPACE_TYPE_VALUES, hasActiveFilters, paramValue, parseSpaceFilters, serializeSpaceFilters, spacesHref } from "@/app/_lib/spaceFilters";
+import {
+	EMPTY_FILTERS,
+	CITY_VALUES,
+	LIGHT_VALUES,
+	SETTING_VALUES,
+	SPACE_TYPE_VALUES,
+	hasActiveFilters,
+	paramValue,
+	parseSpaceFilters,
+	serializeSpaceFilters,
+	spacesHref,
+} from "@/app/_lib/spaceFilters";
 import type { SpaceFilters } from "@/app/_lib/types";
 
 const full: SpaceFilters = {

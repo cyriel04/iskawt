@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SITE_NAME } from "@/app/_lib/constants/site";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
@@ -19,7 +20,7 @@ type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	const { slug } = await params;
 	const space = await getPublishedSpaceBySlug(slug);
-	return { title: space ? `${space.title} — Iskawt` : "Space not found — Iskawt" };
+	return { title: space ? `${space.title} — ${SITE_NAME}` : `Space not found — ${SITE_NAME}` };
 }
 
 export default async function SpacePage({ params }: Props) {

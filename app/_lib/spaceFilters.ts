@@ -24,7 +24,6 @@ export const EMPTY_FILTERS: SpaceFilters = {
 	page: 1,
 };
 
-
 // The URL form of an enum value: MAKATI → makati, QUEZON_CITY → quezon-city.
 export function paramValue(value: string): string {
 	return value.toLowerCase().replace(/_/g, "-");

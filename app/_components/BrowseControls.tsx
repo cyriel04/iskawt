@@ -27,7 +27,16 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { cityLabels, naturalLightLabels, settingLabels, spaceTypeLabels } from "@/app/_lib/constants/labels";
 import { CREW_MAX, RATE_MAX, SEARCH_TEXT_MAX } from "@/app/_lib/constants/limits";
-import { CITY_VALUES, LIGHT_VALUES, SETTING_VALUES, SPACE_TYPE_VALUES, paramValue, parseSpaceFilters, serializeSpaceFilters, spacesHref } from "@/app/_lib/spaceFilters";
+import {
+	CITY_VALUES,
+	LIGHT_VALUES,
+	SETTING_VALUES,
+	SPACE_TYPE_VALUES,
+	paramValue,
+	parseSpaceFilters,
+	serializeSpaceFilters,
+	spacesHref,
+} from "@/app/_lib/spaceFilters";
 import type { RawSearchParams, SpaceFilters } from "@/app/_lib/types";
 import styles from "./BrowseControls.module.scss";
 
