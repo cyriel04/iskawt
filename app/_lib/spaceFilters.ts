@@ -23,7 +23,13 @@ export const EMPTY_FILTERS: SpaceFilters = {
 	page: 1,
 };
 
-const Q_MAX = 100;
+const Q_MAX = 100; // characters (code points), not UTF-16 units
+
+// Upper bounds from the URL shape in types.ts. Above its cap a value is
+// dropped, not clamped. The filter panel's inputs carry the same max.
+export const CREW_MAX = 999;
+export const RATE_MAX = 999999;
+export const PAGE_MAX = 999;
 
 // The URL form of an enum value: MAKATI → makati, QUEZON_CITY → quezon-city.
 export function paramValue(value: string): string {
@@ -77,25 +83,27 @@ function enumList<T extends string>(raw: string | string[] | undefined, known: M
 	return [...found].sort(byParam);
 }
 
-// Digits only, at least 1, and exactly representable. "2.5", "-1", "1e3" → null.
-function positiveInt(raw: string | string[] | undefined): number | null {
+// Digits only, no more than the cap has, and 1..cap. "2.5", "-1", "1e3",
+// "3000000000" → null. The digit limit keeps huge strings away from Number().
+function positiveInt(raw: string | string[] | undefined, cap: number): number | null {
 	const value = first(raw);
-	if (value === undefined || !/^\d+$/.test(value)) return null;
+	if (value === undefined || !/^\d+$/.test(value) || value.length > String(cap).length) return null;
 	const n = Number(value);
-	return Number.isSafeInteger(n) && n >= 1 ? n : null;
+	return n >= 1 && n <= cap ? n : null;
 }
 
 function searchText(raw: string | string[] | undefined): string | null {
 	const value = first(raw);
 	if (value === undefined) return null;
-	const text = value.replace(/\s+/g, " ").trim().slice(0, Q_MAX).trimEnd();
+	// Cut by code point, so an emoji at the boundary is kept whole, never halved.
+	const text = Array.from(value.replace(/\s+/g, " ").trim()).slice(0, Q_MAX).join("").trimEnd();
 	return text === "" ? null : text;
 }
 
 export const parseSpaceFilters: ParseSpaceFilters = (params: RawSearchParams): SpaceFilters => {
 	const settingParam = first(params.setting);
-	let min = positiveInt(params.rateMin);
-	let max = positiveInt(params.rateMax);
+	let min = positiveInt(params.rateMin, RATE_MAX);
+	let max = positiveInt(params.rateMax, RATE_MAX);
 	if (min !== null && max !== null && min > max) [min, max] = [max, min];
 
 	return {
@@ -104,9 +112,9 @@ export const parseSpaceFilters: ParseSpaceFilters = (params: RawSearchParams): S
 		types: enumList(params.type, typeByParam),
 		setting: (settingParam !== undefined && settingByParam.get(settingParam)) || null,
 		naturalLight: enumList(params.light, lightByParam),
-		minCrew: positiveInt(params.crew),
+		minCrew: positiveInt(params.crew, CREW_MAX),
 		hourlyRate: { min, max },
-		page: positiveInt(params.page) ?? 1,
+		page: positiveInt(params.page, PAGE_MAX) ?? 1,
 	};
 };
 

@@ -1,5 +1,5 @@
 import { screen } from "@testing-library/react";
-import BrowsePage from "@/app/(browse)/page";
+import BrowsePage, { generateMetadata } from "@/app/(browse)/page";
 import { searchPublishedSpaces } from "@/app/_lib/server/spaces";
 import { EMPTY_FILTERS } from "@/app/_lib/spaceFilters";
 import type { RawSearchParams, SpaceCard, SpaceSearchResult } from "@/app/_lib/types";
@@ -75,5 +75,48 @@ describe("BrowsePage", () => {
 		renderWithTheme(await render({ city: "pateros" }));
 
 		expect(screen.getByRole("heading", { name: "No spaces match these filters" })).toBeInTheDocument();
+	});
+});
+
+describe("generateMetadata", () => {
+	const DEFAULT_TITLE = "Iskawt — shoot spaces in Metro Manila";
+	const DESCRIPTION = "Private spaces across Metro Manila for film and photo shoots.";
+
+	function metadataFor(params: RawSearchParams) {
+		return generateMetadata({ searchParams: Promise.resolve(params) });
+	}
+
+	it.each<[RawSearchParams, string]>([
+		[{ city: "makati", type: "studio" }, "Studios in Makati — Iskawt"],
+		[{ city: "makati" }, "Spaces in Makati — Iskawt"],
+		[{ type: "studio" }, "Studios — Iskawt"],
+		[{ city: "quezon-city", type: "event-space" }, "Event spaces in Quezon City — Iskawt"],
+		[{ type: "cafe", city: "las-pinas" }, "Cafés in Las Piñas — Iskawt"],
+		[{ city: "pasig", q: "rooftop", crew: "10", page: "2" }, "Spaces in Pasig — Iskawt"],
+	])("titles %j as %j", async (params, title) => {
+		expect((await metadataFor(params)).title).toBe(title);
+	});
+
+	it.each<RawSearchParams>([
+		{},
+		{ q: "white cyc", setting: "outdoor" },
+		{ city: ["makati", "pasig"] },
+		{ type: ["studio", "warehouse"] },
+		{ city: "makati", type: ["studio", "warehouse"] },
+		{ city: ["makati", "pasig"], type: "studio" },
+		{ city: "atlantis", type: "castle" },
+	])("keeps the site title for %j", async (params) => {
+		expect((await metadataFor(params)).title).toBe(DEFAULT_TITLE);
+	});
+
+	it("keeps the description whatever the filters", async () => {
+		expect((await metadataFor({})).description).toBe(DESCRIPTION);
+		expect((await metadataFor({ city: "makati", type: "studio" })).description).toBe(DESCRIPTION);
+	});
+
+	it("does not query the database for a title", async () => {
+		mockSearch.mockClear();
+		await metadataFor({ city: "makati" });
+		expect(mockSearch).not.toHaveBeenCalled();
 	});
 });

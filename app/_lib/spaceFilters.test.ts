@@ -90,6 +90,15 @@ describe("parseSpaceFilters", () => {
 		expect(parseSpaceFilters({ q: "c".repeat(150) }).q).toHaveLength(100);
 	});
 
+	it("counts the search cap in characters, never splitting an emoji", () => {
+		const q = parseSpaceFilters({ q: `${"a".repeat(99)}📸 rooftop` }).q;
+		expect(q).toBe(`${"a".repeat(99)}📸`);
+		expect(q?.isWellFormed()).toBe(true);
+		const emoji = parseSpaceFilters({ q: "📸".repeat(150) }).q ?? "";
+		expect([...emoji]).toHaveLength(100);
+		expect(emoji.isWellFormed()).toBe(true);
+	});
+
 	it("uses the first value when a single-valued key repeats", () => {
 		const f = parseSpaceFilters({ q: ["one", "two"], crew: ["4", "8"], setting: ["indoor", "outdoor"] });
 		expect(f.q).toBe("one");
@@ -117,7 +126,36 @@ describe("parseSpaceFilters", () => {
 		});
 	});
 
-	it.each(["0", "-1", "1.5", "abc", "", "99999999999999999999"])("reads page %j as page 1", (bad) => {
+	it.each([
+		["crew", "1000"],
+		["crew", "3000000000"],
+		["crew", "0999"],
+		["rateMin", "1000000"],
+		["rateMax", "99999999999"],
+	])("drops %s=%j, above its cap", (key, value) => {
+		const f = parseSpaceFilters({ [key]: value });
+		expect(f.minCrew).toBeNull();
+		expect(f.hourlyRate).toEqual({ min: null, max: null });
+	});
+
+	it("keeps a crew and rates at their caps", () => {
+		const f = parseSpaceFilters({ crew: "999", rateMin: "999999", rateMax: "999999" });
+		expect(f.minCrew).toBe(999);
+		expect(f.hourlyRate).toEqual({ min: 999999, max: 999999 });
+	});
+
+	it("keeps one rate bound when the other is above its cap", () => {
+		expect(parseSpaceFilters({ rateMin: "500", rateMax: "99999999999" }).hourlyRate).toEqual({
+			min: 500,
+			max: null,
+		});
+	});
+
+	it("keeps page 999", () => {
+		expect(parseSpaceFilters({ page: "999" }).page).toBe(999);
+	});
+
+	it.each(["0", "-1", "1.5", "abc", "", "99999999999999999999", "1000", "9007199254740991"])("reads page %j as page 1", (bad) => {
 		expect(parseSpaceFilters({ page: bad }).page).toBe(1);
 	});
 
@@ -186,18 +224,20 @@ function randomFilters(rand: () => number): SpaceFilters {
 	const maybe = (n: number) => (rand() < 0.5 ? null : n);
 	const words = ["white", "cyc", "rooftop", "Poblacion", "café", "a&b", "100%", "+plus"];
 	const q = rand() < 0.5 ? null : words.filter(() => rand() < 0.5).join(" ") || null;
-	const low = maybe(1 + Math.floor(rand() * 5000));
-	const high = maybe(1 + Math.floor(rand() * 5000));
+	// Anywhere in 1..cap, and the cap itself now and then: the edge must round-trip too.
+	const upTo = (cap: number) => (rand() < 0.1 ? cap : 1 + Math.floor(rand() * cap));
+	const low = maybe(upTo(999999));
+	const high = maybe(upTo(999999));
 	return {
 		q,
 		cities: subset(CITY_VALUES, rand),
 		types: subset(SPACE_TYPE_VALUES, rand),
 		setting: rand() < 0.33 ? null : SETTING_VALUES[Math.floor(rand() * SETTING_VALUES.length)],
 		naturalLight: subset(LIGHT_VALUES, rand),
-		minCrew: maybe(1 + Math.floor(rand() * 50)),
+		minCrew: maybe(upTo(999)),
 		hourlyRate:
 			low !== null && high !== null ? { min: Math.min(low, high), max: Math.max(low, high) } : { min: low, max: high },
-		page: 1 + Math.floor(rand() * 20),
+		page: upTo(999),
 	};
 }
 

@@ -21,8 +21,30 @@
 	font: var(--mui-font-body1);
 }
 
+// Toolbar row: the search field takes the room, as .search does in
+// BrowseControls; the button beside it is the size of "All filters".
+.skeletonSearch {
+	flex: 1 1 320px;
+	height: space(11);
+	border-radius: $radius-md;
+}
+
+.skeletonFilters {
+	width: space(28);
+	height: space(11);
+	border-radius: $radius-md;
+}
+
+// Summary row: one chip, then the count pushed to the far end like .count.
+.skeletonChip {
+	width: space(24);
+	height: space(11);
+	border-radius: $radius-sm;
+}
+
 .skeletonCount {
 	width: 80px;
+	margin-inline-start: auto;
 	font: var(--mui-font-caption);
 }
 

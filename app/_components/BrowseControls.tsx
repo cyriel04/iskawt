@@ -1,10 +1,12 @@
 "use client"; // Form submit handlers navigate with the router; the panel opens and closes.
 
-// The only client code on the browse page. Neither component holds filter
-// state: inputs are uncontrolled drafts seeded from the URL, and submitting
-// navigates to the canonical URL for the new filters, always on page 1.
+// The only client code on the browse page: the search box and the filter
+// panel, together so they share one search draft. Neither holds filter state:
+// inputs are uncontrolled drafts seeded from the URL, and submitting navigates
+// to the canonical URL for the new filters, always on page 1. Applying the
+// panel reads whatever is in the search box now, submitted or not.
 
-import { useId, useState, type FormEvent } from "react";
+import { useId, useRef, useState, useSyncExternalStore, type FormEvent, type RefObject } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
@@ -26,7 +28,9 @@ import Typography from "@mui/material/Typography";
 import { cityLabels, naturalLightLabels, settingLabels, spaceTypeLabels } from "@/app/_components/labels";
 import {
 	CITY_VALUES,
+	CREW_MAX,
 	LIGHT_VALUES,
+	RATE_MAX,
 	SETTING_VALUES,
 	SPACE_TYPE_VALUES,
 	paramValue,
@@ -46,9 +50,20 @@ function formParams(form: HTMLFormElement): RawSearchParams {
 	return raw;
 }
 
+// False in server HTML and during hydration, true once React runs in the
+// browser. No subscription: it only ever changes once.
+const noSubscription = () => () => {};
+function useHydrated(): boolean {
+	return useSyncExternalStore(
+		noSubscription,
+		() => true,
+		() => false,
+	);
+}
+
 // ---------------------------------------------------------------- search
 
-export function SearchBox({ filters }: { filters: SpaceFilters }) {
+function SearchBox({ filters, inputRef }: { filters: SpaceFilters; inputRef: RefObject<HTMLInputElement | null> }) {
 	const router = useRouter();
 	// Everything but the search text and the page, carried as hidden fields so
 	// the form also works as a plain GET before hydration.
@@ -70,6 +85,7 @@ export function SearchBox({ filters }: { filters: SpaceFilters }) {
 				label="Search spaces"
 				placeholder="Rooftop, white walls, high ceilings, Poblacion…"
 				defaultValue={filters.q ?? ""}
+				inputRef={inputRef}
 				size="small"
 				fullWidth
 				slotProps={{ htmlInput: { maxLength: 100 } }}
@@ -119,22 +135,26 @@ function CheckboxGroup<T extends string>({
 	);
 }
 
-export function FilterPanel({ filters }: { filters: SpaceFilters }) {
+function FilterPanel({ filters, searchRef }: { filters: SpaceFilters; searchRef: RefObject<HTMLInputElement | null> }) {
 	const router = useRouter();
+	const hydrated = useHydrated();
 	const [open, setOpen] = useState(false);
 	const titleId = useId();
 	const rateNoteId = useId();
 
 	function submit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
-		const next = parseSpaceFilters(formParams(event.currentTarget));
+		// The search draft as it stands in the box, parsed like any other q.
+		const q = searchRef.current === null ? (filters.q ?? undefined) : searchRef.current.value;
+		const next = parseSpaceFilters({ ...formParams(event.currentTarget), q });
 		setOpen(false);
 		router.push(spacesHref({ ...next, page: 1 }));
 	}
 
 	return (
 		<>
-			<Button variant="outlined" aria-haspopup="dialog" onClick={() => setOpen(true)}>
+			{/* Disabled until hydrated: before then a click would do nothing. */}
+			<Button variant="outlined" aria-haspopup="dialog" disabled={!hydrated} onClick={() => setOpen(true)}>
 				All filters
 			</Button>
 			<Dialog open={open} onClose={() => setOpen(false)} aria-labelledby={titleId} scroll="paper" fullWidth>
@@ -148,8 +168,6 @@ export function FilterPanel({ filters }: { filters: SpaceFilters }) {
 						</IconButton>
 					</div>
 					<DialogContent dividers className={styles.content}>
-						<input type="hidden" name="q" value={filters.q ?? ""} />
-
 						<CheckboxGroup
 							legend="City"
 							name="city"
@@ -201,7 +219,7 @@ export function FilterPanel({ filters }: { filters: SpaceFilters }) {
 							name="crew"
 							label="Minimum crew"
 							defaultValue={filters.minCrew ?? ""}
-							slotProps={{ htmlInput: { min: 1, step: 1, inputMode: "numeric" } }}
+							slotProps={{ htmlInput: { min: 1, max: CREW_MAX, step: 1, inputMode: "numeric" } }}
 							className={styles.number}
 						/>
 
@@ -218,7 +236,7 @@ export function FilterPanel({ filters }: { filters: SpaceFilters }) {
 										label={name === "rateMin" ? "Minimum hourly rate" : "Maximum hourly rate"}
 										defaultValue={(name === "rateMin" ? filters.hourlyRate.min : filters.hourlyRate.max) ?? ""}
 										slotProps={{
-											htmlInput: { min: 1, step: 1, inputMode: "numeric" },
+											htmlInput: { min: 1, max: RATE_MAX, step: 1, inputMode: "numeric" },
 											input: { startAdornment: <InputAdornment position="start">₱</InputAdornment> },
 										}}
 										className={styles.number}
@@ -237,6 +255,18 @@ export function FilterPanel({ filters }: { filters: SpaceFilters }) {
 					</DialogActions>
 				</form>
 			</Dialog>
+		</>
+	);
+}
+
+// ---------------------------------------------------------------- together
+
+export function BrowseControls({ filters }: { filters: SpaceFilters }) {
+	const searchRef = useRef<HTMLInputElement>(null);
+	return (
+		<>
+			<SearchBox filters={filters} inputRef={searchRef} />
+			<FilterPanel filters={filters} searchRef={searchRef} />
 		</>
 	);
 }

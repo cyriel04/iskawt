@@ -55,6 +55,26 @@ export const spaceTypeLabels: Record<SpaceType, string> = {
 	OTHER: "Other",
 };
 
+// Plural, for headings and page titles: "Studios in Makati".
+export const spaceTypePluralLabels: Record<SpaceType, string> = {
+	APARTMENT: "Apartments",
+	HOUSE: "Houses",
+	STUDIO: "Studios",
+	OFFICE: "Offices",
+	COWORKING: "Co-working spaces",
+	WAREHOUSE: "Warehouses",
+	RETAIL: "Retail spaces",
+	CAFE: "Cafés",
+	RESTAURANT: "Restaurants",
+	BAR: "Bars",
+	ROOFTOP: "Rooftops",
+	GARDEN: "Gardens",
+	POOL: "Pools",
+	EVENT_SPACE: "Event spaces",
+	GYM: "Gyms",
+	OTHER: "Other spaces",
+};
+
 export const settingLabels: Record<Setting, string> = {
 	INDOOR: "Indoor",
 	OUTDOOR: "Outdoor",

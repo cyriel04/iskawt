@@ -6,7 +6,7 @@
 
 import Link from "next/link";
 import Typography from "@mui/material/Typography";
-import { FilterPanel, SearchBox } from "@/app/_components/BrowseControls";
+import { BrowseControls } from "@/app/_components/BrowseControls";
 import BrowseResults from "@/app/_components/BrowseResults";
 import {
 	cityLabels,
@@ -115,8 +115,7 @@ export default function BrowseView({ filters, result }: { filters: SpaceFilters;
 	return (
 		<div className={styles.view}>
 			<div className={styles.toolbar}>
-				<SearchBox filters={filters} />
-				<FilterPanel filters={filters} />
+				<BrowseControls filters={filters} />
 			</div>
 
 			<div className={styles.summary}>
