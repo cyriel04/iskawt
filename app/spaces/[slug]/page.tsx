@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SITE_NAME } from "@/app/_lib/constants/site";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
@@ -8,8 +9,10 @@ import Typography from "@mui/material/Typography";
 import PhotoFrame from "@/app/_components/PhotoFrame";
 import RatePanel from "@/app/_components/RatePanel";
 import SpaceFacts from "@/app/_components/SpaceFacts";
-import { cityLabels, locationLine, settingLabels, spaceTypeLabels } from "@/app/_components/labels";
+import { cityLabels, settingLabels, spaceTypeLabels } from "@/app/_lib/constants/labels";
+import { locationLine } from "@/app/_components/labels";
 import { getPublishedSpaceBySlug } from "@/app/_lib/server/spaces";
+import { EMPTY_FILTERS, spacesHref } from "@/app/_lib/spaceFilters";
 import styles from "./page.module.scss";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -17,7 +20,7 @@ type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	const { slug } = await params;
 	const space = await getPublishedSpaceBySlug(slug);
-	return { title: space ? `${space.title} — Iskawt` : "Space not found — Iskawt" };
+	return { title: space ? `${space.title} — ${SITE_NAME}` : `Space not found — ${SITE_NAME}` };
 }
 
 export default async function SpacePage({ params }: Props) {
@@ -31,8 +34,7 @@ export default async function SpacePage({ params }: Props) {
 		<Container component="main" disableGutters maxWidth={false} className={styles.page}>
 			<Breadcrumbs aria-label="Breadcrumb" color="text.secondary" className={styles.breadcrumb}>
 				<Link href="/">Spaces</Link>
-				{/* Plain text until slice 4 adds a city filter URL to link to. */}
-				<span>{cityLabels[space.city]}</span>
+				<Link href={spacesHref({ ...EMPTY_FILTERS, cities: [space.city] })}>{cityLabels[space.city]}</Link>
 				<Typography component="span" aria-current="page">
 					{space.title}
 				</Typography>

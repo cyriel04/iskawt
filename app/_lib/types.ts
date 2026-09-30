@@ -99,3 +99,71 @@ export type SpaceDetail = SpaceCard & {
 
 	filmCredits: PublicFilmCredit[];
 };
+
+// ---------------------------------------------------------------- browse filters
+//
+// Filter state lives in the URL, so a filtered link pasted into a new tab
+// reproduces the view. `SpaceFilters` is the parsed, validated form; the query
+// layer only ever receives this, never raw search params.
+//
+// URL shape (the only accepted keys; anything else is ignored):
+//
+//   ?q=white+cyc            text. Every word must match one of: title, description,
+//                           areaName, a tag label, the city name, the space type name
+//   &city=makati&city=pasig repeatable; lowercase kebab of City
+//   &type=studio            repeatable; lowercase kebab of SpaceType
+//   &setting=outdoor        indoor | outdoor. BOTH spaces match either.
+//   &light=abundant         repeatable; abundant | moderate | minimal | none
+//   &crew=10                minimum crew the space holds (maxCrew >= crew); 1–999
+//   &rateMin=1000           hourly rate, whole pesos, inclusive; 1–999999
+//   &rateMax=3000
+//   &page=2                 1-based; omitted means 1; 1–999
+//
+// Parsing is forgiving: an unknown enum value, a non-integer, a negative
+// number, or one above its cap is dropped, not an error. A page URL never 400s over a bad filter.
+// Serialising is canonical: fixed key order, sorted repeated values, defaults
+// omitted. The same filters always produce the same URL.
+
+// The setting a renter asks for. A BOTH space matches INDOOR and OUTDOOR alike,
+// so BOTH is not itself a filter value.
+export type SettingFilter = Exclude<Setting, "BOTH">;
+
+// UNKNOWN is a data gap, not something a renter asks for.
+export type NaturalLightFilter = Exclude<NaturalLight, "UNKNOWN">;
+
+export type SpaceFilters = {
+	q: string | null; // trimmed, whitespace collapsed, max 100 chars; "" → null
+	cities: City[]; // empty = any city
+	types: SpaceType[]; // empty = any type
+	setting: SettingFilter | null;
+	naturalLight: NaturalLightFilter[]; // empty = any, including UNKNOWN
+	minCrew: number | null; // positive integer. Spaces with null maxCrew are excluded.
+	hourlyRate: {
+		// whole pesos, inclusive. If min > max, parse swaps them.
+		// Either bound set excludes spaces with a null hourlyRate.
+		min: number | null;
+		max: number | null;
+	};
+	page: number; // 1-based, integer >= 1
+};
+
+// The raw shape Next.js hands a page as `await searchParams`.
+export type RawSearchParams = Record<string, string | string[] | undefined>;
+
+// Both live in app/_lib/spaceFilters.ts (pure, no server imports, so the page
+// and client components can share them):
+//   parseSpaceFilters(params: RawSearchParams): SpaceFilters
+//   serializeSpaceFilters(filters: SpaceFilters): URLSearchParams
+// Round-trip law: parse(serialize(f)) deep-equals f for any valid f.
+export type ParseSpaceFilters = (params: RawSearchParams) => SpaceFilters;
+export type SerializeSpaceFilters = (filters: SpaceFilters) => URLSearchParams;
+
+// One page of browse results. Order is fixed: most recently listed first,
+// then slug. No sort control in v1.
+export type SpaceSearchResult = {
+	spaces: SpaceCard[];
+	total: number; // matches across all pages — the results count
+	page: number; // echoes filters.page, even when past the last page
+	pageSize: number; // fixed server-side at 12
+	pageCount: number; // ceil(total / pageSize); 0 when total is 0
+};

@@ -1,0 +1,120 @@
+@use "../_styles/tokens" as *;
+
+.view {
+	display: flex;
+	flex-direction: column;
+	gap: $stack;
+}
+
+// Search and "All filters" on one row, wrapping when narrow.
+.toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: space(3);
+}
+
+// Chips, Clear all, and the count pushed to the far end.
+.summary {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: space(2);
+}
+
+.chips {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: space(2);
+}
+
+@mixin focus-ring {
+	&:focus-visible {
+		outline: 2px solid $color-stamp;
+		outline-offset: 2px;
+	}
+}
+
+// Each chip is one link that removes its value. 44px tall for touch.
+.chip {
+	display: inline-flex;
+	align-items: center;
+	gap: space(2);
+	min-height: space(11);
+	padding-inline: space(3);
+	border: 1px solid $color-hairline;
+	border-radius: $radius-sm;
+	background: $color-paper;
+	color: $color-ink;
+	font: var(--mui-font-caption);
+	text-decoration: none;
+
+	&:hover {
+		border-color: $color-stamp;
+	}
+
+	@include focus-ring;
+}
+
+.textLink {
+	display: inline-flex;
+	align-items: center;
+	min-height: space(11);
+	padding-inline: space(2);
+	color: $color-stamp;
+	font: var(--mui-font-caption);
+
+	@include focus-ring;
+}
+
+.count {
+	margin-inline-start: auto;
+}
+
+// A link that looks like an outlined button: empty-state and page actions.
+.action {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: space(11);
+	padding-inline: space(5);
+	border: 1px solid $color-stamp;
+	border-radius: $radius-md;
+	color: $color-stamp;
+	font: var(--mui-font-button);
+	text-decoration: none;
+
+	&:hover {
+		background: $color-canvas;
+	}
+
+	@include focus-ring;
+}
+
+.empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: space(3);
+	padding-block: space(12);
+	text-align: center;
+}
+
+// Previous at the start, page number centred, next at the end.
+.pager {
+	display: grid;
+	grid-template-columns: 1fr auto 1fr;
+	align-items: center;
+	gap: space(3);
+
+	> :first-child {
+		justify-self: start;
+	}
+
+	> :last-child {
+		justify-self: end;
+	}
+}

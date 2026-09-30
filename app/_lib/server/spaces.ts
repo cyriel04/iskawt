@@ -3,9 +3,17 @@
 // Host contact details, exactAddress and coordinates are not selected at all.
 
 import { cache } from "react";
+import { cityLabels, spaceTypeLabels, spaceTypePluralLabels } from "@/app/_lib/constants/labels";
+import { PAGE_SIZE } from "@/app/_lib/constants/limits";
 import { prisma } from "@/app/_lib/db";
 import type { Prisma } from "@/generated/prisma/client";
-import type { PublicPhoto, SpaceCard, SpaceDetail } from "@/app/_lib/types";
+import type {
+	PublicPhoto,
+	SpaceCard,
+	SpaceDetail,
+	SpaceFilters,
+	SpaceSearchResult,
+} from "@/app/_lib/types";
 
 // A space is public only when it is published AND a human has verified its host.
 export const publishedWhere = {
@@ -131,13 +139,114 @@ export function toSpaceDetail(row: DetailRow): SpaceDetail {
 	};
 }
 
-export async function listPublishedSpaces(): Promise<SpaceCard[]> {
-	const rows = await prisma.space.findMany({
-		where: publishedWhere,
-		select: cardSelect,
-		orderBy: [{ listedAt: { sort: "desc", nulls: "last" } }, { slug: "asc" }],
-	});
-	return rows.map(toSpaceCard);
+// Most recently listed first, then slug so ties page stably.
+const listOrder = [
+	{ listedAt: { sort: "desc", nulls: "last" } },
+	{ slug: "asc" },
+] satisfies Prisma.SpaceOrderByWithRelationInput[];
+
+// Lowercase with diacritics, spaces, hyphens and dashes stripped, so "Las
+// Piñas", "las-pinas" and "laspinas" all fold to "laspinas", and "event-space"
+// meets "Event space" and "coworking" meets "Co-working space".
+function fold(text: string): string {
+	return text
+		.normalize("NFD")
+		.replace(/[\p{Diacritic}\p{Dash_Punctuation}\s]/gu, "")
+		.toLowerCase();
+}
+
+// Pure: the enum values whose display label contains the word, ignoring case,
+// accents, spacing and hyphens. Order follows the label map. An empty word
+// matches nothing.
+export function matchLabels<T extends string>(word: string, labels: Record<T, string>): T[] {
+	const needle = fold(word);
+	if (needle === "") return [];
+	const isValue = (key: string): key is T => Object.hasOwn(labels, key);
+	return Object.keys(labels)
+		.filter(isValue)
+		.filter((value) => fold(labels[value]).includes(needle));
+}
+
+// One word of q: a text column or tag contains it, or it names a city or type.
+// A city/type clause is added only when some value matches, never `in: []`.
+function wordWhere(word: string): Prisma.SpaceWhereInput {
+	const contains = { contains: word, mode: "insensitive" } as const;
+	const or: Prisma.SpaceWhereInput[] = [
+		{ title: contains },
+		{ description: contains },
+		{ areaName: contains },
+		{ tags: { some: { label: contains } } },
+	];
+	const cities = matchLabels(word, cityLabels);
+	if (cities.length > 0) or.push({ city: { in: cities } });
+	// Singular or plural: "studio" and "studios" both name STUDIO.
+	const types = [
+		...new Set([...matchLabels(word, spaceTypeLabels), ...matchLabels(word, spaceTypePluralLabels)]),
+	];
+	if (types.length > 0) or.push({ type: { in: types } });
+	return { OR: or };
+}
+
+// Pure: the filters as a where clause, always ANDed with publishedWhere.
+// Only set filters add a clause, so no filters is exactly publishedWhere.
+export function buildSpaceWhere(filters: SpaceFilters): Prisma.SpaceWhereInput {
+	const clauses: Prisma.SpaceWhereInput[] = [];
+
+	const words = filters.q === null ? [] : filters.q.split(/\s+/).filter((w) => w !== "");
+	if (words.length > 0) {
+		// Every word must match somewhere; the words need not match the same field.
+		clauses.push({ AND: words.map(wordWhere) });
+	}
+	if (filters.cities.length > 0) {
+		clauses.push({ city: { in: filters.cities } });
+	}
+	if (filters.types.length > 0) {
+		clauses.push({ type: { in: filters.types } });
+	}
+	if (filters.setting !== null) {
+		// A BOTH space suits an indoor shoot and an outdoor one alike.
+		clauses.push({ setting: { in: [filters.setting, "BOTH"] } });
+	}
+	if (filters.naturalLight.length > 0) {
+		clauses.push({ naturalLight: { in: filters.naturalLight } });
+	}
+	if (filters.minCrew !== null) {
+		// gte never matches NULL, so a space with no maxCrew drops out.
+		clauses.push({ maxCrew: { gte: filters.minCrew } });
+	}
+	const { min, max } = filters.hourlyRate;
+	if (min !== null || max !== null) {
+		// Either bound drops spaces with a null hourlyRate, for the same reason.
+		clauses.push({
+			hourlyRate: {
+				...(min !== null && { gte: min }),
+				...(max !== null && { lte: max }),
+			},
+		});
+	}
+
+	return clauses.length === 0 ? { ...publishedWhere } : { ...publishedWhere, AND: clauses };
+}
+
+export async function searchPublishedSpaces(filters: SpaceFilters): Promise<SpaceSearchResult> {
+	const where = buildSpaceWhere(filters);
+	const [rows, total] = await Promise.all([
+		prisma.space.findMany({
+			where,
+			select: cardSelect,
+			orderBy: listOrder,
+			skip: (filters.page - 1) * PAGE_SIZE,
+			take: PAGE_SIZE,
+		}),
+		prisma.space.count({ where }),
+	]);
+	return {
+		spaces: rows.map(toSpaceCard),
+		total,
+		page: filters.page,
+		pageSize: PAGE_SIZE,
+		pageCount: Math.ceil(total / PAGE_SIZE),
+	};
 }
 
 // cache() lets generateMetadata and the page share one query per request.

@@ -73,11 +73,19 @@ describe("SpacePage", () => {
 
 		const nav = screen.getByRole("navigation", { name: "Breadcrumb" });
 		expect(within(nav).getByRole("link", { name: "Spaces" })).toHaveAttribute("href", "/");
-		expect(within(nav).getByText("Makati")).toBeInTheDocument();
-		expect(within(nav).queryByRole("link", { name: "Makati" })).toBeNull();
+		expect(within(nav).getByRole("link", { name: "Makati" })).toHaveAttribute("href", "/?city=makati");
 		const current = nav.querySelector('[aria-current="page"]');
 		expect(current).not.toBeNull();
 		expect(current).toHaveTextContent("[DEMO] Corner loft with afternoon light");
+	});
+
+	it("links the city crumb to browse filtered by a multi-word city", async () => {
+		mockGet.mockResolvedValue({ ...demoDetail, city: "QUEZON_CITY", areaName: "Cubao" });
+
+		renderWithTheme(await SpacePage({ params }));
+
+		const nav = screen.getByRole("navigation", { name: "Breadcrumb" });
+		expect(within(nav).getByRole("link", { name: "Quezon City" })).toHaveAttribute("href", "/?city=quezon-city");
 	});
 
 	it("is a 404 when no published space has the slug", async () => {
