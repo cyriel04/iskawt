@@ -10,6 +10,7 @@ import RatePanel from "@/app/_components/RatePanel";
 import SpaceFacts from "@/app/_components/SpaceFacts";
 import { cityLabels, locationLine, settingLabels, spaceTypeLabels } from "@/app/_components/labels";
 import { getPublishedSpaceBySlug } from "@/app/_lib/server/spaces";
+import { EMPTY_FILTERS, spacesHref } from "@/app/_lib/spaceFilters";
 import styles from "./page.module.scss";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -31,8 +32,7 @@ export default async function SpacePage({ params }: Props) {
 		<Container component="main" disableGutters maxWidth={false} className={styles.page}>
 			<Breadcrumbs aria-label="Breadcrumb" color="text.secondary" className={styles.breadcrumb}>
 				<Link href="/">Spaces</Link>
-				{/* Plain text until slice 4 adds a city filter URL to link to. */}
-				<span>{cityLabels[space.city]}</span>
+				<Link href={spacesHref({ ...EMPTY_FILTERS, cities: [space.city] })}>{cityLabels[space.city]}</Link>
 				<Typography component="span" aria-current="page">
 					{space.title}
 				</Typography>
