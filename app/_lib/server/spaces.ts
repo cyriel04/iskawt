@@ -3,6 +3,7 @@
 // Host contact details, exactAddress and coordinates are not selected at all.
 
 import { cache } from "react";
+import { cityLabels, spaceTypeLabels } from "@/app/_components/labels";
 import { prisma } from "@/app/_lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import type {
@@ -143,32 +144,50 @@ const listOrder = [
 	{ slug: "asc" },
 ] satisfies Prisma.SpaceOrderByWithRelationInput[];
 
-export async function listPublishedSpaces(): Promise<SpaceCard[]> {
-	const rows = await prisma.space.findMany({
-		where: publishedWhere,
-		select: cardSelect,
-		orderBy: listOrder,
-	});
-	return rows.map(toSpaceCard);
+export const PAGE_SIZE = 12;
+
+// Lowercase with diacritics stripped, so "Las Piñas" folds to "las pinas".
+function fold(text: string): string {
+	return text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 }
 
-export const PAGE_SIZE = 12;
+// Pure: the enum values whose display label contains the word, ignoring case
+// and accents. Order follows the label map. An empty word matches nothing.
+export function matchLabels<T extends string>(word: string, labels: Record<T, string>): T[] {
+	const needle = fold(word);
+	if (needle === "") return [];
+	const isValue = (key: string): key is T => Object.hasOwn(labels, key);
+	return Object.keys(labels)
+		.filter(isValue)
+		.filter((value) => fold(labels[value]).includes(needle));
+}
+
+// One word of q: a text column or tag contains it, or it names a city or type.
+// A city/type clause is added only when some value matches, never `in: []`.
+function wordWhere(word: string): Prisma.SpaceWhereInput {
+	const contains = { contains: word, mode: "insensitive" } as const;
+	const or: Prisma.SpaceWhereInput[] = [
+		{ title: contains },
+		{ description: contains },
+		{ areaName: contains },
+		{ tags: { some: { label: contains } } },
+	];
+	const cities = matchLabels(word, cityLabels);
+	if (cities.length > 0) or.push({ city: { in: cities } });
+	const types = matchLabels(word, spaceTypeLabels);
+	if (types.length > 0) or.push({ type: { in: types } });
+	return { OR: or };
+}
 
 // Pure: the filters as a where clause, always ANDed with publishedWhere.
 // Only set filters add a clause, so no filters is exactly publishedWhere.
 export function buildSpaceWhere(filters: SpaceFilters): Prisma.SpaceWhereInput {
 	const clauses: Prisma.SpaceWhereInput[] = [];
 
-	if (filters.q !== null) {
-		const contains = { contains: filters.q, mode: "insensitive" } as const;
-		clauses.push({
-			OR: [
-				{ title: contains },
-				{ description: contains },
-				{ areaName: contains },
-				{ tags: { some: { label: contains } } },
-			],
-		});
+	const words = filters.q === null ? [] : filters.q.split(/\s+/).filter((w) => w !== "");
+	if (words.length > 0) {
+		// Every word must match somewhere; the words need not match the same field.
+		clauses.push({ AND: words.map(wordWhere) });
 	}
 	if (filters.cities.length > 0) {
 		clauses.push({ city: { in: filters.cities } });

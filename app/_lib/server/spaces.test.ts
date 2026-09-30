@@ -21,10 +21,11 @@ import {
 	cardSelect,
 	detailSelect,
 	getPublishedSpaceBySlug,
-	listPublishedSpaces,
+	matchLabels,
 	publishedWhere,
 	searchPublishedSpaces,
 } from "@/app/_lib/server/spaces";
+import { cityLabels, spaceTypeLabels } from "@/app/_components/labels";
 import type { SpaceFilters } from "@/app/_lib/types";
 
 // DEMO rows, shaped like what Prisma returns for cardSelect / detailSelect.
@@ -139,47 +140,6 @@ describe("publishedWhere", () => {
 	});
 });
 
-describe("listPublishedSpaces", () => {
-	it("queries published spaces with the card select", async () => {
-		mockFindMany.mockResolvedValue([]);
-
-		await listPublishedSpaces();
-
-		expect(mockFindMany).toHaveBeenCalledWith({
-			where: publishedWhere,
-			select: cardSelect,
-			orderBy: [{ listedAt: { sort: "desc", nulls: "last" } }, { slug: "asc" }],
-		});
-	});
-
-	it("maps a row to a SpaceCard", async () => {
-		mockFindMany.mockResolvedValue([cardRow]);
-
-		const [card] = await listPublishedSpaces();
-
-		expect(card).toStrictEqual({
-			slug: "demo-poblacion-loft",
-			title: "[DEMO] Corner loft with afternoon light",
-			city: "MAKATI",
-			areaName: "Poblacion",
-			type: "APARTMENT",
-			coverPhoto: { url: "https://example.invalid/demo-cover.jpg", alt: "Demo cover photo" },
-			rates: { hourly: 1800, halfDay: 7000, fullDay: 12000, minimumHours: 3 },
-			floorAreaSqm: 68,
-			maxCrew: 12,
-			naturalLight: "ABUNDANT",
-		});
-	});
-
-	it("gives a null cover photo when the space has no photos", async () => {
-		mockFindMany.mockResolvedValue([{ ...cardRow, photos: [] }]);
-
-		const [card] = await listPublishedSpaces();
-
-		expect(card.coverPhoto).toBeNull();
-	});
-});
-
 describe("getPublishedSpaceBySlug", () => {
 	it("looks up the slug among published spaces only", async () => {
 		mockFindFirst.mockResolvedValue(null);
@@ -241,6 +201,61 @@ function filters(overrides: Partial<SpaceFilters>): SpaceFilters {
 	return { ...noFilters, ...overrides };
 }
 
+// One word's clause: the four text columns, then any city/type label matches.
+function textMatch(word: string, ...labelMatches: object[]) {
+	const contains = { contains: word, mode: "insensitive" };
+	return {
+		OR: [
+			{ title: contains },
+			{ description: contains },
+			{ areaName: contains },
+			{ tags: { some: { label: contains } } },
+			...labelMatches,
+		],
+	};
+}
+
+describe("matchLabels", () => {
+	it("matches a whole city name case-insensitively", () => {
+		expect(matchLabels("MARIKINA", cityLabels)).toEqual(["MARIKINA"]);
+	});
+
+	it("matches part of a multi-word name", () => {
+		expect(matchLabels("quezon", cityLabels)).toEqual(["QUEZON_CITY"]);
+	});
+
+	it("ignores accents in the label", () => {
+		expect(matchLabels("pinas", cityLabels)).toEqual(["LAS_PINAS"]);
+		expect(matchLabels("cafe", spaceTypeLabels)).toEqual(["CAFE"]);
+		expect(matchLabels("paranaque", cityLabels)).toEqual(["PARANAQUE"]);
+	});
+
+	it("ignores accents in the word", () => {
+		expect(matchLabels("Piñas", cityLabels)).toEqual(["LAS_PINAS"]);
+		expect(matchLabels("CAFÉ", spaceTypeLabels)).toEqual(["CAFE"]);
+	});
+
+	it("returns every value whose label contains the word", () => {
+		expect(matchLabels("san", cityLabels)).toEqual(["SAN_JUAN"]);
+		expect(matchLabels("ma", cityLabels)).toEqual([
+			"MAKATI",
+			"MALABON",
+			"MANDALUYONG",
+			"MANILA",
+			"MARIKINA",
+		]);
+	});
+
+	it("returns an empty list when nothing matches", () => {
+		expect(matchLabels("loft", cityLabels)).toEqual([]);
+		expect(matchLabels("loft", spaceTypeLabels)).toEqual([]);
+	});
+
+	it("returns an empty list for an empty word", () => {
+		expect(matchLabels("", cityLabels)).toEqual([]);
+	});
+});
+
 const listOrder = [{ listedAt: { sort: "desc", nulls: "last" } }, { slug: "asc" }];
 
 describe("buildSpaceWhere", () => {
@@ -252,16 +267,57 @@ describe("buildSpaceWhere", () => {
 		expect(buildSpaceWhere(filters({ page: 4 }))).toEqual(publishedWhere);
 	});
 
-	it("matches q case-insensitively across title, description, areaName and tag labels", () => {
+	it("ANDs one clause per word of q, each matching text fields case-insensitively", () => {
 		expect(buildSpaceWhere(filters({ q: "white cyc" }))).toEqual({
+			...publishedWhere,
+			AND: [{ AND: [textMatch("white"), textMatch("cyc")] }],
+		});
+	});
+
+	it("adds no city or type clause for a word that matches no label", () => {
+		const where = buildSpaceWhere(filters({ q: "loft" }));
+		expect(where).toEqual({ ...publishedWhere, AND: [{ AND: [textMatch("loft")] }] });
+		expect(keysDeep(where)).not.toContain("city");
+		expect(keysDeep(where)).not.toContain("type");
+	});
+
+	it("matches a city name that appears in no text column", () => {
+		expect(buildSpaceWhere(filters({ q: "marikina" }))).toEqual({
+			...publishedWhere,
+			AND: [{ AND: [textMatch("marikina", { city: { in: ["MARIKINA"] } })] }],
+		});
+	});
+
+	it("matches each word of a two-word city name to that city", () => {
+		expect(buildSpaceWhere(filters({ q: "quezon city" }))).toEqual({
 			...publishedWhere,
 			AND: [
 				{
-					OR: [
-						{ title: { contains: "white cyc", mode: "insensitive" } },
-						{ description: { contains: "white cyc", mode: "insensitive" } },
-						{ areaName: { contains: "white cyc", mode: "insensitive" } },
-						{ tags: { some: { label: { contains: "white cyc", mode: "insensitive" } } } },
+					AND: [
+						textMatch("quezon", { city: { in: ["QUEZON_CITY"] } }),
+						textMatch("city", { city: { in: ["QUEZON_CITY"] } }),
+					],
+				},
+			],
+		});
+	});
+
+	it("matches a space type name without its accent", () => {
+		expect(buildSpaceWhere(filters({ q: "cafe" }))).toEqual({
+			...publishedWhere,
+			AND: [{ AND: [textMatch("cafe", { type: { in: ["CAFE"] } })] }],
+		});
+	});
+
+	it("adds both a city and a type clause when a word matches each", () => {
+		// "ro" is in Pateros and in Rooftop, and in no other city or type name.
+		const where = buildSpaceWhere(filters({ q: "ro" }));
+		expect(where).toEqual({
+			...publishedWhere,
+			AND: [
+				{
+					AND: [
+						textMatch("ro", { city: { in: ["PATEROS"] } }, { type: { in: ["ROOFTOP"] } }),
 					],
 				},
 			],
@@ -344,14 +400,7 @@ describe("buildSpaceWhere", () => {
 		).toEqual({
 			...publishedWhere,
 			AND: [
-				{
-					OR: [
-						{ title: { contains: "loft", mode: "insensitive" } },
-						{ description: { contains: "loft", mode: "insensitive" } },
-						{ areaName: { contains: "loft", mode: "insensitive" } },
-						{ tags: { some: { label: { contains: "loft", mode: "insensitive" } } } },
-					],
-				},
+				{ AND: [textMatch("loft")] },
 				{ city: { in: ["MAKATI"] } },
 				{ maxCrew: { gte: 8 } },
 			],
@@ -447,6 +496,26 @@ describe("searchPublishedSpaces", () => {
 			pageSize: 12,
 			pageCount: 1,
 		});
+	});
+
+	it("gives a null cover photo when the space has no photos", async () => {
+		mockFindMany.mockResolvedValue([{ ...cardRow, photos: [] }]);
+		mockCount.mockResolvedValue(1);
+
+		const { spaces } = await searchPublishedSpaces(noFilters);
+
+		expect(spaces[0].coverPhoto).toBeNull();
+	});
+
+	it("queries with the card select and no host include when q is set", async () => {
+		mockFindMany.mockResolvedValue([]);
+		mockCount.mockResolvedValue(0);
+
+		await searchPublishedSpaces(filters({ q: "marikina cafe" }));
+
+		const args = mockFindMany.mock.calls[0][0];
+		expect(args.select).toBe(cardSelect);
+		expect(args).not.toHaveProperty("include");
 	});
 
 	it.each([
