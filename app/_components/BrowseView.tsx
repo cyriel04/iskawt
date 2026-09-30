@@ -8,14 +8,8 @@ import Link from "next/link";
 import Typography from "@mui/material/Typography";
 import { BrowseControls } from "@/app/_components/BrowseControls";
 import BrowseResults from "@/app/_components/BrowseResults";
-import {
-	cityLabels,
-	formatPeso,
-	lightSummary,
-	naturalLightLabels,
-	settingLabels,
-	spaceTypeLabels,
-} from "@/app/_components/labels";
+import { cityLabels, naturalLightLabels, settingLabels, spaceTypeLabels } from "@/app/_lib/constants/labels";
+import { formatPeso, lightSummary } from "@/app/_components/labels";
 import { EMPTY_FILTERS, hasActiveFilters, spacesHref } from "@/app/_lib/spaceFilters";
 import type { SpaceFilters, SpaceSearchResult } from "@/app/_lib/types";
 import styles from "./BrowseView.module.scss";

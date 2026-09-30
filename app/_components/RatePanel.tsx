@@ -2,7 +2,8 @@ import { Fragment } from "react";
 import Divider from "@mui/material/Divider";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
-import { INDICATIVE_RATES_NOTE, formatPeso } from "@/app/_components/labels";
+import { INDICATIVE_RATES_NOTE } from "@/app/_lib/constants/site";
+import { formatPeso } from "@/app/_components/labels";
 import type { IndicativeRates, PublicHost } from "@/app/_lib/types";
 import styles from "./RatePanel.module.scss";
 

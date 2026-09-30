@@ -3,14 +3,13 @@ import { connection } from "next/server";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 import BrowseView from "@/app/_components/BrowseView";
-import { INDICATIVE_RATES_NOTE, cityLabels, spaceTypePluralLabels } from "@/app/_components/labels";
+import { cityLabels, spaceTypePluralLabels } from "@/app/_lib/constants/labels";
+import { INDICATIVE_RATES_NOTE, SITE_DESCRIPTION, SITE_NAME, SITE_TITLE } from "@/app/_lib/constants/site";
 import { searchPublishedSpaces } from "@/app/_lib/server/spaces";
 import { parseSpaceFilters } from "@/app/_lib/spaceFilters";
 import type { RawSearchParams, SpaceFilters } from "@/app/_lib/types";
 import styles from "./page.module.scss";
 
-const SITE_TITLE = "Iskawt — shoot spaces in Metro Manila";
-const DESCRIPTION = "Private spaces across Metro Manila for film and photo shoots.";
 
 // "Studios in Makati", "Spaces in Makati", "Studios", or null when the filters
 // are not exactly one city and/or one type. Other filters do not change it.
@@ -29,7 +28,7 @@ export async function generateMetadata({
 	searchParams: Promise<RawSearchParams>;
 }): Promise<Metadata> {
 	const title = filteredTitle(parseSpaceFilters(await searchParams));
-	return { title: title === null ? SITE_TITLE : `${title} — Iskawt`, description: DESCRIPTION };
+	return { title: title === null ? SITE_TITLE : `${title} — ${SITE_NAME}`, description: SITE_DESCRIPTION };
 }
 
 export default async function BrowsePage({

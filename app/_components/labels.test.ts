@@ -1,11 +1,5 @@
-import {
-	cityLabels,
-	formatPeso,
-	headlineRate,
-	lightSummary,
-	locationLine,
-	spaceTypeLabels,
-} from "@/app/_components/labels";
+import { cityLabels, spaceTypeLabels } from "@/app/_lib/constants/labels";
+import { formatPeso, headlineRate, lightSummary, locationLine } from "@/app/_components/labels";
 
 describe("labels", () => {
 	it("spells city names the way people write them", () => {

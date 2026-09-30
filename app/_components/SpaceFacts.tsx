@@ -1,12 +1,7 @@
 import { Fragment, type ReactNode } from "react";
 import Link from "@mui/material/Link";
 import Typography from "@mui/material/Typography";
-import {
-	levelLabels,
-	naturalLightLabels,
-	powerAccessLabels,
-	productionTypeLabels,
-} from "@/app/_components/labels";
+import { levelLabels, naturalLightLabels, powerAccessLabels, productionTypeLabels } from "@/app/_lib/constants/labels";
 import type { SpaceDetail } from "@/app/_lib/types";
 import styles from "./SpaceFacts.module.scss";
 

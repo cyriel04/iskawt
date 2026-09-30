@@ -40,6 +40,9 @@ app/
     *.module.scss           styles shared by several routes
   _lib/
     types.ts                shared types — THE CONTRACT
+    constants/              plain shared values, no logic: labels.ts (enum
+                            display names, singular + plural), limits.ts
+                            (URL caps, page size), site.ts (site-wide copy)
     db.ts                   the one PrismaClient, with its driver adapter
     server/                 queries, business logic
     theme.ts                design tokens → MUI theme + CSS variables.
@@ -121,6 +124,7 @@ pnpm db:studio
 | `page.tsx` / `layout.tsx` / `loading.tsx` / `error.tsx` / `not-found.tsx` anywhere in `app/`, `app/_components/**`, `app/_styles/**`, any `*.module.scss`, `app/_lib/theme.ts` | frontend-dev | backend-dev |
 | `app/api/**`, `app/_lib/server/**`, `app/_lib/db.ts`, `prisma/**` | backend-dev | frontend-dev |
 | `app/_lib/types.ts` | **nobody without approval** | both |
+| `app/_lib/constants/**` | shared — either may add; changing an existing value needs approval (search matches labels, the parser enforces limits) | — |
 | `prisma/migrations/**`, `generated/**` | generated only | both |
 
 Everything is under `app/` now, so the split is **by file kind, not by top-level

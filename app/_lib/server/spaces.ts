@@ -3,7 +3,8 @@
 // Host contact details, exactAddress and coordinates are not selected at all.
 
 import { cache } from "react";
-import { cityLabels, spaceTypeLabels } from "@/app/_components/labels";
+import { cityLabels, spaceTypeLabels } from "@/app/_lib/constants/labels";
+import { PAGE_SIZE } from "@/app/_lib/constants/limits";
 import { prisma } from "@/app/_lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import type {
@@ -143,8 +144,6 @@ const listOrder = [
 	{ listedAt: { sort: "desc", nulls: "last" } },
 	{ slug: "asc" },
 ] satisfies Prisma.SpaceOrderByWithRelationInput[];
-
-export const PAGE_SIZE = 12;
 
 // Lowercase with diacritics stripped, so "Las Piñas" folds to "las pinas".
 function fold(text: string): string {

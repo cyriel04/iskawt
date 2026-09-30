@@ -2,13 +2,8 @@ import Link from "next/link";
 import Card from "@mui/material/Card";
 import Typography from "@mui/material/Typography";
 import PhotoFrame from "@/app/_components/PhotoFrame";
-import {
-	formatPeso,
-	headlineRate,
-	lightSummary,
-	locationLine,
-	spaceTypeLabels,
-} from "@/app/_components/labels";
+import { spaceTypeLabels } from "@/app/_lib/constants/labels";
+import { formatPeso, headlineRate, lightSummary, locationLine } from "@/app/_components/labels";
 import type { SpaceCard as SpaceCardData } from "@/app/_lib/types";
 import styles from "./SpaceCard.module.scss";
 

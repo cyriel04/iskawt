@@ -16,7 +16,6 @@ jest.mock("@/app/_lib/db", () => ({
 }));
 
 import {
-	PAGE_SIZE,
 	buildSpaceWhere,
 	cardSelect,
 	detailSelect,
@@ -25,7 +24,8 @@ import {
 	publishedWhere,
 	searchPublishedSpaces,
 } from "@/app/_lib/server/spaces";
-import { cityLabels, spaceTypeLabels } from "@/app/_components/labels";
+import { cityLabels, spaceTypeLabels } from "@/app/_lib/constants/labels";
+import { PAGE_SIZE } from "@/app/_lib/constants/limits";
 import type { SpaceFilters } from "@/app/_lib/types";
 
 // DEMO rows, shaped like what Prisma returns for cardSelect / detailSelect.

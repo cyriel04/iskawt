@@ -3,6 +3,7 @@
 // documented on SpaceFilters in app/_lib/types.ts.
 
 import { City, NaturalLight, SpaceType } from "@/generated/prisma/enums";
+import { CREW_MAX, PAGE_MAX, RATE_MAX, SEARCH_TEXT_MAX } from "@/app/_lib/constants/limits";
 import type {
 	NaturalLightFilter,
 	ParseSpaceFilters,
@@ -23,13 +24,6 @@ export const EMPTY_FILTERS: SpaceFilters = {
 	page: 1,
 };
 
-const Q_MAX = 100; // characters (code points), not UTF-16 units
-
-// Upper bounds from the URL shape in types.ts. Above its cap a value is
-// dropped, not clamped. The filter panel's inputs carry the same max.
-export const CREW_MAX = 999;
-export const RATE_MAX = 999999;
-export const PAGE_MAX = 999;
 
 // The URL form of an enum value: MAKATI → makati, QUEZON_CITY → quezon-city.
 export function paramValue(value: string): string {
@@ -99,7 +93,7 @@ function searchText(raw: string | string[] | undefined): string | null {
 	const value = first(raw);
 	if (value === undefined) return null;
 	// Cut by code point, so an emoji at the boundary is kept whole, never halved.
-	const text = Array.from(value.replace(/\s+/g, " ").trim()).slice(0, Q_MAX).join("").trimEnd();
+	const text = Array.from(value.replace(/\s+/g, " ").trim()).slice(0, SEARCH_TEXT_MAX).join("").trimEnd();
 	return text === "" ? null : text;
 }
 
