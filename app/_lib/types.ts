@@ -108,18 +108,19 @@ export type SpaceDetail = SpaceCard & {
 //
 // URL shape (the only accepted keys; anything else is ignored):
 //
-//   ?q=white+cyc            text, matched against title, description, areaName, tag labels
+//   ?q=white+cyc            text. Every word must match one of: title, description,
+//                           areaName, a tag label, the city name, the space type name
 //   &city=makati&city=pasig repeatable; lowercase kebab of City
 //   &type=studio            repeatable; lowercase kebab of SpaceType
 //   &setting=outdoor        indoor | outdoor. BOTH spaces match either.
 //   &light=abundant         repeatable; abundant | moderate | minimal | none
-//   &crew=10                minimum crew the space holds (maxCrew >= crew)
-//   &rateMin=1000           hourly rate, whole pesos, inclusive
+//   &crew=10                minimum crew the space holds (maxCrew >= crew); 1–999
+//   &rateMin=1000           hourly rate, whole pesos, inclusive; 1–999999
 //   &rateMax=3000
-//   &page=2                 1-based; omitted means 1
+//   &page=2                 1-based; omitted means 1; 1–999
 //
-// Parsing is forgiving: an unknown enum value, a non-integer, or a negative
-// number is dropped, not an error. A page URL never 400s over a bad filter.
+// Parsing is forgiving: an unknown enum value, a non-integer, a negative
+// number, or one above its cap is dropped, not an error. A page URL never 400s over a bad filter.
 // Serialising is canonical: fixed key order, sorted repeated values, defaults
 // omitted. The same filters always produce the same URL.
 
