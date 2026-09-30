@@ -83,12 +83,15 @@ function enumList<T extends string>(raw: string | string[] | undefined, known: M
 	return [...found].sort(byParam);
 }
 
-// Digits only, no more than the cap has, and 1..cap. "2.5", "-1", "1e3",
-// "3000000000" → null. The digit limit keeps huge strings away from Number().
+// Digits only and 1..cap; leading zeros are read by value, so "0999" is 999.
+// "2.5", "-1", "1e3", "3000000000" → null. The digit limit, checked after
+// the zeros go, keeps huge strings away from Number().
 function positiveInt(raw: string | string[] | undefined, cap: number): number | null {
 	const value = first(raw);
-	if (value === undefined || !/^\d+$/.test(value) || value.length > String(cap).length) return null;
-	const n = Number(value);
+	if (value === undefined || !/^\d+$/.test(value)) return null;
+	const digits = value.replace(/^0+/, "");
+	if (digits.length > String(cap).length) return null;
+	const n = Number(digits);
 	return n >= 1 && n <= cap ? n : null;
 }
 

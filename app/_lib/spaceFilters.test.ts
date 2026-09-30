@@ -129,7 +129,6 @@ describe("parseSpaceFilters", () => {
 	it.each([
 		["crew", "1000"],
 		["crew", "3000000000"],
-		["crew", "0999"],
 		["rateMin", "1000000"],
 		["rateMax", "99999999999"],
 	])("drops %s=%j, above its cap", (key, value) => {
@@ -149,6 +148,26 @@ describe("parseSpaceFilters", () => {
 			min: 500,
 			max: null,
 		});
+	});
+
+	it("reads leading zeros by value, within the cap", () => {
+		const f = parseSpaceFilters({ crew: "0999", rateMin: "0500000", page: "007" });
+		expect(f.minCrew).toBe(999);
+		expect(f.hourlyRate.min).toBe(500000);
+		expect(f.page).toBe(7);
+	});
+
+	it.each([["crew", "01000"], ["crew", "000"], ["rateMax", "01000000"]])(
+		"still drops %s=%j",
+		(key, value) => {
+			const f = parseSpaceFilters({ [key]: value });
+			expect(f.minCrew).toBeNull();
+			expect(f.hourlyRate).toEqual({ min: null, max: null });
+		},
+	);
+
+	it("serialises a leading-zero URL back to its canonical form", () => {
+		expect(serializeSpaceFilters(parseSpaceFilters({ crew: "0010" })).toString()).toBe("crew=10");
 	});
 
 	it("keeps page 999", () => {
