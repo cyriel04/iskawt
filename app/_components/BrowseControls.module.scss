@@ -1,0 +1,79 @@
+@use "../_styles/tokens" as *;
+
+// ---------------------------------------------------------------- search
+
+.search {
+	display: flex;
+	flex: 1 1 320px;
+	align-items: center;
+	gap: space(2);
+}
+
+.searchField {
+	flex: 1 1 auto;
+	min-width: 0;
+
+	// Match the 44px touch target of the buttons beside it.
+	:global(.MuiInputBase-root) {
+		min-height: space(11);
+	}
+}
+
+// ---------------------------------------------------------------- panel
+
+// Title, scrolling content and actions inside the dialog paper.
+.form {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+.titleBar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding-inline-end: space(3);
+}
+
+.content {
+	display: flex;
+	flex-direction: column;
+	gap: space(6);
+}
+
+.group {
+	display: flex;
+	flex-direction: column;
+	gap: space(2);
+}
+
+.legend {
+	color: $color-ink;
+}
+
+// Options fill by available width; no breakpoints.
+.options {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr));
+	column-gap: space(2);
+}
+
+.option {
+	min-height: space(11);
+	margin-inline: 0;
+}
+
+.range {
+	display: flex;
+	flex-wrap: wrap;
+	gap: space(3);
+}
+
+.number {
+	flex: 1 1 160px;
+	max-width: 240px;
+}
+
+.actions {
+	padding: space(4);
+}

@@ -24,6 +24,13 @@ describe("BrowseResults", () => {
 		expect(screen.getByText("1 space")).toBeInTheDocument();
 	});
 
+	it("leaves the count out when its parent shows one", () => {
+		renderWithTheme(<BrowseResults spaces={[demoCard, second]} showCount={false} />);
+
+		expect(screen.queryByText("2 spaces")).not.toBeInTheDocument();
+		expect(screen.getAllByRole("listitem")).toHaveLength(2);
+	});
+
 	it("shows an empty state instead of an empty grid", () => {
 		renderWithTheme(<BrowseResults spaces={[]} />);
 
