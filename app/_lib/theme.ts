@@ -3,9 +3,10 @@
 // The ONLY place Iskawt's design tokens become code. Components read from the
 // theme; they never hold a raw hex, a raw pixel gap, or a font stack.
 //
-// Fonts are loaded in app/layout.tsx with next/font/google and exposed as CSS
-// variables. This file references the variables rather than naming the fonts, so
-// the font files stay self-hosted and there is no layout shift on first paint.
+// Fonts are self-hosted in app/_fonts/, loaded in app/layout.tsx with
+// next/font/local, and exposed as CSS variables. This file references the
+// variables rather than naming the fonts, so there is no layout shift on
+// first paint.
 
 "use client";
 
