@@ -196,6 +196,10 @@ be listed, so brackets are the default and removing them is a deliberate act.
 - Tests before implementation. A test that has never failed proves nothing.
 - No new dependency without asking. Check MUI first.
 - Never edit: `prisma/migrations/**`, lockfiles, `.env*`, `.next/`, `node_modules/`.
+- Dependabot PRs (`.github/dependabot.yml`) are the one exception to the
+  lockfile and new-dependency rules: they bump versions of packages already
+  here, never add new ones, and merge only when CI is green. A major bump is
+  read against its changelog before merging, not waved through.
 - Never run `git push` or `git rebase`. Commit locally; the human pushes.
 - Keep diffs small. More than ~8 files means stop and propose a split.
 
