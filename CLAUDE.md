@@ -247,3 +247,8 @@ SCSS modules, not `sx`. Decided for slice 3 onward.
 3. `pnpm lint` clean
 4. No host contact detail or exact address in any public response — checked, not assumed
 5. Reviewed by the `reviewer` subagent before it reaches `main`
+
+CI (`.github/workflows/ci.yml`) runs 1–3 plus `pnpm build` on every PR, and
+checks that migrations apply, that `schema.prisma` has no un-migrated changes,
+and that the seed loads. A red check means not done. Schema drift is fixed with
+`pnpm db:migrate` and a committed migration, never by editing the check.
