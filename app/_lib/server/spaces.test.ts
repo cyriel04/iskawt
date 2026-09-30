@@ -309,6 +309,32 @@ describe("buildSpaceWhere", () => {
 		});
 	});
 
+	it.each([
+		["studios", ["STUDIO"]],
+		["Rooftops", ["ROOFTOP"]],
+		["cafés", ["CAFE"]],
+		["warehouses", ["WAREHOUSE"]],
+	])("matches the plural type name %j", (word, types) => {
+		expect(buildSpaceWhere(filters({ q: word }))).toEqual({
+			...publishedWhere,
+			AND: [{ AND: [textMatch(word, { type: { in: types } })] }],
+		});
+	});
+
+	it.each(["coworking", "co-working", "COWORKING"])("matches %j with or without the hyphen", (word) => {
+		expect(buildSpaceWhere(filters({ q: word }))).toEqual({
+			...publishedWhere,
+			AND: [{ AND: [textMatch(word, { type: { in: ["COWORKING"] } })] }],
+		});
+	});
+
+	it("lists a type once when both its singular and plural names match", () => {
+		expect(buildSpaceWhere(filters({ q: "studio" }))).toEqual({
+			...publishedWhere,
+			AND: [{ AND: [textMatch("studio", { type: { in: ["STUDIO"] } })] }],
+		});
+	});
+
 	it("adds both a city and a type clause when a word matches each", () => {
 		// "ro" is in Pateros and in Rooftop, and in no other city or type name.
 		const where = buildSpaceWhere(filters({ q: "ro" }));

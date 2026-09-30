@@ -3,7 +3,7 @@
 // Host contact details, exactAddress and coordinates are not selected at all.
 
 import { cache } from "react";
-import { cityLabels, spaceTypeLabels } from "@/app/_lib/constants/labels";
+import { cityLabels, spaceTypeLabels, spaceTypePluralLabels } from "@/app/_lib/constants/labels";
 import { PAGE_SIZE } from "@/app/_lib/constants/limits";
 import { prisma } from "@/app/_lib/db";
 import type { Prisma } from "@/generated/prisma/client";
@@ -145,9 +145,10 @@ const listOrder = [
 	{ slug: "asc" },
 ] satisfies Prisma.SpaceOrderByWithRelationInput[];
 
-// Lowercase with diacritics stripped, so "Las Piñas" folds to "las pinas".
+// Lowercase with diacritics and hyphens stripped, so "Las Piñas" folds to
+// "las pinas" and "Co-working" to "coworking".
 function fold(text: string): string {
-	return text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+	return text.normalize("NFD").replace(/\p{Diacritic}|-/gu, "").toLowerCase();
 }
 
 // Pure: the enum values whose display label contains the word, ignoring case
@@ -173,7 +174,10 @@ function wordWhere(word: string): Prisma.SpaceWhereInput {
 	];
 	const cities = matchLabels(word, cityLabels);
 	if (cities.length > 0) or.push({ city: { in: cities } });
-	const types = matchLabels(word, spaceTypeLabels);
+	// Singular or plural: "studio" and "studios" both name STUDIO.
+	const types = [
+		...new Set([...matchLabels(word, spaceTypeLabels), ...matchLabels(word, spaceTypePluralLabels)]),
+	];
 	if (types.length > 0) or.push({ type: { in: types } });
 	return { OR: or };
 }
