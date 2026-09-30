@@ -1,0 +1,68 @@
+# Weekly version updates. Security updates are switched on separately in
+# the repo settings (Settings → Code security). Every PR opened here runs CI.
+#
+# Groups keep the noise down. A group only takes the update types it lists.
+# Anything left over, like a major bump outside prisma or next, gets a PR of
+# its own and is never bundled with unrelated packages.
+
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: Asia/Manila
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(deps)
+      prefix-development: chore(deps-dev)
+    groups:
+      # Client, CLI and adapter must stay on one version, majors included.
+      prisma:
+        patterns: ["prisma", "@prisma/*"]
+      # The linter config is versioned with the framework.
+      next:
+        patterns: ["next", "eslint-config-next"]
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
+        update-types: [minor, patch]
+      mui:
+        patterns: ["@mui/*", "@emotion/*"]
+        update-types: [minor, patch]
+      dev-tooling:
+        dependency-type: development
+        update-types: [minor, patch]
+    ignore:
+      # Tracks the Node version in use (24), not the newest release.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: Asia/Manila
+    commit-message:
+      prefix: chore(ci)
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: Asia/Manila
+    commit-message:
+      prefix: chore(deps)
+    ignore:
+      # A Postgres major upgrade needs a data migration. Keep it a decision.
+      - dependency-name: postgres
+        update-types: ["version-update:semver-major"]
