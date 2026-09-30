@@ -1,0 +1,96 @@
+# CI for every pull request to main and every push to main. It runs the
+# definition of done from CLAUDE.md (typecheck, test, lint) plus the
+# production build, and checks the database schema against the migrations.
+# No deploys here; those arrive with slice 6.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# A newer push to the same branch supersedes a run still in progress.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  checks:
+    name: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # prisma.config.ts requires a URL, but nothing in this job connects:
+      # tests mock Prisma and every page that reads data renders on demand.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/unused
+    steps:
+      - uses: actions/checkout@v5
+
+      # Version comes from "packageManager" in package.json.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # Fails if package.json and the lockfile disagree. Build-script
+      # approvals come from pnpm-workspace.yaml.
+      - run: pnpm install --frozen-lockfile
+
+      # /generated is gitignored, so the client is built fresh every run.
+      - run: pnpm exec prisma generate
+
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build
+
+  database:
+    name: database
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: iskawt_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d iskawt_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/iskawt_ci?schema=public
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec prisma generate
+
+      # The committed migrations apply cleanly to an empty database.
+      - run: pnpm exec prisma migrate deploy
+
+      # schema.prisma has no changes that lack a migration.
+      # Exit 2 means drift: run `pnpm db:migrate` and commit the migration.
+      - name: prisma migrate diff (drift check)
+        run: pnpm exec prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
+
+      # The demo seed still loads against the current schema.
+      - run: pnpm db:seed
