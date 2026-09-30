@@ -145,14 +145,19 @@ const listOrder = [
 	{ slug: "asc" },
 ] satisfies Prisma.SpaceOrderByWithRelationInput[];
 
-// Lowercase with diacritics and hyphens stripped, so "Las Piñas" folds to
-// "las pinas" and "Co-working" to "coworking".
+// Lowercase with diacritics, spaces, hyphens and dashes stripped, so "Las
+// Piñas", "las-pinas" and "laspinas" all fold to "laspinas", and "event-space"
+// meets "Event space" and "coworking" meets "Co-working space".
 function fold(text: string): string {
-	return text.normalize("NFD").replace(/\p{Diacritic}|-/gu, "").toLowerCase();
+	return text
+		.normalize("NFD")
+		.replace(/[\p{Diacritic}\p{Dash_Punctuation}\s]/gu, "")
+		.toLowerCase();
 }
 
 // Pure: the enum values whose display label contains the word, ignoring case
-// and accents. Order follows the label map. An empty word matches nothing.
+// accents, spacing and hyphens. Order follows the label map. An empty word
+// matches nothing.
 export function matchLabels<T extends string>(word: string, labels: Record<T, string>): T[] {
 	const needle = fold(word);
 	if (needle === "") return [];

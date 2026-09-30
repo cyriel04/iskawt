@@ -328,6 +328,18 @@ describe("buildSpaceWhere", () => {
 		});
 	});
 
+	it.each([
+		["event-space", { type: { in: ["EVENT_SPACE"] } }],
+		["event–space", { type: { in: ["EVENT_SPACE"] } }],
+		["quezon-city", { city: { in: ["QUEZON_CITY"] } }],
+		["las-pinas", { city: { in: ["LAS_PINAS"] } }],
+	])("matches the hyphenated name %j as if it were spaced", (word, clause) => {
+		expect(buildSpaceWhere(filters({ q: word }))).toEqual({
+			...publishedWhere,
+			AND: [{ AND: [textMatch(word, clause)] }],
+		});
+	});
+
 	it("lists a type once when both its singular and plural names match", () => {
 		expect(buildSpaceWhere(filters({ q: "studio" }))).toEqual({
 			...publishedWhere,
