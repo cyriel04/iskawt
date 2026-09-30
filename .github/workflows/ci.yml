@@ -11,10 +11,11 @@ on:
   push:
     branches: [main]
 
-# A newer push to the same branch supersedes a run still in progress.
+# A newer push to a PR supersedes its run still in progress. Runs on main
+# always finish, so every merge commit gets its own result.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -30,6 +31,8 @@ jobs:
     env:
       # prisma.config.ts requires a URL, but nothing in this job connects:
       # tests mock Prisma and every page that reads data renders on demand.
+      # If the build fails with "connection refused", a page started reading
+      # the database at build time. Make it dynamic; don't point this at a DB.
       DATABASE_URL: postgresql://ci:ci@localhost:5432/unused
     steps:
       - uses: actions/checkout@v5
