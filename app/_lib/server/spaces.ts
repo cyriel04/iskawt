@@ -155,7 +155,7 @@ function fold(text: string): string {
 		.toLowerCase();
 }
 
-// Pure: the enum values whose display label contains the word, ignoring case
+// Pure: the enum values whose display label contains the word, ignoring case,
 // accents, spacing and hyphens. Order follows the label map. An empty word
 // matches nothing.
 export function matchLabels<T extends string>(word: string, labels: Record<T, string>): T[] {
