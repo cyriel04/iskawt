@@ -43,6 +43,11 @@ model Host {
   respondsInHours Int?      // self-reported, shown as a rough signal
   verifiedAt      DateTime? // a human spoke to them and confirmed the space is theirs
 
+  // Set automatically when a user signs in with this host's contactEmail and
+  // the host is verified. See app/_lib/server/hostLink.ts.
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
   spaces Space[]
 
   createdAt DateTime @default(now())
@@ -190,6 +195,87 @@ model HostApplication {
   reviewedAt DateTime?
 
   @@index([status, createdAt])
+}
+
+// ---------------------------------------------------------------- accounts
+//
+// Better Auth's tables (magic-link sign-in). Field names are Better Auth's and
+// must not change. User.email is PRIVATE in the same way Host.contactEmail is:
+// only ever shown to the user themselves.
+
+model User {
+  id            String   @id
+  name          String // Better Auth stores "" for magic-link sign-ups
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions Session[]
+  accounts Account[]
+  host     Host?
+}
+
+model Session {
+  id        String   @id
+  token     String   @unique // PRIVATE. Never logged.
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String // PRIVATE. Never logged.
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+}
+
+// One row per magic-link request, for the per-email limit in
+// app/_lib/server/signInLimit.ts. Better Auth's RateLimit keys on IP, not email.
+model SignInRequest {
+  id        String   @id @default(cuid())
+  email     String // PRIVATE. Lowercased, trimmed.
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
 }
 
 // ---------------------------------------------------------------- credits
