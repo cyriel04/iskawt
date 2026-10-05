@@ -132,6 +132,22 @@ folder**. Routes and layouts are frontend; anything under `api/` or `_lib/server
 is backend. When in doubt: does it run only on the server and touch the database?
 That is backend-dev's, wherever it sits.
 
+## Workflow — every feature or slice
+
+The main session designs and coordinates; agents implement. Always:
+
+1. **Brainstorm** with `superpowers:brainstorming` — questions, design, written
+   spec in `docs/superpowers/specs/`, human approves the spec.
+2. **Plan** with `superpowers:writing-plans` into `docs/superpowers/plans/`;
+   human reads it.
+3. **Execute** with `superpowers:executing-plans`, dispatching each task to the
+   owning agent (`backend-dev`, `frontend-dev`) per the ownership map. The main
+   session does not write application code itself.
+4. **Review** with a fresh `reviewer` agent on the diff before it reaches `main`.
+
+Each feature lives on its own branch (`feat/<slice-or-topic>`), created from
+`main` before the spec is committed.
+
 ## The contract
 
 `app/_lib/types.ts` and `prisma/schema.prisma` are settled in the main session with the
