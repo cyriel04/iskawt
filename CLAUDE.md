@@ -220,7 +220,12 @@ be listed, so brackets are the default and removing them is a deliberate act.
   lockfile and new-dependency rules: they bump versions of packages already
   here, never add new ones, and merge only when CI is green. A major bump is
   read against its changelog before merging, not waved through.
-- Never run `git push` or `git rebase`. Commit locally; the human pushes.
+- Never run `git push` or `git rebase`. The human pushes.
+- **Always work on a feature branch** (`feat/<slice-or-topic>`), never on `main`.
+  On that branch, agents and the main session **commit locally** at each plan
+  task's commit step, ending the message with the `Co-Authored-By` line. This
+  overrides the global "never commit" default for this repo (approved by the
+  human, 2026-10-05).
 - Keep diffs small. More than ~8 files means stop and propose a split.
 
 ## Conventions
