@@ -10,15 +10,17 @@ export async function linkHostForUser(user: { id: string; email: string }): Prom
 	const existing = await prisma.host.findFirst({ where: { userId: user.id }, select: { id: true } });
 	if (existing) return "already-linked";
 
-	const matches = await prisma.host.findMany({
-		where: {
-			contactEmail: { equals: normalizeEmail(user.email), mode: "insensitive" },
-			verifiedAt: { not: null },
-			userId: null,
-		},
-		select: { id: true },
-		take: 2,
-	});
+	// Raw SQL on purpose. Prisma's `mode: "insensitive"` compiles to an
+	// unescaped ILIKE, where `_` and `%` are wildcards: maria_santos@... would
+	// match maria.santos@... and take over that host. This is exact equality,
+	// with the email as a bound parameter. Never $queryRawUnsafe, never concat.
+	const normalized = normalizeEmail(user.email);
+	const matches = await prisma.$queryRaw<{ id: string }[]>`
+		SELECT "id" FROM "Host"
+		WHERE lower(btrim("contactEmail")) = ${normalized}
+			AND "verifiedAt" IS NOT NULL
+			AND "userId" IS NULL
+		LIMIT 2`;
 	if (matches.length === 0) return "no-match";
 	// Two hosts differing only by case: a human decides, not this code.
 	if (matches.length > 1) return "ambiguous";
