@@ -33,7 +33,9 @@ const jetbrainsMono = localFont({
 });
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-	const user = await getCurrentUser();
+	// No global-error.tsx sits above this layout, so a throw here would replace
+	// every page with Next's bare error screen. Degrade to signed-out instead.
+	const user = await getCurrentUser().catch(() => null);
 	return (
 		<html lang="en" className={`${archivo.variable} ${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
 			<body className={shell.body}>
