@@ -167,3 +167,15 @@ export type SpaceSearchResult = {
 	pageSize: number; // fixed server-side at 12
 	pageCount: number; // ceil(total / pageSize); 0 when total is 0
 };
+
+// ---------------------------------------------------------------- accounts
+
+// The signed-in user, as they see themselves. Only ever describes the person
+// holding the session cookie, never anyone else. Better Auth stores an empty
+// name for magic-link sign-ups; the query layer maps "" to null.
+export type CurrentUser = {
+	id: string;
+	email: string;
+	name: string | null;
+	host: { displayName: string } | null; // set when linked to a verified Host
+};
