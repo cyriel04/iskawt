@@ -5,7 +5,7 @@ import type { ReactElement } from "react";
 import { render } from "@testing-library/react";
 import { ThemeProvider } from "@mui/material/styles";
 import theme from "@/app/_lib/theme";
-import type { PublicPhoto, SpaceCard, SpaceDetail } from "@/app/_lib/types";
+import type { CurrentUser, PublicPhoto, SpaceCard, SpaceDetail } from "@/app/_lib/types";
 
 export function renderWithTheme(ui: ReactElement) {
 	return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
@@ -61,4 +61,18 @@ export const demoDetail: SpaceDetail = {
 export const demoPhoto: PublicPhoto = {
 	url: "https://example.invalid/demo-cover.jpg",
 	alt: "Demo photo placeholder",
+};
+
+export const demoUser: CurrentUser = {
+	id: "user_demo",
+	email: "demo-user@example.invalid",
+	name: null,
+	host: null,
+};
+
+export const demoHostUser: CurrentUser = {
+	id: "user_demo_host",
+	email: "demo-host-a@example.invalid",
+	name: "Demo Host A",
+	host: { displayName: "Demo Host A" },
 };
