@@ -1,0 +1,19 @@
+@use "../_styles/tokens" as *;
+
+.form {
+	display: flex;
+	flex-direction: column;
+	gap: space(4);
+}
+
+.submit {
+	min-height: 44px;
+}
+
+.sent {
+	margin: 0;
+	padding: space(4);
+	border: 1px solid $color-hairline;
+	border-radius: $radius-md;
+	background: $color-paper;
+}
