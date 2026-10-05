@@ -1,0 +1,17 @@
+@use "../_styles/tokens" as *;
+
+.trigger {
+	min-height: 44px;
+	text-transform: none;
+}
+
+.label {
+	max-width: 24ch;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.item {
+	min-height: 44px;
+}

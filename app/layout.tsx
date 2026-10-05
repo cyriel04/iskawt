@@ -4,6 +4,7 @@ import theme from "@/app/_lib/theme";
 import SiteHeader from "@/app/_components/SiteHeader";
 import SiteFooter from "@/app/_components/SiteFooter";
 import ScrollToTop from "@/app/_components/ScrollToTop";
+import { getCurrentUser } from "@/app/_lib/server/currentUser";
 import shell from "@/app/_styles/shell.module.scss";
 import localFont from "next/font/local";
 
@@ -31,7 +32,8 @@ const jetbrainsMono = localFont({
 	variable: "--font-jetbrains-mono",
 });
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+	const user = await getCurrentUser();
 	return (
 		<html lang="en" className={`${archivo.variable} ${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
 			<body className={shell.body}>
@@ -39,7 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 				<AppRouterCacheProvider options={{ enableCssLayer: true }}>
 					<ThemeProvider theme={theme}>
 						<CssBaseline />
-						<SiteHeader />
+						<SiteHeader user={user} />
 						<div className={shell.content}>{children}</div>
 						<SiteFooter />
 						<ScrollToTop />
