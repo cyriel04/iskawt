@@ -11,8 +11,12 @@ export function normalizeEmail(email: string): string {
 // inbox. Better Auth's own limiter keys on IP and stays on as well.
 export async function recordSignInRequest(email: string, now: Date = new Date()): Promise<boolean> {
 	const normalized = normalizeEmail(email);
+	const cutoff = new Date(now.getTime() - HOUR_MS);
+	// Rows past the window no longer count and still hold an email address:
+	// prune them for every address on each request, so the table stays bounded.
+	await prisma.signInRequest.deleteMany({ where: { createdAt: { lt: cutoff } } });
 	const recent = await prisma.signInRequest.count({
-		where: { email: normalized, createdAt: { gt: new Date(now.getTime() - HOUR_MS) } },
+		where: { email: normalized, createdAt: { gt: cutoff } },
 	});
 	if (recent >= MAGIC_LINK_REQUESTS_PER_HOUR) return false;
 	await prisma.signInRequest.create({ data: { email: normalized }, select: { id: true } });
