@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
@@ -26,6 +26,25 @@ export default function SignInForm({ linkError }: { linkError: boolean }) {
 	const [state, setState] = useState<State>(
 		linkError ? { kind: "error", message: LINK_ERROR_TEXT } : { kind: "idle" },
 	);
+	const statusRef = useRef<HTMLParagraphElement>(null);
+	const emailRef = useRef<HTMLInputElement>(null);
+	// Set by "Use a different email", so focus returns to the field only then.
+	const returning = useRef(false);
+	const sent = state.kind === "sent";
+
+	// The form unmounts on "sent"; without this, focus drops to <body>.
+	useEffect(() => {
+		if (sent) statusRef.current?.focus();
+		else if (returning.current) {
+			returning.current = false;
+			emailRef.current?.focus();
+		}
+	}, [sent]);
+
+	function editEmail() {
+		returning.current = true;
+		setState({ kind: "idle" });
+	}
 
 	async function onSubmit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -50,32 +69,38 @@ export default function SignInForm({ linkError }: { linkError: boolean }) {
 		}
 	}
 
-	if (state.kind === "sent") {
-		return (
-			<p role="status" className={styles.sent}>
-				Check your email. The link works once and expires in {MAGIC_LINK_TTL_MINUTES} minutes.
-			</p>
-		);
-	}
-
 	const sending = state.kind === "sending";
 	return (
-		<form noValidate onSubmit={onSubmit} className={styles.form}>
-			{state.kind === "error" && <Alert severity="error">{state.message}</Alert>}
-			<TextField
-				label="Email address"
-				type="email"
-				autoComplete="email"
-				value={email}
-				onChange={(e) => setEmail(e.target.value)}
-				error={invalid}
-				helperText={invalid ? "Enter a valid email address." : undefined}
-				disabled={sending}
-				fullWidth
-			/>
-			<Button type="submit" variant="contained" size="large" disabled={sending} className={styles.submit}>
-				{sending ? "Sending…" : "Email me a sign-in link"}
-			</Button>
-		</form>
+		<div className={styles.root}>
+			{/* Rendered empty from first paint: a live region that arrives already
+			    filled is not announced by some screen readers. */}
+			<p role="status" ref={statusRef} tabIndex={-1} className={sent ? styles.sent : styles.status}>
+				{sent ? `Check your email. The link works once and expires in ${MAGIC_LINK_TTL_MINUTES} minutes.` : ""}
+			</p>
+			{sent ? (
+				<Button variant="text" onClick={editEmail} className={styles.again}>
+					Use a different email
+				</Button>
+			) : (
+				<form noValidate onSubmit={onSubmit} className={styles.form}>
+					{state.kind === "error" && <Alert severity="error">{state.message}</Alert>}
+					<TextField
+						label="Email address"
+						type="email"
+						autoComplete="email"
+						value={email}
+						inputRef={emailRef}
+						onChange={(e) => setEmail(e.target.value)}
+						error={invalid}
+						helperText={invalid ? "Enter a valid email address." : undefined}
+						disabled={sending}
+						fullWidth
+					/>
+					<Button type="submit" variant="contained" size="large" disabled={sending} className={styles.submit}>
+						{sending ? "Sending…" : "Email me a sign-in link"}
+					</Button>
+				</form>
+			)}
+		</div>
 	);
 }

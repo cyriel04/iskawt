@@ -32,6 +32,34 @@ it("sends the link and shows the check-your-email state", async () => {
 	);
 });
 
+// The live region must exist before it is filled, or some screen readers
+// never announce the confirmation.
+it("renders an empty status region before anything is sent", () => {
+	renderWithTheme(<SignInForm linkError={false} />);
+	expect(screen.getByRole("status")).toBeEmptyDOMElement();
+});
+
+it("moves focus to the confirmation once the link is sent", async () => {
+	mockMagicLink.mockResolvedValue({ data: { status: true }, error: null });
+	renderWithTheme(<SignInForm linkError={false} />);
+	await submit("demo-user@example.invalid");
+	const status = await screen.findByText(/Check your email/);
+	expect(screen.getByRole("status")).toHaveFocus();
+	expect(status).toBe(screen.getByRole("status"));
+});
+
+it("returns to the form with the email kept via 'Use a different email'", async () => {
+	mockMagicLink.mockResolvedValue({ data: { status: true }, error: null });
+	renderWithTheme(<SignInForm linkError={false} />);
+	await submit("demo-user@example.invalid");
+	await userEvent.click(await screen.findByRole("button", { name: "Use a different email" }));
+	const field = screen.getByLabelText("Email address");
+	expect(field).toHaveValue("demo-user@example.invalid");
+	expect(field).toHaveFocus();
+	expect(screen.getByRole("status")).toBeEmptyDOMElement();
+	expect(screen.getByRole("button", { name: "Email me a sign-in link" })).toBeEnabled();
+});
+
 it("trims a padded email before sending it", async () => {
 	mockMagicLink.mockResolvedValue({ data: { status: true }, error: null });
 	renderWithTheme(<SignInForm linkError={false} />);
@@ -62,7 +90,7 @@ it("says the email could not be sent when the server fails, not 'check your emai
 	renderWithTheme(<SignInForm linkError={false} />);
 	await submit("demo-user@example.invalid");
 	expect(await screen.findByRole("alert")).toHaveTextContent("We couldn't send the email. Try again.");
-	expect(screen.queryByRole("status")).not.toBeInTheDocument();
+	expect(screen.getByRole("status")).toBeEmptyDOMElement();
 });
 
 it("says the email could not be sent when the request itself rejects", async () => {
