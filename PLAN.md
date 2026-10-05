@@ -94,16 +94,27 @@ either agent starts.
 
 ---
 
-## Slice 5 — Inquiries
+## Slice 5a — Accounts
+
+Scope changed 2026-10-05: inquiries become real in-app threads between host and
+renter, with accounts for both. Accounts come first.
+
+- Magic-link sign-in (Better Auth), Resend over `fetch` for email.
+- A user whose email matches a verified `Host.contactEmail` is linked to that host
+  automatically; ambiguous matches are left for a human.
+- `/sign-in`, header account menu. Browsing never requires signing in.
+- Spec: `docs/superpowers/specs/2026-10-05-slice-5a-accounts-design.md`.
+
+## Slice 5b — Inquiries and threads
 
 The product's whole reason to exist. Nothing else matters if this is unreliable.
 
-- **backend-dev:** `POST /api/inquiries` — validation, rate limiting, spam trap,
-  `Inquiry` row in `NEW`, email relayed to the host. The response to the renter
-  never contains host contact details.
-- **frontend-dev:** inquiry form on the detail page — date, duration, crew size,
-  production type, message, contact details. Client validation matching the server
-  rules. Explicit success state: what happens next and roughly when.
+- A signed-in renter sends an inquiry from the detail page; host and renter message
+  each other in the app; email notifies of new messages.
+- Neither side sees the other's email or phone unless they type it into a message
+  themselves. The host releases the exact address in a message, by choice.
+- Open question: sign in before writing the inquiry, or write first and confirm by
+  the emailed link. Decide in the 5b spec.
 - **You:** watch the first ten inquiries by hand. Reply if the host doesn't.
 
 ---
@@ -127,8 +138,9 @@ Cut these if they creep in:
 
 - Payments, deposits, invoices, cancellation policies
 - Availability calendars — `availabilityNotes` is free text on purpose
-- Reviews, ratings, favourites, messaging threads
-- Host accounts and auth — a human creates host rows in v1
+- Reviews, ratings, favourites
+- (Messaging threads and host/renter accounts moved into v1 on 2026-10-05 —
+  slices 5a and 5b. A human still creates `Host` rows.)
 - Maps — `areaName` and city carry the location; a map needs jittered coordinates
   and a real privacy review first
 - Admin dashboard — Prisma Studio
