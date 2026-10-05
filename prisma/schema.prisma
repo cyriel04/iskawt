@@ -250,9 +250,12 @@ model Account {
   @@index([userId])
 }
 
+// PRIVATE, both columns. For magic links, identifier is "magic-link:<token
+// hash>" (storeToken: "hashed" in app/_lib/server/authHooks.ts) and value is
+// JSON holding the email. Never logged, never selected outside Better Auth.
 model Verification {
   id         String   @id
-  identifier String
+  identifier String // PRIVATE. Never logged.
   value      String // PRIVATE. Never logged.
   expiresAt  DateTime
   createdAt  DateTime @default(now())

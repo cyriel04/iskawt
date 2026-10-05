@@ -11,3 +11,6 @@ export const PAGE_SIZE = 12; // spaces per browse page
 
 export const MAGIC_LINK_TTL_MINUTES = 15;
 export const MAGIC_LINK_REQUESTS_PER_HOUR = 5; // per email address
+// Per IP, for Better Auth's limiter. Wide on purpose: Globe and Smart put
+// many mobile subscribers behind one CGNAT address.
+export const MAGIC_LINK_REQUESTS_PER_IP_PER_HOUR = 30;
