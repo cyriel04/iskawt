@@ -78,6 +78,10 @@ These bite on every fresh clone and every new machine. Do not work around them.
   `options={{ enableCssLayer: true }}`. Without it, MUI's styles load after the
   SCSS modules and win every tie, so a `className` on an MUI component silently
   loses (e.g. `position: fixed` on a `Fab`). Never remove that option.
+- **Local Postgres runs in Docker.** If `docker` can't reach its socket, start it
+  yourself rather than stopping: `open -a Docker`, wait until `docker info`
+  succeeds, then `docker compose up -d` (container `iskawt-db`, port 5432).
+  Agents and the main session may both do this without asking.
 - **pnpm blocks dependency build scripts.** Approvals live in `pnpm-workspace.yaml`
   at the repo root, never in a `"pnpm"` block in `package.json` — current pnpm does
   not read that field. Use `pnpm approve-builds`; never
