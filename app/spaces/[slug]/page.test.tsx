@@ -8,9 +8,14 @@ import { demoDetail, demoPhoto, demoUser, renderWithTheme } from "@/app/_compone
 jest.mock("@/app/_lib/server/spaces", () => ({ getPublishedSpaceBySlug: jest.fn() }));
 jest.mock("@/app/_lib/server/currentUser", () => ({ getCurrentUser: jest.fn() }));
 jest.mock("@/app/_lib/server/inquiryAccess", () => ({ isHostOfSpace: jest.fn() }));
+type PanelProps = { viewer: string; slug: string; hostName: string; respondsInHours: number | null; today: string };
+const mockPanelProps: PanelProps[] = [];
 jest.mock("@/app/_components/InquiryPanel", () => ({
 	__esModule: true,
-	default: ({ viewer }: { viewer: string }) => <div data-testid="panel" data-viewer={viewer} />,
+	default: (props: PanelProps) => {
+		mockPanelProps.push(props);
+		return <div data-testid="panel" data-viewer={props.viewer} />;
+	},
 }));
 jest.mock("next/navigation", () => ({
 	notFound: jest.fn(() => {
@@ -24,6 +29,7 @@ const mockIsHost = jest.mocked(isHostOfSpace);
 const params = Promise.resolve({ slug: "demo-poblacion-loft" });
 
 beforeEach(() => {
+	mockPanelProps.length = 0;
 	mockGetUser.mockReset();
 	mockGetUser.mockResolvedValue(null);
 	mockIsHost.mockReset();
@@ -140,6 +146,34 @@ describe("SpacePage inquiry panel", () => {
 		renderWithTheme(await SpacePage({ params }));
 
 		expect(screen.getByTestId("panel")).toHaveAttribute("data-viewer", "host");
+	});
+
+	it("falls back to renter when the host lookup fails, and still renders", async () => {
+		mockGet.mockResolvedValue(demoDetail);
+		mockGetUser.mockResolvedValue(demoUser);
+		mockIsHost.mockRejectedValue(new Error("db down"));
+
+		renderWithTheme(await SpacePage({ params }));
+
+		expect(screen.getByTestId("panel")).toHaveAttribute("data-viewer", "renter");
+		expect(
+			screen.getByRole("heading", { level: 1, name: "[DEMO] Corner loft with afternoon light" }),
+		).toBeInTheDocument();
+	});
+
+	it("passes the listing's slug, host and Manila date down to the panel", async () => {
+		mockGet.mockResolvedValue(demoDetail);
+		mockGetUser.mockResolvedValue(demoUser);
+
+		renderWithTheme(await SpacePage({ params }));
+
+		const props = mockPanelProps.at(-1);
+		expect(props).toBeDefined();
+		if (!props) return;
+		expect(props.slug).toBe(demoDetail.slug);
+		expect(props.hostName).toBe(demoDetail.host.displayName);
+		expect(props.respondsInHours).toBe(demoDetail.host.respondsInHours);
+		expect(props.today).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 	});
 
 	it("falls back to signed-out when the session lookup fails, and still renders", async () => {

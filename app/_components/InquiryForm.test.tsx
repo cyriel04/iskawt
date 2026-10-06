@@ -91,7 +91,7 @@ it.each([
 	[400, { error: "VALIDATION", fields: { shootDate: "Pick today or a later date." } }, "Pick today or a later date."],
 	[400, { error: "OWN_SPACE" }, "You can't send an inquiry about your own listing."],
 	[404, { error: "NOT_FOUND" }, "This listing isn't taking inquiries right now."],
-	[429, { error: "RATE_LIMITED" }, "You've sent a lot of inquiries today. Try again tomorrow."],
+	[429, { error: "RATE_LIMITED" }, "You've sent a lot of messages. Try again later."],
 	[500, {}, "We couldn't send that. Try again."],
 ])("shows the error for %i %o", async (status, body, text) => {
 	reply(status, body);
@@ -114,6 +114,8 @@ it("on 401 links back to sign-in with next set to this listing", async () => {
 		"href",
 		"/sign-in?next=%2Fspaces%2Fdemo-poblacion-loft",
 	);
+	expect(screen.getByRole("status")).toBeEmptyDOMElement();
+	expect(screen.getByRole("status")).not.toHaveTextContent("Sent");
 });
 
 it("handles a network failure and disables the button while sending", async () => {

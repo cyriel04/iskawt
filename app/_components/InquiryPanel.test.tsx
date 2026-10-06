@@ -2,7 +2,19 @@ import { screen } from "@testing-library/react";
 import InquiryPanel from "@/app/_components/InquiryPanel";
 import { renderWithTheme } from "@/app/_components/testing";
 
-jest.mock("@/app/_components/InquiryForm", () => ({ __esModule: true, default: () => <form aria-label="Inquiry form" /> }));
+type FormProps = { spaceSlug: string; hostName: string; respondsInHours: number | null; today: string };
+const mockFormProps: FormProps[] = [];
+jest.mock("@/app/_components/InquiryForm", () => ({
+	__esModule: true,
+	default: (props: FormProps) => {
+		mockFormProps.push(props);
+		return <form aria-label="Inquiry form" />;
+	},
+}));
+
+beforeEach(() => {
+	mockFormProps.length = 0;
+});
 
 const base = { slug: "demo-poblacion-loft", hostName: "Demo Host A", respondsInHours: 12, today: "2026-10-07" };
 
@@ -30,4 +42,14 @@ it("own listing: says so and links to the inbox", () => {
 it("renter: shows the form", () => {
 	renderWithTheme(<InquiryPanel {...base} viewer="renter" />);
 	expect(screen.getByRole("form", { name: "Inquiry form" })).toBeInTheDocument();
+});
+
+it("renter: passes the slug, host and date through to the form", () => {
+	renderWithTheme(<InquiryPanel {...base} viewer="renter" />);
+	expect(mockFormProps.at(-1)).toEqual({
+		spaceSlug: "demo-poblacion-loft",
+		hostName: "Demo Host A",
+		respondsInHours: 12,
+		today: "2026-10-07",
+	});
 });

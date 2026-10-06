@@ -20,6 +20,10 @@ it.each([
 	"/%2F/evil.example",
 	" /inbox",
 	"/inbox\nSet-Cookie: x",
+	"/.//evil.example",
+	"/..//evil",
+	"/inbox/../..//evil",
+	"/\u0001x",
 ])("falls back to / for %p", (raw) => {
 	expect(safeNext(raw)).toBe("/");
 });

@@ -18,7 +18,7 @@ import styles from "./InquiryForm.module.scss";
 
 const OWN_SPACE_TEXT = "You can't send an inquiry about your own listing.";
 const NOT_FOUND_TEXT = "This listing isn't taking inquiries right now.";
-const RATE_LIMITED_TEXT = "You've sent a lot of inquiries today. Try again tomorrow.";
+const RATE_LIMITED_TEXT = "You've sent a lot of messages. Try again later.";
 const SEND_FAILED_TEXT = "We couldn't send that. Try again.";
 const SESSION_ENDED_TEXT = "Your session ended. Sign in again to send this.";
 

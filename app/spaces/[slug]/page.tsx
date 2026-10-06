@@ -32,10 +32,12 @@ export default async function SpacePage({ params }: Props) {
 	const space = await getPublishedSpaceBySlug(slug);
 	if (!space) notFound();
 
-	// A failed session lookup shows the signed-out panel rather than breaking
-	// the listing.
+	// A failed session lookup shows the signed-out panel, and a failed host
+	// lookup the renter panel, rather than breaking the listing. The inquiry
+	// route still refuses a host messaging their own space.
 	const user = await getCurrentUser().catch(() => null);
-	const viewer = !user ? "signed-out" : (await isHostOfSpace(space.slug, user.id)) ? "host" : "renter";
+	const isHost = user ? await isHostOfSpace(space.slug, user.id).catch(() => false) : false;
+	const viewer = !user ? "signed-out" : isHost ? "host" : "renter";
 
 	const location = locationLine(space.areaName, space.city);
 
