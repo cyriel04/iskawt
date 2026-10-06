@@ -187,7 +187,7 @@ The rules:
 - **`durationHours`.** It is an integer from 1 to 24.
 - **`crewSize`.** It is an integer from 1 to `CREW_MAX`.
 - **`productionType`.** It must be a valid enum value.
-- **`website`.** It must be empty. A filled spam trap gets a 200 with a fake success: it creates nothing and sends nothing.
+- **`website`.** It must be empty. A filled spam trap gets a 201 with a fake success, `{ id: null, reused: false }`. It creates nothing and sends nothing. It is checked before validation, so a bot learns nothing from field errors.
 
 ## Access rules
 
@@ -300,6 +300,17 @@ Every handler reads the session through `getCurrentUser()`. Errors are
   - Reply errors.
   - The poller's fake timers: it polls while visible, stops when hidden, and appends new messages without duplicates.
 - **Sign-in:** `next` is honoured for `/spaces/x` and rejected for `//evil.example` and `https://evil.example`.
+
+## Carried forward from the 5b-1 review
+
+- **5b-2:**
+  - When an inquiry reuses an open thread, only the new message is appended. Changed details (date, duration, crew, budget) are not saved.
+  - The "Added to your existing conversation" success copy must say so, and suggest putting new details in the message.
+- **5b-3:**
+  - The poller re-requests a short overlap and dedupes by message id. Messages can commit out of `createdAt` order, so a cursor that never looks back can skip one.
+  - Inbox rows link to `/inbox/[id]` with `prefetch={false}`. Opening a thread marks it read, so a prefetch must not.
+  - The inbox shows the newest 50 threads (`INBOX_PAGE_SIZE`). "Load more" is out of scope until someone needs it.
+- **Open decision:** a host whose `verifiedAt` is later removed keeps access to existing threads, as an unpublished space does. If revoking verification should cut access, decide that before launch.
 
 ## Out of scope
 
