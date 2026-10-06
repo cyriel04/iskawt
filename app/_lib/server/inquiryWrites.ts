@@ -6,6 +6,7 @@ import { INQUIRIES_PER_USER_PER_DAY, MESSAGES_PER_USER_PER_HOUR } from "@/app/_l
 import { prisma } from "@/app/_lib/db";
 import { getParticipation, isOpen, messageSelect, toInquiryMessage } from "@/app/_lib/server/inquiryAccess";
 import { publishedWhere } from "@/app/_lib/server/spaces";
+import { Prisma } from "@/generated/prisma/client";
 import type { InquiryMessage, InquiryStatus, NewInquiryInput } from "@/app/_lib/types";
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -41,8 +42,9 @@ export async function createInquiry(userId: string, input: NewInquiryInput, now:
 	if (space.host.userId === userId) return { kind: "own-space" };
 
 	// Serializable: two parallel submits can't both see "no open thread" and
-	// create two. The loser throws P2034 and the route returns 500.
-	return prisma.$transaction(
+	// create two. The loser gets P2034 and is retried once, by which time the
+	// winner's thread exists and the retry appends to it.
+	const run = () => prisma.$transaction(
 		async (tx): Promise<CreateResult> => {
 			const open = await tx.inquiry.findFirst({
 				where: { spaceId: space.id, renterId: userId, status: { in: OPEN_STATUSES } },
@@ -92,6 +94,17 @@ export async function createInquiry(userId: string, input: NewInquiryInput, now:
 		},
 		{ isolationLevel: "Serializable" },
 	);
+
+	try {
+		return await run();
+	} catch (error) {
+		if (isSerializationConflict(error)) return run();
+		throw error;
+	}
+}
+
+function isSerializationConflict(error: unknown): boolean {
+	return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034";
 }
 
 export async function postMessage(
@@ -109,21 +122,23 @@ export async function postMessage(
 	});
 	if (sent >= MESSAGES_PER_USER_PER_HOUR) return { kind: "rate-limited" };
 
+	// The open-status guard is re-checked inside the write: a close or decline
+	// that lands after getParticipation must win, not be overwritten.
 	const row = await prisma.$transaction(async (tx) => {
-		const created = await tx.message.create({
+		const touched = await tx.inquiry.updateMany({
+			where: { id: inquiryId, status: { in: OPEN_STATUSES } },
+			data: p.role === "HOST" ? { lastMessageAt: now, hostLastReadAt: now } : { lastMessageAt: now, renterLastReadAt: now },
+		});
+		if (touched.count === 0) return null;
+		if (p.role === "HOST") {
+			await tx.inquiry.updateMany({ where: { id: inquiryId, status: "NEW" }, data: { status: "RESPONDED" } });
+		}
+		return tx.message.create({
 			data: { inquiryId, senderId: userId, body, createdAt: now },
 			select: messageSelect,
 		});
-		await tx.inquiry.update({
-			where: { id: inquiryId },
-			data:
-				p.role === "HOST"
-					? { lastMessageAt: now, hostLastReadAt: now, ...(p.status === "NEW" ? { status: "RESPONDED" as const } : {}) }
-					: { lastMessageAt: now, renterLastReadAt: now },
-			select: { id: true },
-		});
-		return created;
 	});
+	if (!row) return { kind: "closed" };
 
 	return { kind: "sent", message: toInquiryMessage(row, userId, p) };
 }
@@ -138,10 +153,11 @@ export async function changeStatus(
 	if (!isOpen(p.status)) return { kind: "closed" };
 	if (action === "decline" && p.role !== "HOST") return { kind: "not-host" };
 
-	const updated = await prisma.inquiry.update({
-		where: { id: inquiryId },
-		data: { status: action === "decline" ? "DECLINED" : "CLOSED" },
-		select: { status: true },
+	const status: InquiryStatus = action === "decline" ? "DECLINED" : "CLOSED";
+	const updated = await prisma.inquiry.updateMany({
+		where: { id: inquiryId, status: { in: OPEN_STATUSES } },
+		data: { status },
 	});
-	return { kind: "ok", status: updated.status };
+	if (updated.count === 0) return { kind: "closed" };
+	return { kind: "ok", status };
 }
