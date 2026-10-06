@@ -11,6 +11,7 @@ export type {
 	PowerAccess,
 	Level,
 	ProductionType,
+	InquiryStatus,
 } from "@/generated/prisma/enums";
 
 import type {
@@ -21,6 +22,7 @@ import type {
 	PowerAccess,
 	Level,
 	ProductionType,
+	InquiryStatus,
 } from "@/generated/prisma/enums";
 
 export type PublicPhoto = {
@@ -179,3 +181,84 @@ export type CurrentUser = {
 	name: string | null;
 	host: { displayName: string } | null; // set when linked to a verified Host
 };
+
+// ---------------------------------------------------------------- inquiries
+//
+// An Inquiry is a conversation between one renter and the host of one space.
+// Neither side ever sees the other's email or phone: names only.
+
+// Which side of a thread the signed-in user is on.
+export type InquiryRole = "RENTER" | "HOST";
+
+// What the inquiry form posts. Dates are calendar dates in Manila, "YYYY-MM-DD".
+export type NewInquiryInput = {
+	spaceSlug: string;
+	requesterName: string;
+	requesterCompany: string | null;
+	shootDate: string | null;
+	durationHours: number | null;
+	crewSize: number | null;
+	productionType: ProductionType;
+	budgetNote: string | null;
+	message: string;
+	website: string; // spam trap: hidden field, must be empty
+};
+
+export type InquiryMessage = {
+	id: string;
+	body: string;
+	sentAt: string; // ISO 8601
+	fromMe: boolean;
+	senderName: string; // host displayName, or the inquiry's requesterName
+};
+
+// One row in /inbox.
+export type InquirySummary = {
+	id: string;
+	role: InquiryRole;
+	status: InquiryStatus;
+	space: { slug: string; title: string };
+	counterpartName: string;
+	lastMessage: { body: string; sentAt: string; fromMe: boolean }; // body cut to INBOX_PREVIEW_CHARS
+	unread: boolean;
+};
+
+// /inbox/[id]
+export type InquiryThread = {
+	id: string;
+	role: InquiryRole;
+	status: InquiryStatus;
+	space: { slug: string; title: string; areaName: string; city: City };
+	counterpartName: string;
+	requesterCompany: string | null;
+	shootDate: string | null; // "YYYY-MM-DD"
+	durationHours: number | null;
+	crewSize: number | null;
+	productionType: ProductionType;
+	budgetNote: string | null;
+	messages: InquiryMessage[]; // oldest first
+	canReply: boolean;
+	canDecline: boolean;
+	canClose: boolean;
+};
+
+// ---- API shapes (app/api/inquiries/**)
+
+export type InquiryFieldErrors = Partial<Record<keyof NewInquiryInput, string>>;
+
+export type InquiryApiError = {
+	error: "UNAUTHENTICATED" | "VALIDATION" | "OWN_SPACE" | "NOT_FOUND" | "RATE_LIMITED" | "THREAD_CLOSED" | "NOT_HOST";
+	fields?: InquiryFieldErrors;
+};
+
+// POST /api/inquiries — 201 new, 200 reused. id is null only for a spam-trap hit.
+export type CreateInquiryResponse = { id: string | null; reused: boolean };
+
+// POST /api/inquiries/[id]/messages — 201
+export type PostMessageResponse = { message: InquiryMessage };
+
+// GET /api/inquiries/[id]/messages?after=<messageId> — 200
+export type MessagesResponse = { messages: InquiryMessage[]; status: InquiryStatus };
+
+// POST /api/inquiries/[id]/status — 200
+export type StatusResponse = { status: InquiryStatus };

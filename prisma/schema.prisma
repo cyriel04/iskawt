@@ -150,34 +150,57 @@ model Tag {
 
 // ---------------------------------------------------------------- inquiries
 
+// An inquiry is the conversation between one renter (a User) and the host of
+// one space. Neither side's email or phone is ever shown to the other: the
+// renter is known by requesterName, the host by Host.displayName.
 model Inquiry {
   id      String @id @default(cuid())
   spaceId String
   space   Space  @relation(fields: [spaceId], references: [id], onDelete: Cascade)
 
-  // who is asking
+  renterId String
+  renter   User   @relation(fields: [renterId], references: [id], onDelete: Cascade)
+
+  // What the host sees about the renter. Typed on the form, because Better
+  // Auth stores an empty User.name for magic-link sign-ups.
   requesterName    String
-  requesterEmail   String
-  requesterPhone   String?
   requesterCompany String?
 
-  // what they want
-  shootDate      DateTime?
+  shootDate      DateTime?      @db.Date
   durationHours  Int?
   crewSize       Int?
   productionType ProductionType @default(FILM)
-  message        String         @db.Text
   budgetNote     String?        @db.Text
 
-  status      InquiryStatus @default(NEW)
-  sentAt      DateTime? // when it was relayed to the host
-  respondedAt DateTime?
-  internalNote String?  @db.Text // never shown to either party
+  status InquiryStatus @default(NEW)
+
+  lastMessageAt    DateTime  @default(now()) // inbox ordering and unread
+  hostLastReadAt   DateTime?
+  renterLastReadAt DateTime?
+  hostNotifiedAt   DateTime? // email throttle, per side (5b-2)
+  renterNotifiedAt DateTime?
+
+  messages Message[]
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@index([spaceId, createdAt])
+  @@index([spaceId, renterId, status])
+  @@index([renterId, lastMessageAt])
   @@index([status, createdAt])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  inquiryId String
+  inquiry   Inquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  body      String   @db.Text // 1–4000 characters, trimmed
+  createdAt DateTime @default(now())
+
+  @@index([inquiryId, createdAt])
+  @@index([senderId, createdAt])
 }
 
 // Hosts apply to list; a human reviews and creates the Host and Space rows.
@@ -215,6 +238,9 @@ model User {
   sessions Session[]
   accounts Account[]
   host     Host?
+
+  inquiries Inquiry[] // as renter
+  messages  Message[]
 }
 
 model Session {
@@ -374,11 +400,10 @@ enum SpaceStatus {
 }
 
 enum InquiryStatus {
-  NEW
-  SENT
-  RESPONDED
-  DECLINED
-  CLOSED
+  NEW       // waiting for the host's first reply
+  RESPONDED // the host has replied at least once
+  DECLINED  // the host declined; read-only
+  CLOSED    // either side closed it; read-only
 }
 
 enum ApplicationStatus {
