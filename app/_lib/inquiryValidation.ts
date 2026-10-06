@@ -43,8 +43,20 @@ function isRealDate(value: string): boolean {
 
 const chars = (value: string) => [...value].length; // code points, not UTF-16 units
 const text = (value: unknown) => (typeof value === "string" ? value.trim() : "");
-const optionalText = (value: unknown) => text(value) || null;
 const tooLong = (max: number) => `Keep it under ${max} characters.`;
+
+// Postgres can't store NUL in a text column; letting one through is a 500.
+const UNSUPPORTED = "Remove unsupported characters.";
+const hasNul = (value: string) => value.includes("\u0000");
+
+// Absent (null/undefined) is null. Present but not a string is an error, not a
+// silent null, so a client bug can't drop a field the renter filled in.
+function optionalText(value: unknown, wrongType: string): { value: string | null; error: string | null } {
+	if (value === null || value === undefined) return { value: null, error: null };
+	if (typeof value !== "string") return { value: null, error: wrongType };
+	if (hasNul(value)) return { value: null, error: UNSUPPORTED };
+	return { value: value.trim() || null, error: null };
+}
 
 function optionalInt(value: unknown): number | null | "invalid" {
 	if (value === null || value === undefined || value === "") return null;
@@ -55,6 +67,7 @@ function optionalInt(value: unknown): number | null | "invalid" {
 export function validateMessageBody(body: unknown): { ok: true; value: string } | { ok: false; error: string } {
 	const value = text(body);
 	if (!value) return { ok: false, error: "Write a message." };
+	if (hasNul(value)) return { ok: false, error: UNSUPPORTED };
 	if (chars(value) > MESSAGE_BODY_MAX) return { ok: false, error: tooLong(MESSAGE_BODY_MAX) };
 	return { ok: true, value };
 }
@@ -68,16 +81,22 @@ export function validateNewInquiry(
 
 	const spaceSlug = text(raw.spaceSlug);
 	if (!spaceSlug) errors.spaceSlug = "Missing space.";
+	else if (hasNul(spaceSlug)) errors.spaceSlug = UNSUPPORTED;
 
 	const requesterName = text(raw.requesterName);
 	if (!requesterName) errors.requesterName = "Enter your name.";
+	else if (hasNul(requesterName)) errors.requesterName = UNSUPPORTED;
 	else if (chars(requesterName) > INQUIRY_NAME_MAX) errors.requesterName = tooLong(INQUIRY_NAME_MAX);
 
-	const requesterCompany = optionalText(raw.requesterCompany);
-	if (requesterCompany && chars(requesterCompany) > INQUIRY_COMPANY_MAX) errors.requesterCompany = tooLong(INQUIRY_COMPANY_MAX);
+	const company = optionalText(raw.requesterCompany, "Enter text.");
+	const requesterCompany = company.value;
+	if (company.error) errors.requesterCompany = company.error;
+	else if (requesterCompany && chars(requesterCompany) > INQUIRY_COMPANY_MAX) errors.requesterCompany = tooLong(INQUIRY_COMPANY_MAX);
 
-	const shootDate = optionalText(raw.shootDate);
-	if (shootDate !== null) {
+	const date = optionalText(raw.shootDate, "Enter a valid date.");
+	const shootDate = date.value;
+	if (date.error) errors.shootDate = date.error;
+	else if (shootDate !== null) {
 		if (!isRealDate(shootDate)) errors.shootDate = "Enter a valid date.";
 		else if (shootDate < today) errors.shootDate = "Pick today or a later date.";
 		else if (shootDate > addDays(today, SHOOT_DATE_MAX_DAYS_AHEAD)) errors.shootDate = "Pick a date within the next year.";
@@ -94,10 +113,13 @@ export function validateNewInquiry(
 	}
 
 	const productionType = text(raw.productionType);
-	if (!isProductionType(productionType)) errors.productionType = "Choose a production type.";
+	if (hasNul(productionType)) errors.productionType = UNSUPPORTED;
+	else if (!isProductionType(productionType)) errors.productionType = "Choose a production type.";
 
-	const budgetNote = optionalText(raw.budgetNote);
-	if (budgetNote && chars(budgetNote) > INQUIRY_BUDGET_NOTE_MAX) errors.budgetNote = tooLong(INQUIRY_BUDGET_NOTE_MAX);
+	const note = optionalText(raw.budgetNote, "Enter text.");
+	const budgetNote = note.value;
+	if (note.error) errors.budgetNote = note.error;
+	else if (budgetNote && chars(budgetNote) > INQUIRY_BUDGET_NOTE_MAX) errors.budgetNote = tooLong(INQUIRY_BUDGET_NOTE_MAX);
 
 	const message = validateMessageBody(raw.message);
 	if (!message.ok) errors.message = message.error;

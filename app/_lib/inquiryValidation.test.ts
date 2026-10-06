@@ -40,6 +40,11 @@ describe("validateNewInquiry", () => {
 		});
 	});
 
+	it("treats null and undefined optional text as null", () => {
+		const result = validateNewInquiry({ ...valid, requesterCompany: undefined, shootDate: null, budgetNote: null }, today);
+		expect(result).toMatchObject({ ok: true, value: { requesterCompany: null, shootDate: null, budgetNote: null } });
+	});
+
 	it("treats missing optional fields as null", () => {
 		const result = validateNewInquiry(
 			{ spaceSlug: "s", requesterName: "A", productionType: "FILM", message: "Hi", website: "" },
@@ -63,7 +68,21 @@ describe("validateNewInquiry", () => {
 		["message", { message: "  " }, "Write a message."],
 		["message", { message: "x".repeat(4001) }, "Keep it under 4000 characters."],
 		["spaceSlug", { spaceSlug: "" }, "Missing space."],
-	])("rejects a bad %s", (field, patch, error) => {
+		// Postgres rejects NUL in text columns; reject it as a field error, not a 500.
+		["requesterName", { requesterName: "Demo\u0000Renter" }, "Remove unsupported characters."],
+		["requesterCompany", { requesterCompany: "Demo\u0000Films" }, "Remove unsupported characters."],
+		["shootDate", { shootDate: "2026-10-20\u0000" }, "Remove unsupported characters."],
+		["budgetNote", { budgetNote: "about\u0000 PHP" }, "Remove unsupported characters."],
+		["message", { message: "Hi\u0000there" }, "Remove unsupported characters."],
+		["spaceSlug", { spaceSlug: "demo\u0000loft" }, "Remove unsupported characters."],
+		["productionType", { productionType: "FILM\u0000" }, "Remove unsupported characters."],
+		// A present value of the wrong type is an error, not a silent null.
+		["requesterCompany", { requesterCompany: 42 }, "Enter text."],
+		["requesterCompany", { requesterCompany: { name: "x" } }, "Enter text."],
+		["shootDate", { shootDate: 20261020 }, "Enter a valid date."],
+		["shootDate", { shootDate: true }, "Enter a valid date."],
+		["budgetNote", { budgetNote: ["x"] }, "Enter text."],
+	])("rejects a bad %s (%o)", (field, patch, error) => {
 		const result = validateNewInquiry({ ...valid, ...patch }, today);
 		expect(result).toEqual({ ok: false, errors: { [field]: error } });
 	});
@@ -98,5 +117,8 @@ describe("validateMessageBody", () => {
 		expect(validateMessageBody(" ")).toEqual({ ok: false, error: "Write a message." });
 		expect(validateMessageBody("x".repeat(4001))).toEqual({ ok: false, error: "Keep it under 4000 characters." });
 		expect(validateMessageBody(42)).toEqual({ ok: false, error: "Write a message." });
+	});
+	it("rejects a NUL character, which Postgres can't store", () => {
+		expect(validateMessageBody("Hi\u0000there")).toEqual({ ok: false, error: "Remove unsupported characters." });
 	});
 });
