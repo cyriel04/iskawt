@@ -1,5 +1,7 @@
+import { after } from "next/server";
 import { getCurrentUser } from "@/app/_lib/server/currentUser";
 import { createInquiry } from "@/app/_lib/server/inquiryWrites";
+import { notifyCounterpart } from "@/app/_lib/server/inquiryNotify";
 import { manilaToday, validateNewInquiry } from "@/app/_lib/inquiryValidation";
 import type { CreateInquiryResponse, InquiryApiError } from "@/app/_lib/types";
 
@@ -23,8 +25,10 @@ export async function POST(request: Request): Promise<Response> {
 	const outcome = await createInquiry(user.id, result.value);
 	switch (outcome.kind) {
 		case "created":
+			after(() => notifyCounterpart(outcome.id, "RENTER", result.value.message));
 			return Response.json({ id: outcome.id, reused: false } satisfies CreateInquiryResponse, { status: 201 });
 		case "reused":
+			after(() => notifyCounterpart(outcome.id, "RENTER", result.value.message));
 			return Response.json({ id: outcome.id, reused: true } satisfies CreateInquiryResponse, { status: 200 });
 		case "not-found":
 			return error({ error: "NOT_FOUND" }, 404);

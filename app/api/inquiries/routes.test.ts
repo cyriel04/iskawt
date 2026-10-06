@@ -5,6 +5,11 @@ const mockPostMessage = jest.fn();
 const mockChangeStatus = jest.fn();
 const mockGetMessagesAfter = jest.fn();
 
+const mockNotify = jest.fn();
+const afterCallbacks: Array<() => unknown> = [];
+jest.mock("@/app/_lib/server/inquiryNotify", () => ({ notifyCounterpart: (...a: unknown[]) => mockNotify(...a) }));
+jest.mock("next/server", () => ({ after: (cb: () => unknown) => afterCallbacks.push(cb) }));
+
 jest.mock("@/app/_lib/server/currentUser", () => ({ getCurrentUser: () => mockGetCurrentUser() }));
 jest.mock("@/app/_lib/server/inquiryWrites", () => ({
 	createInquiry: (...a: unknown[]) => mockCreateInquiry(...a),
@@ -33,6 +38,7 @@ const validBody = {
 
 beforeEach(() => {
 	jest.resetAllMocks();
+	afterCallbacks.length = 0;
 	mockGetCurrentUser.mockResolvedValue(user);
 });
 
@@ -164,5 +170,48 @@ describe("POST /api/inquiries/[id]/status", () => {
 		const res = await statusRoute(json({ action: "close" }), ctx);
 		expect(res.status).toBe(status);
 		expect(await res.json()).toEqual(body);
+	});
+});
+
+describe("notifications", () => {
+	const runAfter = async () => {
+		for (const cb of afterCallbacks) await cb();
+	};
+
+	it("notifies the host after a new or reused inquiry, with the trimmed message", async () => {
+		for (const outcome of [{ kind: "created", id: "inq_new" }, { kind: "reused", id: "inq_open" }]) {
+			afterCallbacks.length = 0;
+			mockNotify.mockReset();
+			mockCreateInquiry.mockResolvedValue(outcome);
+			await createRoute(json({ ...validBody, message: "  Free next week?  " }));
+			await runAfter();
+			expect(mockNotify).toHaveBeenCalledWith(outcome.id, "RENTER", "Free next week?");
+		}
+	});
+
+	it("schedules nothing for spam, validation errors or refused creates", async () => {
+		await createRoute(json({ website: "http://spam.example" }));
+		await createRoute(json({ ...validBody, requesterName: "" }));
+		for (const kind of ["not-found", "own-space", "rate-limited"]) {
+			mockCreateInquiry.mockResolvedValue({ kind });
+			await createRoute(json(validBody));
+		}
+		expect(afterCallbacks).toHaveLength(0);
+	});
+
+	it("notifies the other side after a sent message, using the sender's role", async () => {
+		const message = { id: "m9", body: "Yes", sentAt: "2026-10-07T10:00:00.000Z", fromMe: true, senderName: "Demo Host A" };
+		mockPostMessage.mockResolvedValue({ kind: "sent", message, role: "HOST" });
+		const res = await sendMessage(json({ body: "Yes" }), ctx);
+		expect(res.status).toBe(201);
+		expect(await res.json()).toEqual({ message }); // role is not leaked into the response
+		await runAfter();
+		expect(mockNotify).toHaveBeenCalledWith("inq_1", "HOST", "Yes");
+	});
+
+	it("schedules nothing when the message isn't sent", async () => {
+		mockPostMessage.mockResolvedValue({ kind: "closed" });
+		await sendMessage(json({ body: "Hi" }), ctx);
+		expect(afterCallbacks).toHaveLength(0);
 	});
 });
