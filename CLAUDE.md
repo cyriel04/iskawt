@@ -78,6 +78,10 @@ These bite on every fresh clone and every new machine. Do not work around them.
   `options={{ enableCssLayer: true }}`. Without it, MUI's styles load after the
   SCSS modules and win every tie, so a `className` on an MUI component silently
   loses (e.g. `position: fixed` on a `Fab`). Never remove that option.
+- **Local Postgres runs in Docker.** If `docker` can't reach its socket, start it
+  yourself rather than stopping: `open -a Docker`, wait until `docker info`
+  succeeds, then `docker compose up -d` (container `iskawt-db`, port 5432).
+  Agents and the main session may both do this without asking.
 - **pnpm blocks dependency build scripts.** Approvals live in `pnpm-workspace.yaml`
   at the repo root, never in a `"pnpm"` block in `package.json` — current pnpm does
   not read that field. Use `pnpm approve-builds`; never
@@ -131,6 +135,22 @@ Everything is under `app/` now, so the split is **by file kind, not by top-level
 folder**. Routes and layouts are frontend; anything under `api/` or `_lib/server/`
 is backend. When in doubt: does it run only on the server and touch the database?
 That is backend-dev's, wherever it sits.
+
+## Workflow — every feature or slice
+
+The main session designs and coordinates; agents implement. Always:
+
+1. **Brainstorm** with `superpowers:brainstorming` — questions, design, written
+   spec in `docs/superpowers/specs/`, human approves the spec.
+2. **Plan** with `superpowers:writing-plans` into `docs/superpowers/plans/`;
+   human reads it.
+3. **Execute** with `superpowers:executing-plans`, dispatching each task to the
+   owning agent (`backend-dev`, `frontend-dev`) per the ownership map. The main
+   session does not write application code itself.
+4. **Review** with a fresh `reviewer` agent on the diff before it reaches `main`.
+
+Each feature lives on its own branch (`feat/<slice-or-topic>`), created from
+`main` before the spec is committed.
 
 ## The contract
 
@@ -200,7 +220,12 @@ be listed, so brackets are the default and removing them is a deliberate act.
   lockfile and new-dependency rules: they bump versions of packages already
   here, never add new ones, and merge only when CI is green. A major bump is
   read against its changelog before merging, not waved through.
-- Never run `git push` or `git rebase`. Commit locally; the human pushes.
+- Never run `git push` or `git rebase`. The human pushes.
+- **Always work on a feature branch** (`feat/<slice-or-topic>`), never on `main`.
+  On that branch, agents and the main session **commit locally** at each plan
+  task's commit step, ending the message with the `Co-Authored-By` line. This
+  overrides the global "never commit" default for this repo (approved by the
+  human, 2026-10-05).
 - Keep diffs small. More than ~8 files means stop and propose a split.
 
 ## Conventions

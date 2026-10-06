@@ -1,0 +1,8 @@
+@use "../_styles/tokens" as *;
+
+.page {
+	display: flex;
+	flex-direction: column;
+	gap: space(4);
+	padding-block: $stack;
+}

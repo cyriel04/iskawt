@@ -1,0 +1,36 @@
+@use "../_styles/tokens" as *;
+
+.form {
+	display: flex;
+	flex-direction: column;
+	gap: space(4);
+}
+
+.submit {
+	min-height: 44px;
+}
+
+.sent {
+	margin: 0;
+	padding: space(4);
+	border: 1px solid $color-hairline;
+	border-radius: $radius-md;
+	background: $color-paper;
+}
+
+.root {
+	display: flex;
+	flex-direction: column;
+}
+
+// The live region before anything is sent: empty, takes no space, but stays
+// in the accessibility tree so its later text is announced.
+.status {
+	margin: 0;
+}
+
+.again {
+	align-self: flex-start;
+	min-height: 44px;
+	margin-top: space(2);
+}
