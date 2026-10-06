@@ -1,15 +1,22 @@
 import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { ThemeProvider } from "@mui/material/styles";
+import theme from "@/app/_lib/theme";
 import ThreadView from "@/app/_components/ThreadView";
 import { demoThread, renderWithTheme } from "@/app/_components/testing";
 
 const mockFetch = jest.fn();
+const mockRefresh = jest.fn();
+// A fresh router object per render, so an effect that depends on it re-runs
+// on every render: the refresh guard has to hold on its own.
+jest.mock("next/navigation", () => ({ useRouter: () => ({ refresh: mockRefresh }) }));
 const reply = (status: number, body: unknown) => ({ status, ok: status >= 200 && status < 300, json: () => Promise.resolve(body) });
 let visibility: DocumentVisibilityState = "visible";
 
 beforeEach(() => {
 	jest.useFakeTimers();
 	mockFetch.mockReset();
+	mockRefresh.mockReset();
 	global.fetch = mockFetch;
 	visibility = "visible";
 	Object.defineProperty(document, "visibilityState", { configurable: true, get: () => visibility });
@@ -25,6 +32,14 @@ const setVisibility = (v: DocumentVisibilityState) =>
 		visibility = v;
 		document.dispatchEvent(new Event("visibilitychange"));
 	});
+const pending = () => new Promise<never>(() => {});
+// Routes fetch by endpoint: GET messages (poll), POST messages (send), POST status.
+const route = (handlers: { poll?: () => Promise<unknown>; send?: () => Promise<unknown>; status?: () => Promise<unknown> }) =>
+	mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+		const handler = url.endsWith("/status") ? handlers.status : init?.method === "POST" ? handlers.send : handlers.poll;
+		return handler ? handler() : pending();
+	});
+const pollCalls = () => mockFetch.mock.calls.filter(([url, init]: [string, RequestInit | undefined]) => !url.endsWith("/status") && init?.method !== "POST");
 const messages = () => within(screen.getByRole("list", { name: "Messages" })).getAllByRole("listitem");
 
 it("renders the messages oldest first with sender and time", () => {
@@ -188,4 +203,135 @@ it("renders read-only from the start for a closed thread and doesn't poll", asyn
 	expect(screen.getByText("This conversation is closed.")).toBeInTheDocument();
 	await tick(60);
 	expect(mockFetch).not.toHaveBeenCalled();
+});
+
+it("refreshes the page once when a poll reports a new status", async () => {
+	route({ poll: () => Promise.resolve(reply(200, { status: "CLOSED", messages: [] })) });
+	const { rerender } = renderWithTheme(<ThreadView thread={demoThread} />);
+	await tick(15);
+	expect(mockRefresh).toHaveBeenCalledTimes(1);
+	// Same tree, so the component re-renders rather than remounting.
+	rerender(
+		<ThemeProvider theme={theme}>
+			<ThreadView thread={demoThread} />
+		</ThemeProvider>,
+	);
+	await tick(60);
+	expect(mockRefresh).toHaveBeenCalledTimes(1);
+});
+
+it("refreshes the page once after a confirmed decline", async () => {
+	route({ status: () => Promise.resolve(reply(200, { status: "DECLINED" })) });
+	renderWithTheme(<ThreadView thread={{ ...demoThread, role: "HOST", canDecline: true }} />);
+	await user().click(screen.getByRole("button", { name: "Decline" }));
+	await user().click(screen.getByRole("button", { name: "Yes, decline" }));
+	await tick(0);
+	expect(mockRefresh).toHaveBeenCalledTimes(1);
+});
+
+it("doesn't refresh when the polled status hasn't changed", async () => {
+	route({ poll: () => Promise.resolve(reply(200, { status: "RESPONDED", messages: [] })) });
+	renderWithTheme(<ThreadView thread={demoThread} />);
+	await tick(45);
+	expect(pollCalls()).toHaveLength(3);
+	expect(mockRefresh).not.toHaveBeenCalled();
+});
+
+it("on 409 from a status change asks the server for the real status instead of assuming CLOSED", async () => {
+	route({ status: () => Promise.resolve(reply(409, { error: "THREAD_CLOSED" })) });
+	renderWithTheme(<ThreadView thread={demoThread} />);
+	await user().click(screen.getByRole("button", { name: "Close conversation" }));
+	await user().click(screen.getByRole("button", { name: "Yes, close it" }));
+	await tick(0);
+	expect(pollCalls()).toHaveLength(1);
+	expect(screen.queryByText("This conversation is closed.")).not.toBeInTheDocument();
+});
+
+it("on 409 from a status change shows whatever the server says, then refreshes", async () => {
+	route({
+		status: () => Promise.resolve(reply(409, { error: "THREAD_CLOSED" })),
+		poll: () => Promise.resolve(reply(200, { status: "DECLINED", messages: [] })),
+	});
+	renderWithTheme(<ThreadView thread={demoThread} />);
+	await user().click(screen.getByRole("button", { name: "Close conversation" }));
+	await user().click(screen.getByRole("button", { name: "Yes, close it" }));
+	await tick(0);
+	expect(screen.getByText("This conversation is closed.")).toBeInTheDocument();
+	expect(screen.queryByRole("button", { name: "Close conversation" })).not.toBeInTheDocument();
+	expect(mockRefresh).toHaveBeenCalledTimes(1);
+});
+
+it("on 409 from send polls for the real status and says it was closed only once", async () => {
+	route({
+		send: () => Promise.resolve(reply(409, { error: "THREAD_CLOSED" })),
+		poll: () => Promise.resolve(reply(200, { status: "DECLINED", messages: [] })),
+	});
+	renderWithTheme(<ThreadView thread={demoThread} />);
+	await user().type(screen.getByLabelText("Reply"), "Still on?");
+	await user().click(screen.getByRole("button", { name: "Send" }));
+	await tick(0);
+	expect(pollCalls()).toHaveLength(1);
+	expect(screen.getByRole("alert")).toHaveTextContent("This conversation was closed.");
+	expect(screen.queryByText("This conversation is closed.")).not.toBeInTheDocument();
+	expect(screen.getByLabelText("Reply")).toHaveValue("Still on?");
+	expect(screen.getByLabelText("Reply")).toBeDisabled();
+	expect(mockRefresh).toHaveBeenCalledTimes(1);
+});
+
+it("on 401 from send asks to sign in again, stops polling and keeps the text", async () => {
+	route({
+		send: () => Promise.resolve(reply(401, { error: "UNAUTHENTICATED" })),
+		poll: () => Promise.resolve(reply(200, { status: "RESPONDED", messages: [] })),
+	});
+	renderWithTheme(<ThreadView thread={demoThread} />);
+	await user().type(screen.getByLabelText("Reply"), "Hello");
+	await user().click(screen.getByRole("button", { name: "Send" }));
+	await tick(0);
+	expect(screen.getByRole("alert")).toHaveTextContent("Your session ended.");
+	expect(screen.getByLabelText("Reply")).toHaveValue("Hello");
+	await tick(60);
+	expect(pollCalls()).toHaveLength(0);
+});
+
+it("never starts a poll while one is still in flight", async () => {
+	route({ poll: pending });
+	renderWithTheme(<ThreadView thread={demoThread} />);
+	await tick(30);
+	expect(mockFetch).toHaveBeenCalledTimes(1);
+});
+
+it("ignores a stale poll that resolves after a confirmed close", async () => {
+	let resolvePoll: (value: unknown) => void = () => {};
+	route({
+		poll: () => new Promise((resolve) => (resolvePoll = resolve)),
+		status: () => Promise.resolve(reply(200, { status: "CLOSED" })),
+	});
+	renderWithTheme(<ThreadView thread={demoThread} />);
+	await tick(15);
+	expect(pollCalls()).toHaveLength(1);
+	await user().click(screen.getByRole("button", { name: "Close conversation" }));
+	await user().click(screen.getByRole("button", { name: "Yes, close it" }));
+	await tick(0);
+	await act(async () => resolvePoll(reply(200, { status: "RESPONDED", messages: [] })));
+	await tick(0);
+	expect(screen.getByText("This conversation is closed.")).toBeInTheDocument();
+	expect(screen.queryByLabelText("Reply")).not.toBeInTheDocument();
+	expect(screen.queryByRole("button", { name: "Close conversation" })).not.toBeInTheDocument();
+});
+
+it("moves focus to the confirm button, and back to the opener on Cancel", async () => {
+	renderWithTheme(<ThreadView thread={demoThread} />);
+	await user().click(screen.getByRole("button", { name: "Close conversation" }));
+	expect(screen.getByRole("button", { name: "Yes, close it" })).toHaveFocus();
+	await user().click(screen.getByRole("button", { name: "Cancel" }));
+	expect(screen.getByRole("button", { name: "Close conversation" })).toHaveFocus();
+});
+
+it("moves focus to the closed notice after a confirmed close", async () => {
+	route({ status: () => Promise.resolve(reply(200, { status: "CLOSED" })) });
+	renderWithTheme(<ThreadView thread={demoThread} />);
+	await user().click(screen.getByRole("button", { name: "Close conversation" }));
+	await user().click(screen.getByRole("button", { name: "Yes, close it" }));
+	await tick(0);
+	expect(screen.getByText("This conversation is closed.")).toHaveFocus();
 });

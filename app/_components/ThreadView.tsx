@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
@@ -42,6 +43,7 @@ const CONFIRM: Record<Action, { question: string; yes: string }> = {
 // the server's can* flags only describe the first render.
 export default function ThreadView({ thread }: { thread: InquiryThread }) {
 	const { id } = thread;
+	const router = useRouter();
 	const [messages, setMessages] = useState<InquiryMessage[]>(thread.messages);
 	const [status, setStatus] = useState<InquiryStatus>(thread.status);
 	const [draft, setDraft] = useState("");
@@ -60,6 +62,10 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 	const closeRef = useRef<HTMLButtonElement>(null);
 	const declineRef = useRef<HTMLButtonElement>(null);
 	const returnFocusTo = useRef<Action | null>(null);
+	const closedRef = useRef<HTMLParagraphElement>(null);
+	const focusClosed = useRef(false);
+	const refreshedFor = useRef<InquiryStatus>(thread.status);
+	const pollNow = useRef<(() => Promise<void>) | null>(null);
 
 	const open = isOpenStatus(status);
 	const canDecline = open && thread.role === "HOST";
@@ -83,6 +89,22 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 			returnFocusTo.current = null;
 		}
 	}, [confirming]);
+
+	// The server-rendered summary above shows the status too. Refresh it when
+	// the live status moves on; once per status, as the prop catches up after.
+	useEffect(() => {
+		if (status === thread.status || refreshedFor.current === status) return;
+		refreshedFor.current = status;
+		router.refresh();
+	}, [status, thread.status, router]);
+
+	// After a confirmed Close/Decline the buttons go; focus the notice instead.
+	useEffect(() => {
+		if (!open && focusClosed.current) {
+			focusClosed.current = false;
+			closedRef.current?.focus();
+		}
+	}, [open]);
 
 	useEffect(() => {
 		if (!open || stopped) return;
@@ -117,6 +139,7 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 			}
 		}
 
+		pollNow.current = poll;
 		const timer = setInterval(() => {
 			if (document.visibilityState === "visible") void poll();
 		}, THREAD_POLL_SECONDS * 1000);
@@ -126,6 +149,7 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 		document.addEventListener("visibilitychange", onVisibility);
 		return () => {
 			cancelled = true;
+			pollNow.current = null;
 			clearInterval(timer);
 			document.removeEventListener("visibilitychange", onVisibility);
 		};
@@ -152,8 +176,9 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 				setMessages((prev) => mergeMessages(prev, [data.message]));
 				setDraft("");
 			} else if (res.status === 409) {
+				// Closed or declined: the poll brings back which.
 				setAlert({ kind: "closed-on-send" });
-				setStatus("CLOSED");
+				void pollNow.current?.();
 			} else if (res.status === 401) {
 				setAlert({ kind: "session" });
 				setStopped(true);
@@ -182,10 +207,13 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 			});
 			if (res.status === 200) {
 				const data: StatusResponse = await res.json();
+				focusClosed.current = true;
 				setStatus(data.status);
 				setAlert(null);
 			} else if (res.status === 409) {
-				setStatus("CLOSED");
+				// Already closed or declined: the poll brings back which.
+				focusClosed.current = true;
+				void pollNow.current?.();
 			} else if (res.status === 401) {
 				setAlert({ kind: "session" });
 				setStopped(true);
@@ -208,7 +236,8 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 		setConfirming(null);
 	}
 
-	const showBox = open || alert?.kind === "closed-on-send";
+	const closedOnSend = alert?.kind === "closed-on-send";
+	const showBox = open || closedOnSend;
 
 	return (
 		<section aria-label="Conversation" className={styles.root}>
@@ -257,8 +286,8 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 				</Alert>
 			)}
 
-			{!open && (
-				<Typography component="p" variant="body1" className={styles.closed}>
+			{!open && !closedOnSend && (
+				<Typography ref={closedRef} component="p" variant="body1" tabIndex={-1} className={styles.closed}>
 					This conversation is closed.
 				</Typography>
 			)}
@@ -275,9 +304,9 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 						onChange={(e) => setDraft(e.target.value)}
 						error={Boolean(fieldError)}
 						helperText={fieldError}
-						disabled={!open}
+						disabled={!open || closedOnSend}
 					/>
-					<Button type="submit" variant="contained" disabled={!open || sending} className={styles.button}>
+					<Button type="submit" variant="contained" disabled={!open || closedOnSend || sending} className={styles.button}>
 						{sending ? "Sending…" : "Send"}
 					</Button>
 				</form>
