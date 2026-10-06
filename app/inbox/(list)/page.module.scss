@@ -1,0 +1,22 @@
+@use "../../_styles/tokens" as *;
+
+.page {
+	@include page;
+}
+
+// loading.tsx
+.skeletonTitle {
+	width: 30%;
+	font: var(--mui-font-displayLg);
+}
+
+.skeletonRows {
+	display: flex;
+	flex-direction: column;
+	gap: space(3);
+}
+
+.skeletonRow {
+	height: space(18);
+	border-radius: $radius-md;
+}

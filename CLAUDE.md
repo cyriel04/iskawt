@@ -72,6 +72,9 @@ These bite on every fresh clone and every new machine. Do not work around them.
 - **A `loading.tsx` above a route that calls `notFound()` turns its 404 into a 200**,
   because the page shell streams first. Scope loading states with a route group
   (`app/(browse)/loading.tsx`); never put one at `app/loading.tsx`.
+  The same goes for `redirect()`: under a `loading.tsx` it becomes a 200 with a
+  meta refresh. Do sign-in checks in a `layout.tsx` beside the `loading.tsx`
+  (layouts render above it), as in `app/inbox/(list)/layout.tsx`.
 - **`@mui/material-nextjs` has a per-version entry.** Import from
   `@mui/material-nextjs/v16-appRouter`.
 - **MUI styles must sit in a CSS layer.** `AppRouterCacheProvider` takes

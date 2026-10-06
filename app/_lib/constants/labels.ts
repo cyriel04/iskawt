@@ -6,6 +6,7 @@
 
 import type {
 	City,
+	InquiryStatus,
 	Level,
 	NaturalLight,
 	PowerAccess,
@@ -108,4 +109,11 @@ export const productionTypeLabels: Record<ProductionType, string> = {
 	DOCUMENTARY: "Documentary",
 	PHOTOSHOOT: "Photoshoot",
 	EVENT: "Event",
+};
+
+export const inquiryStatusLabels: Record<InquiryStatus, string> = {
+	NEW: "New",
+	RESPONDED: "Replied",
+	DECLINED: "Declined",
+	CLOSED: "Closed",
 };
