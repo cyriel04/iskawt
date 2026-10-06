@@ -1,0 +1,94 @@
+@use "../_styles/tokens" as *;
+
+.root {
+	display: flex;
+	flex-direction: column;
+	gap: space(4);
+}
+
+.messages {
+	display: flex;
+	flex-direction: column;
+	gap: space(3);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.message {
+	display: flex;
+	flex-direction: column;
+	gap: space(1);
+	max-width: min(100%, 60ch);
+	padding: space(3);
+	border: 1px solid $color-hairline;
+	border-radius: $radius-md;
+	background: $color-paper;
+}
+
+// Your own messages sit on the right.
+.fromMe {
+	align-self: flex-end;
+	background: $color-canvas;
+}
+
+.meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: space(2);
+}
+
+.time {
+	color: $color-ink-muted;
+}
+
+.body {
+	margin: 0;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+
+.closed {
+	margin: 0;
+	color: $color-ink-muted;
+}
+
+.form {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: space(3);
+}
+
+.actions {
+	padding-top: space(4);
+	border-top: 1px solid $color-hairline;
+}
+
+.confirm {
+	display: flex;
+	flex-direction: column;
+	gap: space(3);
+
+	p {
+		margin: 0;
+	}
+}
+
+.buttons {
+	display: flex;
+	flex-wrap: wrap;
+	gap: space(2);
+}
+
+.button {
+	min-height: 44px;
+}
+
+.link {
+	display: inline-flex;
+	align-items: center;
+	min-height: 44px;
+	color: inherit;
+}
