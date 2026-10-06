@@ -61,10 +61,19 @@ export function toInquiryMessage(
 	};
 }
 
-export async function markRead(inquiryId: string, role: InquiryRole, now: Date): Promise<void> {
-	await prisma.inquiry.update({
-		where: { id: inquiryId },
-		data: role === "HOST" ? { hostLastReadAt: now } : { renterLastReadAt: now },
-		select: { id: true },
-	});
+// Marks the reader's side read up to `upTo`, the newest message they have now
+// been shown. Never moves the mark backwards, and skips the write when it is
+// already there, so a poll that returns nothing new costs no write.
+export async function markRead(inquiryId: string, role: InquiryRole, upTo: Date): Promise<void> {
+	const args: Prisma.InquiryUpdateManyArgs =
+		role === "HOST"
+			? {
+					where: { id: inquiryId, OR: [{ hostLastReadAt: null }, { hostLastReadAt: { lt: upTo } }] },
+					data: { hostLastReadAt: upTo },
+				}
+			: {
+					where: { id: inquiryId, OR: [{ renterLastReadAt: null }, { renterLastReadAt: { lt: upTo } }] },
+					data: { renterLastReadAt: upTo },
+				};
+	await prisma.inquiry.updateMany(args);
 }

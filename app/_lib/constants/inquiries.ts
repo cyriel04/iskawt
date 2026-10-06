@@ -12,3 +12,4 @@ export const MESSAGES_PER_USER_PER_HOUR = 60;
 export const NOTIFY_COOLDOWN_MINUTES = 10;
 export const THREAD_POLL_SECONDS = 15;
 export const INBOX_PREVIEW_CHARS = 140;
+export const INBOX_PAGE_SIZE = 50;

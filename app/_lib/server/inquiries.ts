@@ -1,6 +1,6 @@
 // Reads for /inbox, /inbox/[id] and the thread poller. Participants only.
 
-import { INBOX_PREVIEW_CHARS } from "@/app/_lib/constants/inquiries";
+import { INBOX_PAGE_SIZE, INBOX_PREVIEW_CHARS } from "@/app/_lib/constants/inquiries";
 import { prisma } from "@/app/_lib/db";
 import { getParticipation, isOpen, markRead, messageSelect, toInquiryMessage } from "@/app/_lib/server/inquiryAccess";
 import type { InquirySummary, InquiryThread, MessagesResponse } from "@/app/_lib/types";
@@ -10,10 +10,26 @@ function preview(body: string): string {
 	return chars.length > INBOX_PREVIEW_CHARS ? `${chars.slice(0, INBOX_PREVIEW_CHARS).join("")}…` : body;
 }
 
+type LatestMessageRow = { id: string; inquiryId: string; body: string; senderId: string; createdAt: Date };
+
+// The newest message of each listed thread, one row per inquiry. A nested
+// `messages: { take: 1 }` in findMany emits no LIMIT and reads every body.
+async function latestMessages(ids: string[]): Promise<Map<string, LatestMessageRow>> {
+	if (ids.length === 0) return new Map();
+	const rows = await prisma.$queryRaw<LatestMessageRow[]>`
+		SELECT DISTINCT ON ("inquiryId") "id", "inquiryId", "body", "senderId", "createdAt"
+		FROM "Message"
+		WHERE "inquiryId" = ANY(${ids})
+		ORDER BY "inquiryId", "createdAt" DESC, "id" DESC
+	`;
+	return new Map(rows.map((row) => [row.inquiryId, row]));
+}
+
 export async function listInquiriesForUser(userId: string): Promise<InquirySummary[]> {
 	const rows = await prisma.inquiry.findMany({
 		where: { OR: [{ renterId: userId }, { space: { host: { userId } } }] },
 		orderBy: [{ lastMessageAt: "desc" }, { id: "asc" }],
+		take: INBOX_PAGE_SIZE,
 		select: {
 			id: true,
 			status: true,
@@ -23,12 +39,12 @@ export async function listInquiriesForUser(userId: string): Promise<InquirySumma
 			hostLastReadAt: true,
 			renterLastReadAt: true,
 			space: { select: { slug: true, title: true, host: { select: { userId: true, displayName: true } } } },
-			messages: { orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 1, select: messageSelect },
 		},
 	});
+	const latest = await latestMessages(rows.map((row) => row.id));
 
 	return rows.flatMap((row) => {
-		const last = row.messages[0];
+		const last = latest.get(row.id);
 		if (!last) return []; // every inquiry is created with a message; defensive
 		const role = row.renterId === userId ? "RENTER" : "HOST";
 		const lastRead = role === "HOST" ? row.hostLastReadAt : row.renterLastReadAt;
@@ -47,11 +63,7 @@ export async function listInquiriesForUser(userId: string): Promise<InquirySumma
 	});
 }
 
-export async function getInquiryThread(
-	inquiryId: string,
-	userId: string,
-	now: Date = new Date(),
-): Promise<InquiryThread | null> {
+export async function getInquiryThread(inquiryId: string, userId: string): Promise<InquiryThread | null> {
 	const p = await getParticipation(inquiryId, userId);
 	if (!p) return null;
 
@@ -72,7 +84,8 @@ export async function getInquiryThread(
 	});
 	if (!row) return null;
 
-	await markRead(inquiryId, p.role, now);
+	const newest = row.messages.at(-1);
+	if (newest) await markRead(inquiryId, p.role, newest.createdAt);
 	const open = isOpen(row.status);
 	return {
 		id: row.id,
@@ -97,7 +110,6 @@ export async function getMessagesAfter(
 	inquiryId: string,
 	userId: string,
 	after: string | null,
-	now: Date = new Date(),
 ): Promise<MessagesResponse | null> {
 	const p = await getParticipation(inquiryId, userId);
 	if (!p) return null;
@@ -119,6 +131,7 @@ export async function getMessagesAfter(
 		select: messageSelect,
 	});
 
-	await markRead(inquiryId, p.role, now);
+	const newest = rows.at(-1);
+	if (newest) await markRead(inquiryId, p.role, newest.createdAt);
 	return { status: p.status, messages: rows.map((m) => toInquiryMessage(m, userId, p)) };
 }

@@ -99,6 +99,14 @@ describe("/api/inquiries/[id]/messages", () => {
 		expect(mockGetMessagesAfter).toHaveBeenLastCalledWith("inq_1", "user_renter", "m1");
 	});
 
+	it("POST 401 when signed out, before reading the body", async () => {
+		mockGetCurrentUser.mockResolvedValue(null);
+		const res = await sendMessage(json({ body: "Hi" }), ctx);
+		expect(res.status).toBe(401);
+		expect(await res.json()).toEqual({ error: "UNAUTHENTICATED" });
+		expect(mockPostMessage).not.toHaveBeenCalled();
+	});
+
 	it("POST validates the body, then maps outcomes", async () => {
 		const empty = await sendMessage(json({ body: "  " }), ctx);
 		expect(empty.status).toBe(400);
@@ -125,6 +133,21 @@ describe("/api/inquiries/[id]/messages", () => {
 });
 
 describe("POST /api/inquiries/[id]/status", () => {
+	it("401 when signed out", async () => {
+		mockGetCurrentUser.mockResolvedValue(null);
+		const res = await statusRoute(json({ action: "close" }), ctx);
+		expect(res.status).toBe(401);
+		expect(await res.json()).toEqual({ error: "UNAUTHENTICATED" });
+		expect(mockChangeStatus).not.toHaveBeenCalled();
+	});
+
+	it("400 for malformed JSON", async () => {
+		const res = await statusRoute(new Request("http://localhost/x", { method: "POST", body: "{not json" }), ctx);
+		expect(res.status).toBe(400);
+		expect(await res.json()).toEqual({ error: "VALIDATION" });
+		expect(mockChangeStatus).not.toHaveBeenCalled();
+	});
+
 	it("rejects an unknown action", async () => {
 		const res = await statusRoute(json({ action: "delete" }), ctx);
 		expect(res.status).toBe(400);
