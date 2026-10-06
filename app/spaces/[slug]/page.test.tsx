@@ -1,9 +1,17 @@
 import { screen, within } from "@testing-library/react";
 import SpacePage, { generateMetadata } from "@/app/spaces/[slug]/page";
 import { getPublishedSpaceBySlug } from "@/app/_lib/server/spaces";
-import { demoDetail, demoPhoto, renderWithTheme } from "@/app/_components/testing";
+import { getCurrentUser } from "@/app/_lib/server/currentUser";
+import { isHostOfSpace } from "@/app/_lib/server/inquiryAccess";
+import { demoDetail, demoPhoto, demoUser, renderWithTheme } from "@/app/_components/testing";
 
 jest.mock("@/app/_lib/server/spaces", () => ({ getPublishedSpaceBySlug: jest.fn() }));
+jest.mock("@/app/_lib/server/currentUser", () => ({ getCurrentUser: jest.fn() }));
+jest.mock("@/app/_lib/server/inquiryAccess", () => ({ isHostOfSpace: jest.fn() }));
+jest.mock("@/app/_components/InquiryPanel", () => ({
+	__esModule: true,
+	default: ({ viewer }: { viewer: string }) => <div data-testid="panel" data-viewer={viewer} />,
+}));
 jest.mock("next/navigation", () => ({
 	notFound: jest.fn(() => {
 		throw new Error("NEXT_NOT_FOUND");
@@ -11,7 +19,16 @@ jest.mock("next/navigation", () => ({
 }));
 
 const mockGet = jest.mocked(getPublishedSpaceBySlug);
+const mockGetUser = jest.mocked(getCurrentUser);
+const mockIsHost = jest.mocked(isHostOfSpace);
 const params = Promise.resolve({ slug: "demo-poblacion-loft" });
+
+beforeEach(() => {
+	mockGetUser.mockReset();
+	mockGetUser.mockResolvedValue(null);
+	mockIsHost.mockReset();
+	mockIsHost.mockResolvedValue(false);
+});
 
 describe("SpacePage", () => {
 	it("looks the space up by the slug in the URL", async () => {
@@ -92,6 +109,49 @@ describe("SpacePage", () => {
 		mockGet.mockResolvedValue(null);
 
 		await expect(SpacePage({ params })).rejects.toThrow("NEXT_NOT_FOUND");
+	});
+});
+
+describe("SpacePage inquiry panel", () => {
+	it("is signed-out without a session, and never asks who hosts the space", async () => {
+		mockGet.mockResolvedValue(demoDetail);
+
+		renderWithTheme(await SpacePage({ params }));
+
+		expect(screen.getByTestId("panel")).toHaveAttribute("data-viewer", "signed-out");
+		expect(mockIsHost).not.toHaveBeenCalled();
+	});
+
+	it("is the renter view for a signed-in user who isn't the host", async () => {
+		mockGet.mockResolvedValue(demoDetail);
+		mockGetUser.mockResolvedValue(demoUser);
+
+		renderWithTheme(await SpacePage({ params }));
+
+		expect(mockIsHost).toHaveBeenCalledWith("demo-poblacion-loft", "user_demo");
+		expect(screen.getByTestId("panel")).toHaveAttribute("data-viewer", "renter");
+	});
+
+	it("is the host view for the space's own host", async () => {
+		mockGet.mockResolvedValue(demoDetail);
+		mockGetUser.mockResolvedValue(demoUser);
+		mockIsHost.mockResolvedValue(true);
+
+		renderWithTheme(await SpacePage({ params }));
+
+		expect(screen.getByTestId("panel")).toHaveAttribute("data-viewer", "host");
+	});
+
+	it("falls back to signed-out when the session lookup fails, and still renders", async () => {
+		mockGet.mockResolvedValue(demoDetail);
+		mockGetUser.mockRejectedValue(new Error("db down"));
+
+		renderWithTheme(await SpacePage({ params }));
+
+		expect(screen.getByTestId("panel")).toHaveAttribute("data-viewer", "signed-out");
+		expect(
+			screen.getByRole("heading", { level: 1, name: "[DEMO] Corner loft with afternoon light" }),
+		).toBeInTheDocument();
 	});
 });
 

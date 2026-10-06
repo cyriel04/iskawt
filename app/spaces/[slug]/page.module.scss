@@ -45,6 +45,9 @@
 
 .aside {
 	flex: 1 1 280px;
+	display: flex;
+	flex-direction: column;
+	gap: space(6);
 }
 
 .about {

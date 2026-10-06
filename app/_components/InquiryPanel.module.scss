@@ -1,0 +1,45 @@
+@use "../_styles/tokens" as *;
+
+@mixin focus-ring {
+	&:focus-visible {
+		outline: 2px solid $color-stamp;
+		outline-offset: 2px;
+	}
+}
+
+.panel {
+	display: flex;
+	flex-direction: column;
+	gap: space(4);
+	padding: space(6);
+}
+
+// The sign-in link, drawn as an outlined button. 44px tall for touch.
+.action {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: space(11);
+	padding-inline: space(5);
+	border: 1px solid $color-stamp;
+	border-radius: $radius-md;
+	color: $color-stamp;
+	font: var(--mui-font-button);
+	text-decoration: none;
+
+	&:hover {
+		background: $color-canvas;
+	}
+
+	@include focus-ring;
+}
+
+.link {
+	display: inline-flex;
+	align-items: center;
+	align-self: flex-start;
+	min-height: space(11);
+	color: $color-stamp;
+
+	@include focus-ring;
+}
