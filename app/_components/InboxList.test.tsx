@@ -36,3 +36,12 @@ it("labels the host's own threads and prefixes your own last message", () => {
 	expect(item).toHaveTextContent("You: Yes, the 20th works.");
 	expect(within(item).queryByText("Unread")).not.toBeInTheDocument();
 });
+
+it("shows a declined or closed thread's status on its row", () => {
+	renderWithTheme(
+		<InboxList items={[{ ...demoSummary, status: "DECLINED" }, { ...demoSummary, id: "inq_2", status: "CLOSED", unread: false }]} />,
+	);
+	const items = within(screen.getByRole("list", { name: "Conversations" })).getAllByRole("listitem");
+	expect(items[0]).toHaveTextContent("Declined");
+	expect(items[1]).toHaveTextContent("Closed");
+});

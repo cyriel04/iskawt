@@ -20,7 +20,7 @@ export default function SiteHeader({ user }: { user: CurrentUser | null }) {
 						<Link href="/inbox" className={styles.link}>
 							Inbox
 						</Link>
-						{user.host &&<Chip label="Host" size="small" color="primary" variant="outlined" />}
+						{user.host && <Chip label="Host" size="small" color="primary" variant="outlined" />}
 						<AccountMenu user={user} />
 					</>
 				) : (
