@@ -26,6 +26,16 @@ describe("SiteHeader", () => {
 		expect(screen.queryByText("Host")).not.toBeInTheDocument();
 	});
 
+	it("links to the inbox when signed in", () => {
+		renderWithTheme(<SiteHeader user={demoUser} />);
+		expect(screen.getByRole("link", { name: "Inbox" })).toHaveAttribute("href", "/inbox");
+	});
+
+	it("has no inbox link when signed out", () => {
+		renderWithTheme(<SiteHeader user={null} />);
+		expect(screen.queryByRole("link", { name: "Inbox" })).not.toBeInTheDocument();
+	});
+
 	it("shows the Host chip for a linked host", () => {
 		renderWithTheme(<SiteHeader user={demoHostUser} />);
 		expect(screen.getByText("Host")).toBeInTheDocument();

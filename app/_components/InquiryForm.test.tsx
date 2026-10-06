@@ -3,6 +3,15 @@ import userEvent from "@testing-library/user-event";
 import InquiryForm from "@/app/_components/InquiryForm";
 import { renderWithTheme } from "@/app/_components/testing";
 
+// Exposes prefetch: a link to /inbox/[id] must not prefetch, because opening a
+// thread marks it read.
+jest.mock("next/link", () => ({
+	__esModule: true,
+	default: ({ prefetch, ...props }: { prefetch?: boolean } & Record<string, unknown>) => (
+		<a data-prefetch={String(prefetch)} {...props} />
+	),
+}));
+
 const props = { spaceSlug: "demo-poblacion-loft", hostName: "Demo Host A", respondsInHours: 12, today: "2026-10-07" };
 const mockFetch = jest.fn();
 beforeEach(() => {
@@ -54,6 +63,7 @@ it("posts the inquiry and shows the sent state with a link to the thread", async
 	expect(status).toHaveTextContent("Sent. Demo Host A usually replies within 12 hours. We'll email you when they do.");
 	expect(status).toHaveFocus();
 	expect(within(status).getByRole("link", { name: "View conversation" })).toHaveAttribute("href", "/inbox/inq_new");
+	expect(within(status).getByRole("link", { name: "View conversation" })).toHaveAttribute("data-prefetch", "false");
 	const [url, init] = mockFetch.mock.calls[0];
 	expect(url).toBe("/api/inquiries");
 	expect(JSON.parse(init.body)).toMatchObject({ spaceSlug: "demo-poblacion-loft", requesterName: "Demo Renter", message: "Free on the 20th?", website: "" });

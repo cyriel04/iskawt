@@ -164,7 +164,7 @@ export default function InquiryForm({ spaceSlug, hostName, respondsInHours, toda
 						{state.response.id !== null && (
 							<>
 								{" "}
-								<Link href={`/inbox/${state.response.id}`} className={styles.link}>
+								<Link href={`/inbox/${state.response.id}`} prefetch={false} className={styles.link}>
 									View conversation
 								</Link>
 							</>
