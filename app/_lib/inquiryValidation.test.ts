@@ -1,4 +1,4 @@
-import { manilaToday, validateMessageBody, validateNewInquiry } from "@/app/_lib/inquiryValidation";
+import { manilaToday, shootDateRange, validateMessageBody, validateNewInquiry } from "@/app/_lib/inquiryValidation";
 
 const today = "2026-10-06";
 const valid = {
@@ -120,5 +120,12 @@ describe("validateMessageBody", () => {
 	});
 	it("rejects a NUL character, which Postgres can't store", () => {
 		expect(validateMessageBody("Hi\u0000there")).toEqual({ ok: false, error: "Remove unsupported characters." });
+	});
+});
+
+describe("shootDateRange", () => {
+	it("spans today to one year ahead, matching the validator", () => {
+		expect(shootDateRange("2026-10-07")).toEqual({ min: "2026-10-07", max: "2027-10-07" });
+		expect(shootDateRange("2028-02-29")).toEqual({ min: "2028-02-29", max: "2029-02-28" });
 	});
 });

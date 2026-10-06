@@ -34,6 +34,11 @@ function addDays(date: string, days: number): string {
 	return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
 }
 
+// The shoot-date window the validator accepts, for the form's date input.
+export function shootDateRange(today: string): { min: string; max: string } {
+	return { min: today, max: addDays(today, SHOOT_DATE_MAX_DAYS_AHEAD) };
+}
+
 function isRealDate(value: string): boolean {
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
 	const [y, m, d] = value.split("-").map(Number);
