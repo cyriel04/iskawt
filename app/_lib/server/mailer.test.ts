@@ -29,6 +29,12 @@ describe("ResendMailer", () => {
 		});
 	});
 
+	it("sends with an abort signal so a hung request cannot hang forever", async () => {
+		const fetchImpl = jest.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+		await new ResendMailer("re_test", "from@example.invalid", fetchImpl).send(message);
+		expect(fetchImpl.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
+	});
+
 	it("throws on a non-2xx response, without the recipient in the error", async () => {
 		const fetchImpl = jest.fn().mockResolvedValue(new Response("down", { status: 503 }));
 		const send = new ResendMailer("re_test", "from@example.invalid", fetchImpl).send(message);

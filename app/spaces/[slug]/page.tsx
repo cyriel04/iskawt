@@ -6,11 +6,15 @@ import Breadcrumbs from "@mui/material/Breadcrumbs";
 import Chip from "@mui/material/Chip";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
+import InquiryPanel from "@/app/_components/InquiryPanel";
 import PhotoFrame from "@/app/_components/PhotoFrame";
 import RatePanel from "@/app/_components/RatePanel";
 import SpaceFacts from "@/app/_components/SpaceFacts";
 import { cityLabels, settingLabels, spaceTypeLabels } from "@/app/_lib/constants/labels";
 import { locationLine } from "@/app/_components/labels";
+import { manilaToday } from "@/app/_lib/inquiryValidation";
+import { getCurrentUser } from "@/app/_lib/server/currentUser";
+import { isHostOfSpace } from "@/app/_lib/server/inquiryAccess";
 import { getPublishedSpaceBySlug } from "@/app/_lib/server/spaces";
 import { EMPTY_FILTERS, spacesHref } from "@/app/_lib/spaceFilters";
 import styles from "./page.module.scss";
@@ -27,6 +31,13 @@ export default async function SpacePage({ params }: Props) {
 	const { slug } = await params;
 	const space = await getPublishedSpaceBySlug(slug);
 	if (!space) notFound();
+
+	// A failed session lookup shows the signed-out panel, and a failed host
+	// lookup the renter panel, rather than breaking the listing. The inquiry
+	// route still refuses a host messaging their own space.
+	const user = await getCurrentUser().catch(() => null);
+	const isHost = user ? await isHostOfSpace(space.slug, user.id).catch(() => false) : false;
+	const viewer = !user ? "signed-out" : isHost ? "host" : "renter";
 
 	const location = locationLine(space.areaName, space.city);
 
@@ -86,6 +97,13 @@ export default async function SpacePage({ params }: Props) {
 
 				<div className={styles.aside}>
 					<RatePanel rates={space.rates} rateNotes={space.rateNotes} host={space.host} />
+					<InquiryPanel
+						viewer={viewer}
+						slug={space.slug}
+						hostName={space.host.displayName}
+						respondsInHours={space.host.respondsInHours}
+						today={manilaToday()}
+					/>
 				</div>
 			</div>
 		</Container>

@@ -310,6 +310,8 @@ Every handler reads the session through `getCurrentUser()`. Errors are
   - The poller re-requests a short overlap and dedupes by message id. Messages can commit out of `createdAt` order, so a cursor that never looks back can skip one.
   - Inbox rows link to `/inbox/[id]` with `prefetch={false}`. Opening a thread marks it read, so a prefetch must not.
   - The inbox shows the newest 50 threads (`INBOX_PAGE_SIZE`). "Load more" is out of scope until someone needs it.
+- **Deploy order:** 5b-2 links to `/inbox` and `/inbox/[id]`, and its emails do too. Those pages arrive in 5b-3, so `main` must not be deployed between 5b-2 and 5b-3. Nothing deploys before slice 6.
+- **Slice 6, before launch:** the renter types `requesterName`, and it appears in an email sent from the Iskawt domain. A name like "Iskawt Support" is a phishing risk. Handle it together with blocking and reporting.
 - **Open decision:** a host whose `verifiedAt` is later removed keeps access to existing threads, as an unpublished space does. If revoking verification should cut access, decide that before launch.
 
 ## Out of scope

@@ -7,7 +7,7 @@ import { prisma } from "@/app/_lib/db";
 import { getParticipation, isOpen, messageSelect, toInquiryMessage } from "@/app/_lib/server/inquiryAccess";
 import { publishedWhere } from "@/app/_lib/server/spaces";
 import { Prisma } from "@/generated/prisma/client";
-import type { InquiryMessage, InquiryStatus, NewInquiryInput } from "@/app/_lib/types";
+import type { InquiryMessage, InquiryRole, InquiryStatus, NewInquiryInput } from "@/app/_lib/types";
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
@@ -20,7 +20,7 @@ export type CreateResult =
 	| { kind: "rate-limited" };
 
 export type PostResult =
-	| { kind: "sent"; message: InquiryMessage }
+	| { kind: "sent"; message: InquiryMessage; role: InquiryRole }
 	| { kind: "not-found" }
 	| { kind: "closed" }
 	| { kind: "rate-limited" };
@@ -140,7 +140,7 @@ export async function postMessage(
 	});
 	if (!row) return { kind: "closed" };
 
-	return { kind: "sent", message: toInquiryMessage(row, userId, p) };
+	return { kind: "sent", message: toInquiryMessage(row, userId, p), role: p.role };
 }
 
 export async function changeStatus(

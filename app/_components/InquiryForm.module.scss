@@ -1,0 +1,55 @@
+@use "../_styles/tokens" as *;
+
+.root {
+	display: flex;
+	flex-direction: column;
+}
+
+.form {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: space(4);
+}
+
+// Hours and crew side by side when there's room, stacked when there isn't.
+.pair {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+	gap: space(4);
+}
+
+.submit {
+	min-height: 44px;
+}
+
+// The live region before anything is sent: empty, takes no space, but stays
+// in the accessibility tree so its later text is announced.
+.status {
+	margin: 0;
+}
+
+.sent {
+	margin: 0;
+	padding: space(4);
+	border: 1px solid $color-hairline;
+	border-radius: $radius-md;
+	background: $color-paper;
+}
+
+// Inline links in the confirmation and the session alert: tall enough to hit.
+.link {
+	display: inline-flex;
+	align-items: center;
+	min-height: 44px;
+	color: inherit;
+}
+
+// Spam trap: off-screen and out of the tab order. Layout measures, not tokens.
+.trap {
+	position: absolute;
+	left: -10000px;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+}

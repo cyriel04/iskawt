@@ -77,3 +77,8 @@ export async function markRead(inquiryId: string, role: InquiryRole, upTo: Date)
 				};
 	await prisma.inquiry.updateMany(args);
 }
+
+// For the listing page: a host viewing their own space sees a note, not the form.
+export async function isHostOfSpace(spaceSlug: string, userId: string): Promise<boolean> {
+	return (await prisma.space.count({ where: { slug: spaceSlug, host: { userId } } })) > 0;
+}

@@ -20,7 +20,8 @@ type State =
 	| { kind: "sent" }
 	| { kind: "error"; message: string };
 
-export default function SignInForm({ linkError }: { linkError: boolean }) {
+// `next` must already be a safe same-site path (app/sign-in/safeNext.ts).
+export default function SignInForm({ linkError, next }: { linkError: boolean; next: string }) {
 	const [email, setEmail] = useState("");
 	const [invalid, setInvalid] = useState(false);
 	const [state, setState] = useState<State>(
@@ -59,7 +60,7 @@ export default function SignInForm({ linkError }: { linkError: boolean }) {
 		try {
 			const { error } = await authClient.signIn.magicLink({
 				email: trimmed,
-				callbackURL: "/",
+				callbackURL: next,
 				errorCallbackURL: "/sign-in",
 			});
 			if (!error) setState({ kind: "sent" });

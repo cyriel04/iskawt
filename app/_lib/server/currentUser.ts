@@ -1,11 +1,13 @@
 import { headers } from "next/headers";
+import { cache } from "react";
 import { prisma } from "@/app/_lib/db";
 import { auth } from "@/app/_lib/server/auth";
 import type { CurrentUser } from "@/app/_lib/types";
 
 // The signed-in user, for their own header and pages. Explicit select: the
-// Host relation must never carry contactEmail or contactPhone.
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+// Host relation must never carry contactEmail or contactPhone. Wrapped in
+// cache() so the layout and page share one lookup per request.
+export const getCurrentUser = cache(async function getCurrentUser(): Promise<CurrentUser | null> {
 	const session = await auth.api.getSession({ headers: await headers() });
 	if (!session) return null;
 
@@ -21,4 +23,4 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 		name: row.name.trim() === "" ? null : row.name,
 		host: row.host && row.host.verifiedAt ? { displayName: row.host.displayName } : null,
 	};
-}
+});

@@ -2,6 +2,16 @@
 const mockGetSession = jest.fn();
 const mockUserFindUnique = jest.fn();
 
+// A pass-through cache() that records what it wraps. Not a jest.fn, so
+// resetAllMocks can't clear the record of the module-load call.
+jest.mock("react", () => {
+	const wrapped: unknown[] = [];
+	const cache = <T,>(fn: T): T => {
+		wrapped.push(fn);
+		return fn;
+	};
+	return { ...jest.requireActual("react"), cache: Object.assign(cache, { wrapped }) };
+});
 jest.mock("next/headers", () => ({ headers: async () => new Headers() }));
 jest.mock("@/app/_lib/server/auth", () => ({
 	auth: { api: { getSession: (...a: unknown[]) => mockGetSession(...a) } },
@@ -13,6 +23,10 @@ jest.mock("@/app/_lib/db", () => ({
 import { getCurrentUser } from "@/app/_lib/server/currentUser";
 
 beforeEach(() => jest.resetAllMocks());
+
+it("is wrapped in React cache() so one request does one lookup", () => {
+	expect(jest.requireMock<{ cache: { wrapped: unknown[] } }>("react").cache.wrapped).toHaveLength(1);
+});
 
 it("returns null without a session", async () => {
 	mockGetSession.mockResolvedValue(null);

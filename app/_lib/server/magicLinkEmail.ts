@@ -1,10 +1,7 @@
 import { SITE_NAME } from "@/app/_lib/constants/site";
 import { MAGIC_LINK_TTL_MINUTES } from "@/app/_lib/constants/limits";
+import { escapeHtml } from "@/app/_lib/server/escapeHtml";
 import type { MailMessage } from "@/app/_lib/server/mailer";
-
-function escapeHtml(value: string): string {
-	return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
 
 export function magicLinkEmail(to: string, url: string): MailMessage {
 	const expiry = `This link works once and expires in ${MAGIC_LINK_TTL_MINUTES} minutes.`;

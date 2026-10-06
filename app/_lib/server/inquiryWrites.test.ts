@@ -217,6 +217,7 @@ describe("postMessage", () => {
 		await expect(postMessage("inq_1", HOST, "Yes", now)).resolves.toEqual({
 			kind: "sent",
 			message: { id: "m9", body: "Yes", sentAt: now.toISOString(), fromMe: true, senderName: "Demo Host A" },
+			role: "HOST",
 		});
 		expect(mockInquiryUpdateMany).toHaveBeenNthCalledWith(1, {
 			where: { id: "inq_1", status: { in: ["NEW", "RESPONDED"] } },
@@ -260,7 +261,7 @@ describe("postMessage", () => {
 
 	it("a renter posting on RESPONDED keeps it RESPONDED (no status write)", async () => {
 		mockInquiryFindUnique.mockResolvedValue(participationRow("RESPONDED"));
-		await expect(postMessage("inq_1", RENTER, "Hi", now)).resolves.toMatchObject({ kind: "sent" });
+		await expect(postMessage("inq_1", RENTER, "Hi", now)).resolves.toMatchObject({ kind: "sent", role: "RENTER" });
 		const statusWrites = mockInquiryUpdateMany.mock.calls.filter(([args]) => "status" in args.data);
 		expect(statusWrites).toEqual([]);
 		expect(mockInquiryUpdate).not.toHaveBeenCalled();

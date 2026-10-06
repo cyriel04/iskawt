@@ -25,6 +25,8 @@ export class ResendMailer implements Mailer {
 				text: message.text,
 				html: message.html,
 			}),
+			// Bounded so a hung request can't keep after() alive.
+			signal: AbortSignal.timeout(10_000),
 		});
 		// Never include the recipient or body: errors end up in logs.
 		if (!response.ok) throw new Error(`Resend responded ${response.status}`);
