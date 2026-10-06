@@ -1,0 +1,90 @@
+@use "../_styles/tokens" as *;
+
+.empty {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: space(2);
+}
+
+.browse {
+	display: inline-flex;
+	align-items: center;
+	min-height: 44px;
+	color: $color-stamp;
+}
+
+.list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	border-top: 1px solid $color-hairline;
+}
+
+.item {
+	border-bottom: 1px solid $color-hairline;
+}
+
+// The whole row is the link.
+.row {
+	display: flex;
+	flex-direction: column;
+	gap: space(1);
+	min-height: 44px;
+	padding-block: space(3);
+	color: inherit;
+	text-decoration: none;
+
+	&:hover .title {
+		text-decoration: underline;
+	}
+
+	&:focus-visible {
+		outline: 2px solid $color-stamp;
+		outline-offset: 2px;
+		border-radius: $radius-sm;
+	}
+}
+
+.top {
+	display: flex;
+	align-items: center;
+	gap: space(2);
+}
+
+.title {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.status {
+	flex: none;
+}
+
+.meta {
+	color: $color-ink-muted;
+}
+
+.preview {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.dot {
+	flex: none;
+	width: space(2);
+	height: space(2);
+	border-radius: 50%;
+	background: $color-stamp;
+}
+
+// Read by screen readers, not shown. Layout measures only.
+.srOnly {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}

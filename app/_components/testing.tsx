@@ -5,7 +5,7 @@ import type { ReactElement } from "react";
 import { render } from "@testing-library/react";
 import { ThemeProvider } from "@mui/material/styles";
 import theme from "@/app/_lib/theme";
-import type { CurrentUser, PublicPhoto, SpaceCard, SpaceDetail } from "@/app/_lib/types";
+import type { CurrentUser, InquirySummary, InquiryThread, PublicPhoto, SpaceCard, SpaceDetail } from "@/app/_lib/types";
 
 export function renderWithTheme(ui: ReactElement) {
 	return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
@@ -75,4 +75,35 @@ export const demoHostUser: CurrentUser = {
 	email: "demo-host-a@example.invalid",
 	name: "Demo Host A",
 	host: { displayName: "Demo Host A" },
+};
+
+export const demoSummary: InquirySummary = {
+	id: "inq_demo",
+	role: "RENTER",
+	status: "RESPONDED",
+	space: { slug: "demo-poblacion-loft", title: "[DEMO] Corner loft with afternoon light" },
+	counterpartName: "Demo Host A",
+	lastMessage: { body: "Yes, the 20th works.", sentAt: "2026-10-07T10:00:00.000Z", fromMe: false },
+	unread: true,
+};
+
+export const demoThread: InquiryThread = {
+	id: "inq_demo",
+	role: "RENTER",
+	status: "RESPONDED",
+	space: { slug: "demo-poblacion-loft", title: "[DEMO] Corner loft with afternoon light", areaName: "Poblacion", city: "MAKATI" },
+	counterpartName: "Demo Host A",
+	requesterCompany: "Demo Films",
+	shootDate: "2026-10-20",
+	durationHours: 6,
+	crewSize: 12,
+	productionType: "COMMERCIAL",
+	budgetNote: null,
+	messages: [
+		{ id: "m1", body: "Free on the 20th?", sentAt: "2026-10-07T09:00:00.000Z", fromMe: true, senderName: "Demo Renter" },
+		{ id: "m2", body: "Yes, the 20th works.", sentAt: "2026-10-07T10:00:00.000Z", fromMe: false, senderName: "Demo Host A" },
+	],
+	canReply: true,
+	canDecline: false,
+	canClose: true,
 };
