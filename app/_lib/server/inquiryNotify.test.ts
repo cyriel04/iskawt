@@ -87,6 +87,19 @@ it("on send failure releases the slot and logs only the inquiry id", async () =>
 	expect(JSON.stringify(errorSpy.mock.calls)).not.toMatch(/example\.invalid|secret message|Demo Renter/);
 });
 
+it("logs the HTTP status when the send error is exactly Resend-shaped", async () => {
+	mockSend.mockRejectedValue(new Error("Resend responded 503"));
+	await notifyCounterpart("inq_1", "RENTER", "secret message body", now);
+	expect(errorSpy).toHaveBeenCalledWith("[inquiry] notify failed", { inquiryId: "inq_1", status: 503 });
+});
+
+it("logs only the inquiry id for any other send error, never its message", async () => {
+	mockSend.mockRejectedValue(new Error("Invalid recipient demo-host@example.invalid"));
+	await notifyCounterpart("inq_1", "RENTER", "secret message body", now);
+	expect(errorSpy).toHaveBeenCalledWith("[inquiry] notify failed", { inquiryId: "inq_1" });
+	expect(JSON.stringify(errorSpy.mock.calls)).not.toMatch(/@|example\.invalid|secret message|Demo Renter/);
+});
+
 it("never throws, even when the database read fails", async () => {
 	mockFindUnique.mockRejectedValue(new Error("db down"));
 	await expect(notifyCounterpart("inq_1", "RENTER", "Hi", now)).resolves.toBeUndefined();

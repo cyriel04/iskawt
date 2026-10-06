@@ -12,6 +12,15 @@ import type { InquiryRole } from "@/app/_lib/types";
 
 const fail = (inquiryId: string) => console.error("[inquiry] notify failed", { inquiryId });
 
+// Only ResendMailer's own fixed-format error is trusted enough to log a field
+// from; any other error message may carry an address or body.
+const RESEND_STATUS = /^Resend responded (\d+)$/;
+function sendFailed(inquiryId: string, error: unknown): void {
+	const match = error instanceof Error ? RESEND_STATUS.exec(error.message) : null;
+	if (match) console.error("[inquiry] notify failed", { inquiryId, status: Number(match[1]) });
+	else fail(inquiryId);
+}
+
 async function claim(inquiryId: string, toHost: boolean, now: Date): Promise<boolean> {
 	const cutoff = new Date(now.getTime() - NOTIFY_COOLDOWN_MINUTES * 60 * 1000);
 	const { count } = toHost
@@ -75,9 +84,9 @@ export async function notifyCounterpart(
 
 		try {
 			await getMailer().send(message);
-		} catch {
+		} catch (error) {
 			await release(inquiryId, toHost, now);
-			fail(inquiryId);
+			sendFailed(inquiryId, error);
 		}
 	} catch {
 		fail(inquiryId);
