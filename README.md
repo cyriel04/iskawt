@@ -64,11 +64,13 @@ pnpm install
 docker compose up -d
 ```
 
-Create a `.env` file in the repository root with the connection string for that database:
+Copy `.env.example` to `.env` and fill it in. Every variable the app reads is listed there with a note:
 
 ```bash
-DATABASE_URL="postgresql://iskawt:devpassword@localhost:5432/iskawt?schema=public"
+cp .env.example .env
 ```
+
+The `DATABASE_URL` default already points at the Docker database. Set `BETTER_AUTH_SECRET` to 32+ random characters. In production you also need `RESEND_API_KEY` and `EMAIL_FROM` for email. Set `REPORTS_EMAIL_TO` to the ops address that gets report notices (ids and reason only). Without it, reports still save, but nobody is emailed.
 
 Then generate the Prisma client, create the tables and load the demo data:
 

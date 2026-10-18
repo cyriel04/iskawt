@@ -119,7 +119,7 @@ and `inquiryLabels`-style display names go in `app/_lib/constants/labels.ts`.
 
 ## Access rules
 
-`getParticipation` additionally loads, in the same query:
+`getParticipation` additionally loads, with one indexed lookup after the participation read:
 
 - whether a `Block` exists between the renter and the host's user, in either
   direction, and whether this viewer made one;
