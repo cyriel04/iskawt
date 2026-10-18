@@ -1,0 +1,21 @@
+@use "../_styles/tokens" as *;
+
+.content {
+	display: flex;
+	flex-direction: column;
+	gap: space(4);
+}
+
+.lead {
+	margin: 0;
+	color: $color-ink-muted;
+}
+
+.option,
+.button {
+	min-height: 44px;
+}
+
+.link {
+	color: inherit;
+}
