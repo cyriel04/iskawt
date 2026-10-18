@@ -260,7 +260,7 @@ export type InquiryApiError = {
 		| "NOT_HOST"
 		| "BLOCKED" // POST /api/inquiries only
 		| "NOT_LINKED"; // POST /api/inquiries/[id]/block: the host hasn't signed in yet
-	fields?: InquiryFieldErrors | ReportFieldErrors;
+	fields?: InquiryFieldErrors;
 };
 
 // POST /api/inquiries — 201 new, 200 reused. id is null only for a spam-trap hit.
@@ -279,6 +279,10 @@ export type StatusResponse = { status: InquiryStatus };
 export type NewReportInput = { reason: ReportReason; detail: string | null };
 export type ReportFieldErrors = Partial<Record<keyof NewReportInput, string>>;
 export type CreateReportResponse = { id: string };
+
+// The report route's errors. Separate from InquiryApiError so the inquiry form's
+// `fields` stays keyed by NewInquiryInput.
+export type ReportApiError = { error: InquiryApiError["error"]; fields?: ReportFieldErrors };
 
 // POST and DELETE /api/inquiries/[id]/block — 200
 export type BlockResponse = { blockedByMe: boolean };
