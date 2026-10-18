@@ -176,7 +176,9 @@ makes a separate block call.
   - the raw name contains a URL (`http`, `www.`, or `word.tld` with no space after
     the dot), an email address, or `@`.
 - In a new `app/_lib/constants/reservedNames.ts`: brand words `iskawt`, `scout`;
-  role words `support`, `admin`, `staff`, `team`, `official`, `moderator`.
+  role words `support`, `admin`, `staff`, `team`, `official`, `moderator`. The
+  reserved words go through the same normalising before comparison, so the
+  `l` → `i` mapping can't make "official" miss itself.
 - Error: "Use your own name or your production's name."
 - Existing rows aren't re-checked.
 
