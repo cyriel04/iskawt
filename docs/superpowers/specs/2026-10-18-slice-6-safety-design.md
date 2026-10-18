@@ -24,7 +24,7 @@ The launch blockers carried forward from the 5b spec:
 | Is a block visible? | Neutral. The blocked side sees the existing "This conversation is closed." and, on a new inquiry, "You can't send inquiries to this host." Nothing ever says "blocked" to them. |
 | Block scope | User to user, not per thread. A host's block covers every space they host. |
 | Emails | No typed text at all: no sender name, no message body. Space title (human-reviewed) and a link only. |
-| Name filter | `requesterName` rejects reserved words (after lookalike normalising), URLs, emails and `@`. Applies everywhere the name is shown. |
+| Name filter | `requesterName` and `requesterCompany` reject reserved words (after lookalike normalising), URLs, emails and `@`, mixed Latin with Cyrillic or Greek, and invisible format characters. Applies everywhere they are shown. |
 | Unverified host | Threads become read-only for both sides. The host can still read them. Re-verifying restores messaging in threads that are still open. |
 | How the rules are enforced | Computed at read time in `getParticipation`. No thread status is rewritten, so unblock and re-verify undo cleanly. |
 | Per-message reports | Dropped. Reports are per conversation; ops reads the whole thread. |
@@ -163,7 +163,9 @@ makes a separate block call.
 
 ## Names and emails (`backend-dev`)
 
-**Name filter**, in `app/_lib/inquiryValidation.ts`, shared by the form and the API:
+**Name filter**, in `app/_lib/inquiryValidation.ts`, shared by the form and the API.
+It applies to `requesterName` and to `requesterCompany` when given (the host sees
+the company in the thread details):
 
 - Normalise: lowercase, strip accents (NFKD, drop combining marks), map lookalikes
   (`1`/`l`/`!` → `i`, `0` → `o`, `@` → `a`, `$` → `s`, `3` → `e`). Then split into
@@ -173,9 +175,13 @@ makes a separate block call.
     "i-s-k-a-w-t" and "IskawtPH" are caught;
   - a **role word** equals one whole word, so "Team Iskawt" and "Admin" are caught
     but "Steam Films" and "Teamwork Studio" are not;
-  - the raw name contains a URL (`http`, `www.`, or `word.tld` with no space after
-    the dot), an email address, or `@`.
-- In a new `app/_lib/constants/reservedNames.ts`: brand words `iskawt`, `scout`;
+  - the name, NFKC-normalised, contains a URL (`http`, `www.`, or `word.tld` with no
+    space after the dot), an email address, or `@`;
+  - it mixes Latin letters with Cyrillic or Greek ones (copy-pasted homoglyphs), or
+    contains any invisible format character (`\p{Cf}`: zero-width space, soft
+    hyphen, bidi override).
+- In a new `app/_lib/constants/reservedNames.ts`: brand word `iskawt` (not `scout`: real location
+  scouts use Iskawt, and "Location Scout" must pass);
   role words `support`, `admin`, `staff`, `team`, `official`, `moderator`. The
   reserved words go through the same normalising before comparison, so the
   `l` → `i` mapping can't make "official" miss itself.
