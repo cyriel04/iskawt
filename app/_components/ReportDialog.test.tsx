@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ReportDialog from "@/app/_components/ReportDialog";
 import { renderWithTheme } from "@/app/_components/testing";
@@ -159,4 +159,15 @@ it("Cancel and Escape close without posting, and reopening shows a clean form", 
 	rerender(<ReportDialog {...props} open />);
 	expect(screen.getByLabelText("Spam")).not.toBeChecked();
 	expect(screen.getByLabelText("Details (optional)")).toHaveValue("");
+});
+
+it("can't be dismissed while the report is in flight", async () => {
+	mockFetch.mockReturnValue(new Promise(() => {}));
+	renderWithTheme(<ReportDialog {...props} />);
+	await userEvent.click(screen.getByLabelText("Spam"));
+	await send();
+	expect(await screen.findByRole("button", { name: "Sending…" })).toBeDisabled();
+	fireEvent.keyDown(dialog(), { key: "Escape" });
+	expect(onClose).not.toHaveBeenCalled();
+	expect(screen.getByRole("button", { name: "Sending…" })).toBeInTheDocument();
 });

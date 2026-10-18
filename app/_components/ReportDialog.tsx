@@ -81,6 +81,7 @@ export default function ReportDialog({ inquiryId, counterpartName, open, onClose
 
 	async function onSubmit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
+		if (sending) return;
 		const checked = validateNewReport({ reason, detail });
 		if (!checked.ok) {
 			setErrors(checked.errors);
@@ -114,7 +115,7 @@ export default function ReportDialog({ inquiryId, counterpartName, open, onClose
 	}
 
 	return (
-		<Dialog open={open} onClose={close} aria-labelledby={titleId} fullWidth maxWidth="sm">
+		<Dialog open={open} onClose={sending ? undefined : close} aria-labelledby={titleId} fullWidth maxWidth="sm">
 			<DialogTitle id={titleId}>Report conversation</DialogTitle>
 			{phase.kind === "sent" ? (
 				<>
