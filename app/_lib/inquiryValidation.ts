@@ -10,6 +10,7 @@ import {
 	MESSAGE_BODY_MAX,
 	SHOOT_DATE_MAX_DAYS_AHEAD,
 } from "@/app/_lib/constants/inquiries";
+import { RESERVED_BRAND_WORDS, RESERVED_ROLE_WORDS } from "@/app/_lib/constants/reservedNames";
 import { ProductionType } from "@/generated/prisma/enums";
 import type { InquiryFieldErrors, NewInquiryInput } from "@/app/_lib/types";
 
@@ -54,6 +55,29 @@ const tooLong = (max: number) => `Keep it under ${max} characters.`;
 const UNSUPPORTED = "Remove unsupported characters.";
 const hasNul = (value: string) => value.includes("\u0000");
 
+// A typed name that could pass for Iskawt, or that carries a URL or an email
+// address. Lookalikes are mapped before splitting into words, and the reserved
+// words go through the same mapping, so "official" still matches itself.
+const OFFICIAL_NAME = "Use your own name or your production's name.";
+const LOOKALIKES: Readonly<Record<string, string>> = { "1": "i", l: "i", "!": "i", "0": "o", "@": "a", $: "s", "3": "e" };
+
+function nameWords(value: string): string[] {
+	const folded = value.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase();
+	const mapped = [...folded].map((c) => LOOKALIKES[c] ?? c).join("");
+	return mapped.split(/[^\p{L}]+/u).filter(Boolean);
+}
+
+const BRAND_WORDS = RESERVED_BRAND_WORDS.map((word) => nameWords(word).join(""));
+const ROLE_WORDS = new Set(RESERVED_ROLE_WORDS.flatMap(nameWords));
+const CONTACT_LIKE = /@|https?:\/\/|www\.|[\p{L}\d]\.\p{L}{2,}/iu;
+
+function looksOfficial(name: string): boolean {
+	if (CONTACT_LIKE.test(name)) return true;
+	const words = nameWords(name);
+	const joined = words.join("");
+	return BRAND_WORDS.some((word) => joined.includes(word)) || words.some((word) => ROLE_WORDS.has(word));
+}
+
 // Absent (null/undefined) is null. Present but not a string is an error, not a
 // silent null, so a client bug can't drop a field the renter filled in.
 function optionalText(value: unknown, wrongType: string): { value: string | null; error: string | null } {
@@ -92,6 +116,7 @@ export function validateNewInquiry(
 	if (!requesterName) errors.requesterName = "Enter your name.";
 	else if (hasNul(requesterName)) errors.requesterName = UNSUPPORTED;
 	else if (chars(requesterName) > INQUIRY_NAME_MAX) errors.requesterName = tooLong(INQUIRY_NAME_MAX);
+	else if (looksOfficial(requesterName)) errors.requesterName = OFFICIAL_NAME;
 
 	const company = optionalText(raw.requesterCompany, "Enter text.");
 	const requesterCompany = company.value;

@@ -107,6 +107,49 @@ describe("validateNewInquiry", () => {
 			value: { website: "http://x" },
 		});
 	});
+
+	const OFFICIAL = "Use your own name or your production's name.";
+
+	it.each([
+		"Iskawt",
+		"ISKAWT",
+		"Ískawt",
+		"1skawt",
+		"i-s-k-a-w-t",
+		"IskawtPH",
+		"Iskawt​Support",
+		"Team Iskawt",
+		"Iskawt Support",
+		"Support",
+		"Admin",
+		"Scout Films",
+		"0fficial Staff",
+		"Mod: moderator",
+		"a@b.co",
+		"visit www.example.com",
+		"example.com",
+		"https://x.io",
+	])("rejects a name that could pass for Iskawt or carries contact details (%s)", (requesterName) => {
+		expect(validateNewInquiry({ ...valid, requesterName }, today)).toEqual({
+			ok: false,
+			errors: { requesterName: OFFICIAL },
+		});
+	});
+
+	it.each([
+		"Ana Reyes",
+		"Reyes Films",
+		"Ma. Teresa",
+		"J.R. Santos",
+		"Studio Uno",
+		"Steam Films",
+		"Teamwork Studio",
+		"Ella Cruz",
+		"José Rizal",
+		"Demo Renter",
+	])("accepts an ordinary name (%s)", (requesterName) => {
+		expect(validateNewInquiry({ ...valid, requesterName }, today).ok).toBe(true);
+	});
 });
 
 describe("validateMessageBody", () => {
