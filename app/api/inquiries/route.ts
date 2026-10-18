@@ -25,10 +25,10 @@ export async function POST(request: Request): Promise<Response> {
 	const outcome = await createInquiry(user.id, result.value);
 	switch (outcome.kind) {
 		case "created":
-			after(() => notifyCounterpart(outcome.id, "RENTER", result.value.message));
+			after(() => notifyCounterpart(outcome.id, "RENTER"));
 			return Response.json({ id: outcome.id, reused: false } satisfies CreateInquiryResponse, { status: 201 });
 		case "reused":
-			after(() => notifyCounterpart(outcome.id, "RENTER", result.value.message));
+			after(() => notifyCounterpart(outcome.id, "RENTER"));
 			return Response.json({ id: outcome.id, reused: true } satisfies CreateInquiryResponse, { status: 200 });
 		case "not-found":
 			return error({ error: "NOT_FOUND" }, 404);

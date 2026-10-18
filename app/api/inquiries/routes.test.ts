@@ -185,7 +185,7 @@ describe("notifications", () => {
 			mockCreateInquiry.mockResolvedValue(outcome);
 			await createRoute(json({ ...validBody, message: "  Free next week?  " }));
 			await runAfter();
-			expect(mockNotify).toHaveBeenCalledWith(outcome.id, "RENTER", "Free next week?");
+			expect(mockNotify).toHaveBeenCalledWith(outcome.id, "RENTER");
 		}
 	});
 
@@ -206,7 +206,7 @@ describe("notifications", () => {
 		expect(res.status).toBe(201);
 		expect(await res.json()).toEqual({ message }); // role is not leaked into the response
 		await runAfter();
-		expect(mockNotify).toHaveBeenCalledWith("inq_1", "HOST", "Yes");
+		expect(mockNotify).toHaveBeenCalledWith("inq_1", "HOST");
 	});
 
 	it("schedules nothing when the message isn't sent", async () => {

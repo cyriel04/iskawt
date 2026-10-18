@@ -19,13 +19,12 @@ const now = new Date("2026-10-07T10:00:00Z");
 const cutoff = new Date("2026-10-07T09:50:00Z");
 const row = (hostUser: { email: string } | null = { email: "demo-host@example.invalid" }) => ({
 	id: "inq_1",
-	requesterName: "Demo Renter",
 	hostNotifiedAt: null,
 	renterNotifiedAt: null,
 	renter: { email: "demo-renter@example.invalid" },
 	space: {
 		title: "[DEMO] Corner loft",
-		host: { displayName: "Demo Host A", contactEmail: "demo-host-contact@example.invalid", user: hostUser },
+		host: { contactEmail: "demo-host-contact@example.invalid", user: hostUser },
 	},
 });
 
@@ -41,7 +40,7 @@ beforeEach(() => {
 afterEach(() => errorSpy.mockRestore());
 
 it("emails the linked host when the renter writes, after claiming the host's throttle slot", async () => {
-	await notifyCounterpart("inq_1", "RENTER", "Free on the 20th?", now);
+	await notifyCounterpart("inq_1", "RENTER", now);
 	expect(mockUpdateMany).toHaveBeenCalledWith({
 		where: { id: "inq_1", OR: [{ hostNotifiedAt: null }, { hostNotifiedAt: { lt: cutoff } }] },
 		data: { hostNotifiedAt: now },
@@ -50,7 +49,7 @@ it("emails the linked host when the renter writes, after claiming the host's thr
 		expect.objectContaining({
 			to: "demo-host@example.invalid",
 			subject: "New message about [DEMO] Corner loft",
-			text: expect.stringContaining("Demo Renter wrote about"),
+			text: expect.stringContaining("You have a new message about [DEMO] Corner loft."),
 		}),
 	);
 	expect(mockSend.mock.calls[0][0].text).toContain("http://localhost:3000/inbox/inq_1");
@@ -58,57 +57,69 @@ it("emails the linked host when the renter writes, after claiming the host's thr
 
 it("emails an unlinked host at contactEmail with sign-in wording", async () => {
 	mockFindUnique.mockResolvedValue(row(null));
-	await notifyCounterpart("inq_1", "RENTER", "Hi", now);
+	await notifyCounterpart("inq_1", "RENTER", now);
 	const msg = mockSend.mock.calls[0][0];
 	expect(msg.to).toBe("demo-host-contact@example.invalid");
 	expect(msg.text).toContain("Sign in with this email address to read and reply: http://localhost:3000/sign-in?next=%2Finbox%2Finq_1");
 });
 
-it("emails the renter when the host writes, naming the host by displayName", async () => {
-	await notifyCounterpart("inq_1", "HOST", "Yes", now);
+it("emails the renter when the host writes", async () => {
+	await notifyCounterpart("inq_1", "HOST", now);
 	expect(mockUpdateMany.mock.calls[0][0].data).toEqual({ renterNotifiedAt: now });
-	expect(mockSend.mock.calls[0][0]).toMatchObject({ to: "demo-renter@example.invalid", text: expect.stringContaining("Demo Host A wrote about") });
+	expect(mockSend.mock.calls[0][0]).toMatchObject({ to: "demo-renter@example.invalid", text: expect.stringContaining("You have a new message about [DEMO] Corner loft.") });
 });
 
 it("sends nothing when the throttle slot is already taken (count 0)", async () => {
 	mockUpdateMany.mockResolvedValue({ count: 0 });
-	await notifyCounterpart("inq_1", "RENTER", "Hi", now);
+	await notifyCounterpart("inq_1", "RENTER", now);
 	expect(mockSend).not.toHaveBeenCalled();
 });
 
 it("on send failure releases the slot and logs only the inquiry id", async () => {
 	mockSend.mockRejectedValue(new Error("Resend responded 503 for demo-host@example.invalid"));
-	await expect(notifyCounterpart("inq_1", "RENTER", "secret message body", now)).resolves.toBeUndefined();
+	await expect(notifyCounterpart("inq_1", "RENTER", now)).resolves.toBeUndefined();
 	expect(mockUpdateMany).toHaveBeenLastCalledWith({
 		where: { id: "inq_1", hostNotifiedAt: now },
 		data: { hostNotifiedAt: null },
 	});
 	expect(errorSpy).toHaveBeenCalledWith("[inquiry] notify failed", { inquiryId: "inq_1" });
-	expect(JSON.stringify(errorSpy.mock.calls)).not.toMatch(/example\.invalid|secret message|Demo Renter/);
+	expect(JSON.stringify(errorSpy.mock.calls)).not.toMatch(/example\.invalid|Demo Renter/);
 });
 
 it("logs the HTTP status when the send error is exactly Resend-shaped", async () => {
 	mockSend.mockRejectedValue(new Error("Resend responded 503"));
-	await notifyCounterpart("inq_1", "RENTER", "secret message body", now);
+	await notifyCounterpart("inq_1", "RENTER", now);
 	expect(errorSpy).toHaveBeenCalledWith("[inquiry] notify failed", { inquiryId: "inq_1", status: 503 });
 });
 
 it("logs only the inquiry id for any other send error, never its message", async () => {
 	mockSend.mockRejectedValue(new Error("Invalid recipient demo-host@example.invalid"));
-	await notifyCounterpart("inq_1", "RENTER", "secret message body", now);
+	await notifyCounterpart("inq_1", "RENTER", now);
 	expect(errorSpy).toHaveBeenCalledWith("[inquiry] notify failed", { inquiryId: "inq_1" });
-	expect(JSON.stringify(errorSpy.mock.calls)).not.toMatch(/@|example\.invalid|secret message|Demo Renter/);
+	expect(JSON.stringify(errorSpy.mock.calls)).not.toMatch(/@|example\.invalid|Demo Renter/);
 });
 
 it("never throws, even when the database read fails", async () => {
 	mockFindUnique.mockRejectedValue(new Error("db down"));
-	await expect(notifyCounterpart("inq_1", "RENTER", "Hi", now)).resolves.toBeUndefined();
+	await expect(notifyCounterpart("inq_1", "RENTER", now)).resolves.toBeUndefined();
 	expect(errorSpy).toHaveBeenCalledWith("[inquiry] notify failed", { inquiryId: "inq_1" });
 });
 
 it("does nothing for an unknown inquiry", async () => {
 	mockFindUnique.mockResolvedValue(null);
-	await notifyCounterpart("nope", "RENTER", "Hi", now);
+	await notifyCounterpart("nope", "RENTER", now);
 	expect(mockUpdateMany).not.toHaveBeenCalled();
 	expect(mockSend).not.toHaveBeenCalled();
+});
+
+it("reads only what the email needs: no names, no message", async () => {
+	await notifyCounterpart("inq_1", "RENTER", now);
+	expect(mockFindUnique).toHaveBeenCalledWith({
+		where: { id: "inq_1" },
+		select: {
+			id: true,
+			renter: { select: { email: true } },
+			space: { select: { title: true, host: { select: { contactEmail: true, user: { select: { email: true } } } } } },
+		},
+	});
 });
