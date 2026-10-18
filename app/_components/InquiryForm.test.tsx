@@ -100,6 +100,7 @@ it("shows a sent state without a link for a null id", async () => {
 it.each([
 	[400, { error: "VALIDATION", fields: { shootDate: "Pick today or a later date." } }, "Pick today or a later date."],
 	[400, { error: "OWN_SPACE" }, "You can't send an inquiry about your own listing."],
+	[403, { error: "BLOCKED" }, "You can't send inquiries to this host."],
 	[404, { error: "NOT_FOUND" }, "This listing isn't taking inquiries right now."],
 	[429, { error: "RATE_LIMITED" }, "You've sent a lot of messages. Try again later."],
 	[500, {}, "We couldn't send that. Try again."],
