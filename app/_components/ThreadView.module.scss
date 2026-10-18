@@ -92,3 +92,16 @@
 	min-height: 44px;
 	color: inherit;
 }
+
+// The More menu sits at the top right of the conversation.
+.header {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.blocked {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: space(3);
+}

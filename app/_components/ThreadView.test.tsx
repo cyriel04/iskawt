@@ -33,13 +33,33 @@ const setVisibility = (v: DocumentVisibilityState) =>
 		document.dispatchEvent(new Event("visibilitychange"));
 	});
 const pending = () => new Promise<never>(() => {});
-// Routes fetch by endpoint: GET messages (poll), POST messages (send), POST status.
-const route = (handlers: { poll?: () => Promise<unknown>; send?: () => Promise<unknown>; status?: () => Promise<unknown> }) =>
+// Routes fetch by endpoint: GET messages (poll), POST messages (send), POST
+// status, POST/DELETE block, POST report.
+type Handlers = {
+	poll?: () => Promise<unknown>;
+	send?: () => Promise<unknown>;
+	status?: () => Promise<unknown>;
+	block?: () => Promise<unknown>;
+	unblock?: () => Promise<unknown>;
+	report?: () => Promise<unknown>;
+};
+const route = (handlers: Handlers) =>
 	mockFetch.mockImplementation((url: string, init?: RequestInit) => {
-		const handler = url.endsWith("/status") ? handlers.status : init?.method === "POST" ? handlers.send : handlers.poll;
+		const handler = url.endsWith("/status")
+			? handlers.status
+			: url.endsWith("/block")
+				? init?.method === "DELETE"
+					? handlers.unblock
+					: handlers.block
+				: url.endsWith("/report")
+					? handlers.report
+					: init?.method === "POST"
+						? handlers.send
+						: handlers.poll;
 		return handler ? handler() : pending();
 	});
-const pollCalls = () => mockFetch.mock.calls.filter(([url, init]: [string, RequestInit | undefined]) => !url.endsWith("/status") && init?.method !== "POST");
+const pollCalls = () =>
+	mockFetch.mock.calls.filter(([url, init]: [string, RequestInit | undefined]) => url.includes("/messages") && init?.method !== "POST");
 const messages = () => within(screen.getByRole("list", { name: "Messages" })).getAllByRole("listitem");
 
 it("renders the messages oldest first with sender and time", () => {
@@ -56,6 +76,7 @@ it("polls every 15 s with a 5 s-overlap cursor and appends without duplicates", 
 	mockFetch.mockResolvedValue(
 		reply(200, {
 			status: "RESPONDED",
+			canReply: true,
 			messages: [demoThread.messages[1], { id: "m3", body: "See you then", sentAt: "2026-10-07T10:05:00.000Z", fromMe: false, senderName: "Demo Host A" }],
 		}),
 	);
@@ -68,7 +89,7 @@ it("polls every 15 s with a 5 s-overlap cursor and appends without duplicates", 
 });
 
 it("doesn't poll while the tab is hidden, and polls at once when it's visible again", async () => {
-	mockFetch.mockResolvedValue(reply(200, { status: "RESPONDED", messages: [] }));
+	mockFetch.mockResolvedValue(reply(200, { status: "RESPONDED", canReply: true, messages: [] }));
 	renderWithTheme(<ThreadView thread={demoThread} />);
 	setVisibility("hidden");
 	await tick(3600);
@@ -79,7 +100,7 @@ it("doesn't poll while the tab is hidden, and polls at once when it's visible ag
 });
 
 it("stops polling on unmount", async () => {
-	mockFetch.mockResolvedValue(reply(200, { status: "RESPONDED", messages: [] }));
+	mockFetch.mockResolvedValue(reply(200, { status: "RESPONDED", canReply: true, messages: [] }));
 	const { unmount } = renderWithTheme(<ThreadView thread={demoThread} />);
 	unmount();
 	await tick(60);
@@ -87,7 +108,7 @@ it("stops polling on unmount", async () => {
 });
 
 it("goes read-only when a poll reports the thread was closed", async () => {
-	mockFetch.mockResolvedValue(reply(200, { status: "CLOSED", messages: [] }));
+	mockFetch.mockResolvedValue(reply(200, { status: "CLOSED", canReply: false, messages: [] }));
 	renderWithTheme(<ThreadView thread={demoThread} />);
 	await tick(15);
 	expect(screen.getByText("This conversation is closed.")).toBeInTheDocument();
@@ -206,7 +227,7 @@ it("renders read-only from the start for a closed thread and doesn't poll", asyn
 });
 
 it("refreshes the page once when a poll reports a new status", async () => {
-	route({ poll: () => Promise.resolve(reply(200, { status: "CLOSED", messages: [] })) });
+	route({ poll: () => Promise.resolve(reply(200, { status: "CLOSED", canReply: false, messages: [] })) });
 	const { rerender } = renderWithTheme(<ThreadView thread={demoThread} />);
 	await tick(15);
 	expect(mockRefresh).toHaveBeenCalledTimes(1);
@@ -230,7 +251,7 @@ it("refreshes the page once after a confirmed decline", async () => {
 });
 
 it("doesn't refresh when the polled status hasn't changed", async () => {
-	route({ poll: () => Promise.resolve(reply(200, { status: "RESPONDED", messages: [] })) });
+	route({ poll: () => Promise.resolve(reply(200, { status: "RESPONDED", canReply: true, messages: [] })) });
 	renderWithTheme(<ThreadView thread={demoThread} />);
 	await tick(45);
 	expect(pollCalls()).toHaveLength(3);
@@ -250,7 +271,7 @@ it("on 409 from a status change asks the server for the real status instead of a
 it("on 409 from a status change shows whatever the server says, then refreshes", async () => {
 	route({
 		status: () => Promise.resolve(reply(409, { error: "THREAD_CLOSED" })),
-		poll: () => Promise.resolve(reply(200, { status: "DECLINED", messages: [] })),
+		poll: () => Promise.resolve(reply(200, { status: "DECLINED", canReply: false, messages: [] })),
 	});
 	renderWithTheme(<ThreadView thread={demoThread} />);
 	await user().click(screen.getByRole("button", { name: "Close conversation" }));
@@ -264,7 +285,7 @@ it("on 409 from a status change shows whatever the server says, then refreshes",
 it("on 409 from send polls for the real status and says it was closed only once", async () => {
 	route({
 		send: () => Promise.resolve(reply(409, { error: "THREAD_CLOSED" })),
-		poll: () => Promise.resolve(reply(200, { status: "DECLINED", messages: [] })),
+		poll: () => Promise.resolve(reply(200, { status: "DECLINED", canReply: false, messages: [] })),
 	});
 	renderWithTheme(<ThreadView thread={demoThread} />);
 	await user().type(screen.getByLabelText("Reply"), "Still on?");
@@ -281,7 +302,7 @@ it("on 409 from send polls for the real status and says it was closed only once"
 it("on 401 from send asks to sign in again, stops polling and keeps the text", async () => {
 	route({
 		send: () => Promise.resolve(reply(401, { error: "UNAUTHENTICATED" })),
-		poll: () => Promise.resolve(reply(200, { status: "RESPONDED", messages: [] })),
+		poll: () => Promise.resolve(reply(200, { status: "RESPONDED", canReply: true, messages: [] })),
 	});
 	renderWithTheme(<ThreadView thread={demoThread} />);
 	await user().type(screen.getByLabelText("Reply"), "Hello");
@@ -312,7 +333,7 @@ it("ignores a stale poll that resolves after a confirmed close", async () => {
 	await user().click(screen.getByRole("button", { name: "Close conversation" }));
 	await user().click(screen.getByRole("button", { name: "Yes, close it" }));
 	await tick(0);
-	await act(async () => resolvePoll(reply(200, { status: "RESPONDED", messages: [] })));
+	await act(async () => resolvePoll(reply(200, { status: "RESPONDED", canReply: true, messages: [] })));
 	await tick(0);
 	expect(screen.getByText("This conversation is closed.")).toBeInTheDocument();
 	expect(screen.queryByLabelText("Reply")).not.toBeInTheDocument();
@@ -334,4 +355,162 @@ it("moves focus to the closed notice after a confirmed close", async () => {
 	await user().click(screen.getByRole("button", { name: "Yes, close it" }));
 	await tick(0);
 	expect(screen.getByText("This conversation is closed.")).toHaveFocus();
+});
+
+const blockedThread = { ...demoThread, canReply: false, canClose: false, canDecline: false, blockedByMe: true };
+const otherSideBlocked = { ...demoThread, canReply: false, canClose: false, canDecline: false, blockedByMe: false };
+const openMenu = () => user().click(screen.getByRole("button", { name: "More" }));
+
+describe("read-only from canReply", () => {
+	it("a thread the other side blocked reads as closed, with no hint of a block", () => {
+		renderWithTheme(<ThreadView thread={otherSideBlocked} />);
+		expect(screen.getByText("This conversation is closed.")).toBeInTheDocument();
+		expect(screen.queryByLabelText("Reply")).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Close conversation" })).not.toBeInTheDocument();
+		expect(screen.queryByText(/blocked/i)).not.toBeInTheDocument();
+	});
+
+	it("a poll saying canReply false makes an open thread read-only, and polling continues", async () => {
+		mockFetch.mockResolvedValue(reply(200, { status: "RESPONDED", canReply: false, messages: [] }));
+		renderWithTheme(<ThreadView thread={demoThread} />);
+		await tick(15);
+		expect(screen.getByText("This conversation is closed.")).toBeInTheDocument();
+		expect(screen.queryByLabelText("Reply")).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Close conversation" })).not.toBeInTheDocument();
+		await tick(15);
+		expect(pollCalls()).toHaveLength(2);
+	});
+
+	it("keeps polling while read-only on an open status, and brings the reply box back when canReply returns", async () => {
+		mockFetch.mockResolvedValue(reply(200, { status: "RESPONDED", canReply: true, messages: [] }));
+		renderWithTheme(<ThreadView thread={otherSideBlocked} />);
+		await tick(15);
+		expect(screen.getByLabelText("Reply")).toBeEnabled();
+		expect(screen.queryByText("This conversation is closed.")).not.toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Close conversation" })).toBeInTheDocument();
+	});
+});
+
+describe("blocking", () => {
+	it("shows 'You blocked' with Unblock and no reply box", () => {
+		renderWithTheme(<ThreadView thread={blockedThread} />);
+		expect(screen.getByText("You blocked Demo Host A.")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Unblock" })).toBeInTheDocument();
+		expect(screen.queryByLabelText("Reply")).not.toBeInTheDocument();
+		expect(screen.queryByText("This conversation is closed.")).not.toBeInTheDocument();
+	});
+
+	it("confirms in the page, blocks, then shows and focuses the blocked notice", async () => {
+		route({ block: () => Promise.resolve(reply(200, { blockedByMe: true })) });
+		renderWithTheme(<ThreadView thread={demoThread} />);
+		await openMenu();
+		await user().click(screen.getByRole("menuitem", { name: "Block Demo Host A" }));
+		expect(
+			screen.getByText(
+				"Block Demo Host A? Neither of you will be able to send messages in your conversations, and they won't be able to send you new inquiries. They won't be told.",
+			),
+		).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Yes, block Demo Host A" })).toHaveFocus();
+		expect(mockFetch).not.toHaveBeenCalled();
+		await user().click(screen.getByRole("button", { name: "Yes, block Demo Host A" }));
+		await tick(0);
+		expect(mockFetch).toHaveBeenCalledWith("/api/inquiries/inq_demo/block", expect.objectContaining({ method: "POST" }));
+		expect(screen.getByText("You blocked Demo Host A.")).toHaveFocus();
+		expect(screen.queryByLabelText("Reply")).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Close conversation" })).not.toBeInTheDocument();
+	});
+
+	it("cancelling the block sends nothing and returns focus to More", async () => {
+		renderWithTheme(<ThreadView thread={demoThread} />);
+		await openMenu();
+		await user().click(screen.getByRole("menuitem", { name: "Block Demo Host A" }));
+		await user().click(screen.getByRole("button", { name: "Cancel" }));
+		expect(mockFetch).not.toHaveBeenCalled();
+		expect(screen.getByRole("button", { name: "More" })).toHaveFocus();
+		expect(screen.getByLabelText("Reply")).toBeInTheDocument();
+	});
+
+	it("on 409 NOT_LINKED explains and changes nothing", async () => {
+		route({ block: () => Promise.resolve(reply(409, { error: "NOT_LINKED" })) });
+		renderWithTheme(<ThreadView thread={demoThread} />);
+		await openMenu();
+		await user().click(screen.getByRole("menuitem", { name: "Block Demo Host A" }));
+		await user().click(screen.getByRole("button", { name: "Yes, block Demo Host A" }));
+		await tick(0);
+		expect(screen.getByRole("alert")).toHaveTextContent("You can block this host once they've joined Iskawt.");
+		expect(screen.getByLabelText("Reply")).toBeEnabled();
+		expect(screen.queryByText("You blocked Demo Host A.")).not.toBeInTheDocument();
+	});
+
+	it("can block a closed thread", async () => {
+		route({ block: () => Promise.resolve(reply(200, { blockedByMe: true })) });
+		renderWithTheme(<ThreadView thread={{ ...demoThread, status: "CLOSED", canReply: false, canClose: false }} />);
+		await openMenu();
+		await user().click(screen.getByRole("menuitem", { name: "Block Demo Host A" }));
+		await user().click(screen.getByRole("button", { name: "Yes, block Demo Host A" }));
+		await tick(0);
+		expect(screen.getByText("You blocked Demo Host A.")).toBeInTheDocument();
+	});
+});
+
+describe("unblocking", () => {
+	it("clears the notice and asks the server whether replies are allowed again", async () => {
+		route({
+			unblock: () => Promise.resolve(reply(200, { blockedByMe: false })),
+			poll: () => Promise.resolve(reply(200, { status: "RESPONDED", canReply: true, messages: [] })),
+		});
+		renderWithTheme(<ThreadView thread={blockedThread} />);
+		await user().click(screen.getByRole("button", { name: "Unblock" }));
+		await tick(0);
+		expect(mockFetch).toHaveBeenCalledWith("/api/inquiries/inq_demo/block", expect.objectContaining({ method: "DELETE" }));
+		expect(pollCalls()).toHaveLength(1);
+		expect(screen.queryByText("You blocked Demo Host A.")).not.toBeInTheDocument();
+		expect(screen.getByLabelText("Reply")).toBeEnabled();
+		expect(screen.getByRole("button", { name: "More" })).toHaveFocus();
+	});
+
+	it("while the other side still blocks: the thread reads as closed, never a reply box", async () => {
+		route({
+			unblock: () => Promise.resolve(reply(200, { blockedByMe: false })),
+			poll: () => Promise.resolve(reply(200, { status: "RESPONDED", canReply: false, messages: [] })),
+		});
+		renderWithTheme(<ThreadView thread={blockedThread} />);
+		await user().click(screen.getByRole("button", { name: "Unblock" }));
+		await tick(0);
+		expect(screen.queryByText("You blocked Demo Host A.")).not.toBeInTheDocument();
+		expect(screen.getByText("This conversation is closed.")).toBeInTheDocument();
+		expect(screen.queryByLabelText("Reply")).not.toBeInTheDocument();
+	});
+
+	it("is offered in the More menu too", async () => {
+		route({ unblock: () => Promise.resolve(reply(200, { blockedByMe: false })) });
+		renderWithTheme(<ThreadView thread={blockedThread} />);
+		await openMenu();
+		await user().click(screen.getByRole("menuitem", { name: "Unblock Demo Host A" }));
+		await tick(0);
+		expect(mockFetch).toHaveBeenCalledWith("/api/inquiries/inq_demo/block", expect.objectContaining({ method: "DELETE" }));
+	});
+});
+
+describe("reporting", () => {
+	it("opens the dialog from the menu; Also block applies the blocked state", async () => {
+		route({
+			report: () => Promise.resolve(reply(201, { id: "rep_1" })),
+			block: () => Promise.resolve(reply(200, { blockedByMe: true })),
+		});
+		renderWithTheme(<ThreadView thread={demoThread} />);
+		await openMenu();
+		await user().click(screen.getByRole("menuitem", { name: "Report conversation" }));
+		const dialog = screen.getByRole("dialog", { name: "Report conversation" });
+		await user().click(within(dialog).getByLabelText("Spam"));
+		await user().click(within(dialog).getByLabelText("Also block Demo Host A"));
+		await user().click(within(dialog).getByRole("button", { name: "Send report" }));
+		await tick(0);
+		expect(within(dialog).getByText("Thanks. Someone from Iskawt will look at this.")).toBeInTheDocument();
+		await user().click(within(dialog).getByRole("button", { name: "Done" }));
+		await tick(1);
+		expect(screen.getByText("You blocked Demo Host A.")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "More" })).toHaveFocus();
+		expect(screen.queryByLabelText("Reply")).not.toBeInTheDocument();
+	});
 });
