@@ -16,7 +16,7 @@ mentions permits, LGU rules, or barangay clearances, stop and ask.
 
 ## Stack
 
-- Next.js 16 (16.3.x), App Router, Turbopack, TypeScript strict
+- Next.js 16 (16.4.x), App Router, Turbopack, TypeScript strict
 - MUI + Emotion for components; **SCSS modules for styling**; theme tokens only
 - Prisma 7 + PostgreSQL (Neon in production, Docker locally)
 - Server components for reads, route handlers for writes. **No GraphQL, no Apollo.**

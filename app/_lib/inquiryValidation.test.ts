@@ -107,6 +107,81 @@ describe("validateNewInquiry", () => {
 			value: { website: "http://x" },
 		});
 	});
+
+	const OFFICIAL = "Use your own name or your production's name.";
+
+	it.each([
+		"Iskawt",
+		"ISKAWT",
+		"Ískawt",
+		"1skawt",
+		"i-s-k-a-w-t",
+		"IskawtPH",
+		"Iskawt​Support",
+		"Team Iskawt",
+		"Iskawt Support",
+		"Support",
+		"Admin",
+		"0fficial Staff",
+		"Mod: moderator",
+		"a@b.co",
+		"visit www.example.com",
+		"example.com",
+		"https://x.io",
+		"Official",
+		"Isk\u0430wt",
+		"Isk\u0430wt PH",
+		"Ad\u200Bmin",
+		"Sup\u00ADport",
+		"\u202Etwaksi",
+		"\uFF45\uFF58\uFF41\uFF4D\uFF50\uFF4C\uFF45\uFF0E\uFF43\uFF4F\uFF4D",
+	])("rejects a name that could pass for Iskawt or carries contact details (%s)", (requesterName) => {
+		expect(validateNewInquiry({ ...valid, requesterName }, today)).toEqual({
+			ok: false,
+			errors: { requesterName: OFFICIAL },
+		});
+	});
+
+	it.each([
+		"Ana Reyes",
+		"Reyes Films",
+		"Ma. Teresa",
+		"J.R. Santos",
+		"Studio Uno",
+		"Steam Films",
+		"Teamwork Studio",
+		"Ella Cruz",
+		"José Rizal",
+		"Demo Renter",
+		"Ana Reyes, Location Scout",
+		"Scout Films",
+		"Francisco Utrera",
+		"Mas Couture",
+		"\u0418\u0432\u0430\u043D \u041F\u0435\u0442\u0440\u043E\u0432",
+	])("accepts an ordinary name (%s)", (requesterName) => {
+		expect(validateNewInquiry({ ...valid, requesterName }, today).ok).toBe(true);
+	});
+
+	it.each(["Iskawt Support", "Team Iskawt", "www.example.com"])(
+		"rejects a company that could pass for Iskawt or carries contact details (%s)",
+		(requesterCompany) => {
+			expect(validateNewInquiry({ ...valid, requesterCompany }, today)).toEqual({
+				ok: false,
+				errors: { requesterCompany: OFFICIAL },
+			});
+		},
+	);
+
+	it.each(["Reyes Films", "Steam Films Inc."])("accepts an ordinary company (%s)", (requesterCompany) => {
+		expect(validateNewInquiry({ ...valid, requesterCompany }, today).ok).toBe(true);
+	});
+
+	it("accepts an empty company", () => {
+		expect(validateNewInquiry({ ...valid, requesterCompany: "" }, today)).toMatchObject({
+			ok: true,
+			value: { requesterCompany: null },
+		});
+	});
 });
 
 describe("validateMessageBody", () => {

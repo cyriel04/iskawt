@@ -32,7 +32,7 @@ export async function POST(request: Request, { params }: Context): Promise<Respo
 	const outcome = await postMessage(id, user.id, validated.value);
 	switch (outcome.kind) {
 		case "sent":
-			after(() => notifyCounterpart(id, outcome.role, validated.value));
+			after(() => notifyCounterpart(id, outcome.role));
 			return Response.json({ message: outcome.message } satisfies PostMessageResponse, { status: 201 });
 		case "not-found":
 			return error({ error: "NOT_FOUND" }, 404);

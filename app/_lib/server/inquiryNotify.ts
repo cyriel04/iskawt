@@ -1,8 +1,8 @@
-// Emails the other side of a thread after a message is saved. Runs from
-// after(), so it never delays or fails the request. The throttle slot is
-// claimed with a conditional updateMany: two messages in a row can't both
-// send. Contact addresses are read here only to address the email and are
-// never logged or returned.
+// Emails the other side of a thread after a message is saved, without the
+// message itself. Runs from after(), so it never delays or fails the request.
+// The throttle slot is claimed with a conditional updateMany: two messages in a
+// row can't both send. Contact addresses are read here only to address the
+// email and are never logged or returned.
 
 import { NOTIFY_COOLDOWN_MINUTES } from "@/app/_lib/constants/inquiries";
 import { prisma } from "@/app/_lib/db";
@@ -47,7 +47,6 @@ async function release(inquiryId: string, toHost: boolean, now: Date): Promise<v
 export async function notifyCounterpart(
 	inquiryId: string,
 	senderRole: InquiryRole,
-	body: string,
 	now: Date = new Date(),
 ): Promise<void> {
 	const toHost = senderRole === "RENTER";
@@ -56,14 +55,8 @@ export async function notifyCounterpart(
 			where: { id: inquiryId },
 			select: {
 				id: true,
-				requesterName: true,
 				renter: { select: { email: true } },
-				space: {
-					select: {
-						title: true,
-						host: { select: { displayName: true, contactEmail: true, user: { select: { email: true } } } },
-					},
-				},
+				space: { select: { title: true, host: { select: { contactEmail: true, user: { select: { email: true } } } } } },
 			},
 		});
 		if (!row) return;
@@ -76,8 +69,6 @@ export async function notifyCounterpart(
 		const message = inquiryMessageEmail({
 			to: toHost ? (host.user?.email ?? host.contactEmail) : row.renter.email,
 			spaceTitle: row.space.title,
-			senderName: toHost ? row.requesterName : host.displayName,
-			body,
 			url: hostNotLinked ? `${base}/sign-in?next=${encodeURIComponent(threadPath)}` : `${base}${threadPath}`,
 			hostNotLinked,
 		});
