@@ -68,17 +68,19 @@ describe("blockersBetween", () => {
 
 describe("getParticipation", () => {
 	it.each([
-		// viewer, blockers, verified, canSend, blockedByMe
-		[RENTER, [], true, true, false],
-		[RENTER, [RENTER], true, false, true],
-		[RENTER, [HOST], true, false, false],
-		[RENTER, [RENTER, HOST], true, false, true],
-		[HOST, [HOST], true, false, true],
-		[HOST, [RENTER], true, false, false],
-		[RENTER, [], false, false, false],
-		[HOST, [], false, false, false],
-	] as const)("viewer %s, blockers %j, verified %s → canSend %s, blockedByMe %s", async (viewer, blockers, verified, canSend, blockedByMe) => {
-		mockInquiryFindUnique.mockResolvedValue(row("NEW", verified ? new Date("2026-10-01T00:00:00Z") : null));
+		// status, viewer, blockers, verified, canSend, blockedByMe
+		["NEW", RENTER, [], true, true, false],
+		["NEW", RENTER, [RENTER], true, false, true],
+		["NEW", RENTER, [HOST], true, false, false],
+		["NEW", RENTER, [RENTER, HOST], true, false, true],
+		["NEW", HOST, [HOST], true, false, true],
+		["NEW", HOST, [RENTER], true, false, false],
+		["NEW", RENTER, [], false, false, false],
+		["NEW", HOST, [], false, false, false],
+		["CLOSED", RENTER, [], true, false, false],
+		["CLOSED", RENTER, [RENTER], true, false, true],
+	] as const)("status %s, viewer %s, blockers %j, verified %s → canSend %s, blockedByMe %s", async (status, viewer, blockers, verified, canSend, blockedByMe) => {
+		mockInquiryFindUnique.mockResolvedValue(row(status, verified ? new Date("2026-10-01T00:00:00Z") : null));
 		mockBlockFindMany.mockResolvedValue(blockers.map((blockerId) => ({ blockerId })));
 		const p = await getParticipation("inq_1", viewer);
 		expect(p).toMatchObject({ role: viewer === RENTER ? "RENTER" : "HOST", canSend, blockedByMe });

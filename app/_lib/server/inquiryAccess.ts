@@ -1,7 +1,9 @@
 // Who is on which side of an inquiry. Every read and write asks here first.
 // A user who is neither the renter nor the host's linked user gets null, and
 // callers turn that into 404, so the existence of a thread is never revealed.
-// Participation deliberately ignores the space's publish state, blocks and the host's verification: those decide whether a thread can take messages (canSend), never whether it can be read.
+// Participation deliberately ignores the space's publish state, blocks and the
+// host's verification: those decide whether a thread can take messages
+// (canSend), never whether it can be read.
 
 import { prisma } from "@/app/_lib/db";
 import type { Prisma } from "@/generated/prisma/client";
