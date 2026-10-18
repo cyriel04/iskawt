@@ -106,4 +106,5 @@ export const demoThread: InquiryThread = {
 	canReply: true,
 	canDecline: false,
 	canClose: true,
+	blockedByMe: false,
 };

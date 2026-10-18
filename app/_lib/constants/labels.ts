@@ -10,6 +10,7 @@ import type {
 	Level,
 	NaturalLight,
 	PowerAccess,
+	ReportReason,
 	ProductionType,
 	Setting,
 	SpaceType,
@@ -116,4 +117,12 @@ export const inquiryStatusLabels: Record<InquiryStatus, string> = {
 	RESPONDED: "Replied",
 	DECLINED: "Declined",
 	CLOSED: "Closed",
+};
+
+export const reportReasonLabels: Record<ReportReason, string> = {
+	SPAM: "Spam",
+	SCAM_OR_PHISHING: "Scam or phishing",
+	HARASSMENT: "Harassment",
+	NOT_THEIR_SPACE: "Not their space to list",
+	OTHER: "Something else",
 };

@@ -94,6 +94,9 @@ export type ReportReason = "SPAM" | "SCAM_OR_PHISHING" | "HARASSMENT" | "NOT_THE
 export type NewReportInput = { reason: ReportReason; detail: string | null };
 export type ReportFieldErrors = Partial<Record<keyof NewReportInput, string>>;
 export type CreateReportResponse = { id: string }; // 201
+// The report route's errors. Separate from InquiryApiError so the inquiry form's
+// `fields` stays keyed by NewInquiryInput.
+export type ReportApiError = { error: InquiryApiError["error"]; fields?: ReportFieldErrors };
 
 // POST and DELETE /api/inquiries/[id]/block — 200
 export type BlockResponse = { blockedByMe: boolean };
@@ -103,7 +106,7 @@ export type InquiryApiError = {
 		| "UNAUTHENTICATED" | "VALIDATION" | "OWN_SPACE" | "NOT_FOUND" | "RATE_LIMITED"
 		| "THREAD_CLOSED" | "NOT_HOST"
 		| "BLOCKED"; // new: POST /api/inquiries only
-	fields?: InquiryFieldErrors | ReportFieldErrors;
+	fields?: InquiryFieldErrors;
 };
 ```
 

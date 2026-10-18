@@ -8,6 +8,7 @@ const mockInquiryUpdate = jest.fn();
 const mockInquiryUpdateMany = jest.fn();
 const mockMessageCount = jest.fn();
 const mockMessageCreate = jest.fn();
+const mockBlockFindMany = jest.fn();
 const mockTransaction = jest.fn();
 
 const db = {
@@ -24,6 +25,7 @@ const db = {
 		count: (...a: unknown[]) => mockMessageCount(...a),
 		create: (...a: unknown[]) => mockMessageCreate(...a),
 	},
+	block: { findMany: (...a: unknown[]) => mockBlockFindMany(...a) },
 };
 // jest.mock is hoisted above `const db`, so the factory reads it lazily.
 jest.mock("@/app/_lib/db", () => ({
@@ -36,6 +38,9 @@ jest.mock("@/app/_lib/db", () => ({
 		},
 		get message() {
 			return db.message;
+		},
+		get block() {
+			return db.block;
 		},
 		$transaction: (...a: unknown[]) => mockTransaction(...a),
 	},
@@ -66,7 +71,7 @@ const participationRow = (status = "NEW") => ({
 	status,
 	renterId: RENTER,
 	requesterName: "Demo Renter",
-	space: { host: { userId: HOST, displayName: "Demo Host A" } },
+	space: { host: { userId: HOST, displayName: "Demo Host A", verifiedAt: new Date("2026-10-01T00:00:00Z") } },
 });
 
 beforeEach(() => {
@@ -77,6 +82,7 @@ beforeEach(() => {
 	mockInquiryFindFirst.mockResolvedValue(null);
 	mockInquiryCount.mockResolvedValue(0);
 	mockMessageCount.mockResolvedValue(0);
+	mockBlockFindMany.mockResolvedValue([]);
 	mockInquiryCreate.mockResolvedValue({ id: "inq_new" });
 	mockInquiryUpdateMany.mockResolvedValue({ count: 1 });
 	mockMessageCreate.mockResolvedValue({ id: "m9", body: "Hi", senderId: RENTER, createdAt: now });
@@ -121,6 +127,30 @@ describe("createInquiry", () => {
 
 	it("refuses a host inquiring about their own space", async () => {
 		await expect(createInquiry(HOST, input, now)).resolves.toEqual({ kind: "own-space" });
+	});
+
+	it.each([["the host blocked the renter", HOST], ["the renter blocked the host", RENTER]])(
+		"returns blocked when %s, before looking for an open thread",
+		async (_label, blockerId) => {
+			mockSpaceFindFirst.mockResolvedValue({ id: "space_1", host: { userId: HOST } });
+			mockBlockFindMany.mockResolvedValue([{ blockerId }]);
+			await expect(createInquiry(RENTER, input)).resolves.toEqual({ kind: "blocked" });
+			expect(mockBlockFindMany).toHaveBeenCalledWith({
+				where: { OR: [{ blockerId: RENTER, blockedId: HOST }, { blockerId: HOST, blockedId: RENTER }] },
+				select: { blockerId: true },
+			});
+			expect(mockTransaction).not.toHaveBeenCalled();
+			expect(mockInquiryFindFirst).not.toHaveBeenCalled();
+		},
+	);
+
+	it("checks no blocks for an unlinked host and carries on", async () => {
+		mockSpaceFindFirst.mockResolvedValue({ id: "space_1", host: { userId: null } });
+		mockInquiryFindFirst.mockResolvedValue(null);
+		mockInquiryCount.mockResolvedValue(0);
+		mockInquiryCreate.mockResolvedValue({ id: "inq_new" });
+		await expect(createInquiry(RENTER, input)).resolves.toEqual({ kind: "created", id: "inq_new" });
+		expect(mockBlockFindMany).not.toHaveBeenCalled();
 	});
 
 	it("reuses the renter's open thread for the same space and appends the message", async () => {
@@ -304,5 +334,23 @@ describe("changeStatus", () => {
 		mockInquiryFindUnique.mockResolvedValue(participationRow());
 		await expect(changeStatus("inq_1", "user_stranger", "close")).resolves.toEqual({ kind: "not-found" });
 		expect(mockInquiryUpdateMany).not.toHaveBeenCalled();
+	});
+});
+
+describe("read-only threads", () => {
+	it.each([
+		["blocked by the host", [{ blockerId: HOST }], new Date("2026-10-01T00:00:00Z")],
+		["blocked by the renter", [{ blockerId: RENTER }], new Date("2026-10-01T00:00:00Z")],
+		["host unverified", [], null],
+	])("postMessage and changeStatus return closed when %s, and write nothing", async (_label, blocks, verifiedAt) => {
+		const r = participationRow("RESPONDED");
+		mockInquiryFindUnique.mockResolvedValue({ ...r, space: { host: { ...r.space.host, verifiedAt } } });
+		mockBlockFindMany.mockResolvedValue(blocks);
+		await expect(postMessage("inq_1", RENTER, "Hi")).resolves.toEqual({ kind: "closed" });
+		await expect(changeStatus("inq_1", HOST, "close")).resolves.toEqual({ kind: "closed" });
+		await expect(changeStatus("inq_1", HOST, "decline")).resolves.toEqual({ kind: "closed" });
+		expect(mockTransaction).not.toHaveBeenCalled();
+		expect(mockInquiryUpdateMany).not.toHaveBeenCalled();
+		expect(mockMessageCreate).not.toHaveBeenCalled();
 	});
 });

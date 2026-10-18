@@ -4,7 +4,7 @@
 
 import { INQUIRIES_PER_USER_PER_DAY, MESSAGES_PER_USER_PER_HOUR } from "@/app/_lib/constants/inquiries";
 import { prisma } from "@/app/_lib/db";
-import { getParticipation, isOpen, messageSelect, toInquiryMessage } from "@/app/_lib/server/inquiryAccess";
+import { blockersBetween, getParticipation, messageSelect, toInquiryMessage } from "@/app/_lib/server/inquiryAccess";
 import { publishedWhere } from "@/app/_lib/server/spaces";
 import { Prisma } from "@/generated/prisma/client";
 import type { InquiryMessage, InquiryRole, InquiryStatus, NewInquiryInput } from "@/app/_lib/types";
@@ -17,6 +17,7 @@ export type CreateResult =
 	| { kind: "reused"; id: string }
 	| { kind: "not-found" }
 	| { kind: "own-space" }
+	| { kind: "blocked" }
 	| { kind: "rate-limited" };
 
 export type PostResult =
@@ -40,6 +41,10 @@ export async function createInquiry(userId: string, input: NewInquiryInput, now:
 	});
 	if (!space) return { kind: "not-found" };
 	if (space.host.userId === userId) return { kind: "own-space" };
+
+	// Before open-thread reuse: a blocked renter is never told their message
+	// was "added to your existing conversation".
+	if ((await blockersBetween(userId, space.host.userId)).length > 0) return { kind: "blocked" };
 
 	// Serializable: two parallel submits can't both see "no open thread" and
 	// create two. The loser gets P2034 and is retried once, by which time the
@@ -115,7 +120,7 @@ export async function postMessage(
 ): Promise<PostResult> {
 	const p = await getParticipation(inquiryId, userId);
 	if (!p) return { kind: "not-found" };
-	if (!isOpen(p.status)) return { kind: "closed" };
+	if (!p.canSend) return { kind: "closed" };
 
 	const sent = await prisma.message.count({
 		where: { senderId: userId, createdAt: { gt: new Date(now.getTime() - HOUR_MS) } },
@@ -123,7 +128,9 @@ export async function postMessage(
 	if (sent >= MESSAGES_PER_USER_PER_HOUR) return { kind: "rate-limited" };
 
 	// The open-status guard is re-checked inside the write: a close or decline
-	// that lands after getParticipation must win, not be overwritten.
+	// that lands after getParticipation must win, not be overwritten. A block or
+	// a verification change landing in that window is not re-checked; at most
+	// one message gets through, and the notifier re-checks before emailing.
 	const row = await prisma.$transaction(async (tx) => {
 		const touched = await tx.inquiry.updateMany({
 			where: { id: inquiryId, status: { in: OPEN_STATUSES } },
@@ -150,7 +157,7 @@ export async function changeStatus(
 ): Promise<StatusResult> {
 	const p = await getParticipation(inquiryId, userId);
 	if (!p) return { kind: "not-found" };
-	if (!isOpen(p.status)) return { kind: "closed" };
+	if (!p.canSend) return { kind: "closed" };
 	if (action === "decline" && p.role !== "HOST") return { kind: "not-host" };
 
 	const status: InquiryStatus = action === "decline" ? "DECLINED" : "CLOSED";

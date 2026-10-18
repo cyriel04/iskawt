@@ -34,6 +34,8 @@ export async function POST(request: Request): Promise<Response> {
 			return error({ error: "NOT_FOUND" }, 404);
 		case "own-space":
 			return error({ error: "OWN_SPACE" }, 400);
+		case "blocked":
+			return error({ error: "BLOCKED" }, 403);
 		case "rate-limited":
 			return error({ error: "RATE_LIMITED" }, 429);
 	}

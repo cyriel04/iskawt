@@ -13,3 +13,6 @@ export const NOTIFY_COOLDOWN_MINUTES = 10;
 export const THREAD_POLL_SECONDS = 15;
 export const INBOX_PREVIEW_CHARS = 140;
 export const INBOX_PAGE_SIZE = 50;
+
+export const REPORTS_PER_USER_PER_DAY = 10;
+export const REPORT_DETAIL_MAX = 1000;

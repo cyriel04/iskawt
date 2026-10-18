@@ -12,6 +12,7 @@ export type {
 	Level,
 	ProductionType,
 	InquiryStatus,
+	ReportReason,
 } from "@/generated/prisma/enums";
 
 import type {
@@ -23,6 +24,7 @@ import type {
 	Level,
 	ProductionType,
 	InquiryStatus,
+	ReportReason,
 } from "@/generated/prisma/enums";
 
 export type PublicPhoto = {
@@ -237,9 +239,10 @@ export type InquiryThread = {
 	productionType: ProductionType;
 	budgetNote: string | null;
 	messages: InquiryMessage[]; // oldest first
-	canReply: boolean;
-	canDecline: boolean;
-	canClose: boolean;
+	canReply: boolean; // false while closed, blocked either way, or the host is unverified
+	canDecline: boolean; // same conditions, plus host only
+	canClose: boolean; // same conditions
+	blockedByMe: boolean; // drives "You blocked {name}." and Unblock
 };
 
 // ---- API shapes (app/api/inquiries/**)
@@ -247,7 +250,16 @@ export type InquiryThread = {
 export type InquiryFieldErrors = Partial<Record<keyof NewInquiryInput, string>>;
 
 export type InquiryApiError = {
-	error: "UNAUTHENTICATED" | "VALIDATION" | "OWN_SPACE" | "NOT_FOUND" | "RATE_LIMITED" | "THREAD_CLOSED" | "NOT_HOST";
+	error:
+		| "UNAUTHENTICATED"
+		| "VALIDATION"
+		| "OWN_SPACE"
+		| "NOT_FOUND"
+		| "RATE_LIMITED"
+		| "THREAD_CLOSED"
+		| "NOT_HOST"
+		| "BLOCKED" // POST /api/inquiries only
+		| "NOT_LINKED"; // POST /api/inquiries/[id]/block: the host hasn't signed in yet
 	fields?: InquiryFieldErrors;
 };
 
@@ -258,7 +270,19 @@ export type CreateInquiryResponse = { id: string | null; reused: boolean };
 export type PostMessageResponse = { message: InquiryMessage };
 
 // GET /api/inquiries/[id]/messages?after=<messageId> — 200
-export type MessagesResponse = { messages: InquiryMessage[]; status: InquiryStatus };
+export type MessagesResponse = { messages: InquiryMessage[]; status: InquiryStatus; canReply: boolean };
 
 // POST /api/inquiries/[id]/status — 200
 export type StatusResponse = { status: InquiryStatus };
+
+// POST /api/inquiries/[id]/report — 201
+export type NewReportInput = { reason: ReportReason; detail: string | null };
+export type ReportFieldErrors = Partial<Record<keyof NewReportInput, string>>;
+export type CreateReportResponse = { id: string };
+
+// The report route's errors. Separate from InquiryApiError so the inquiry form's
+// `fields` stays keyed by NewInquiryInput.
+export type ReportApiError = { error: InquiryApiError["error"]; fields?: ReportFieldErrors };
+
+// POST and DELETE /api/inquiries/[id]/block — 200
+export type BlockResponse = { blockedByMe: boolean };

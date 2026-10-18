@@ -1,8 +1,7 @@
 // Who is on which side of an inquiry. Every read and write asks here first.
 // A user who is neither the renter nor the host's linked user gets null, and
 // callers turn that into 404, so the existence of a thread is never revealed.
-// Participation deliberately ignores the space's publish state: an unpublished
-// listing keeps its conversations.
+// Participation deliberately ignores the space's publish state, blocks and the host's verification: those decide whether a thread can take messages (canSend), never whether it can be read.
 
 import { prisma } from "@/app/_lib/db";
 import type { Prisma } from "@/generated/prisma/client";
@@ -15,6 +14,9 @@ export type Participation = {
 	renterId: string;
 	requesterName: string;
 	hostDisplayName: string;
+	hostUserId: string | null;
+	canSend: boolean; // open, host verified, and no block either way
+	blockedByMe: boolean;
 };
 
 const participationSelect = {
@@ -22,24 +24,43 @@ const participationSelect = {
 	status: true,
 	renterId: true,
 	requesterName: true,
-	space: { select: { host: { select: { userId: true, displayName: true } } } },
+	space: { select: { host: { select: { userId: true, displayName: true, verifiedAt: true } } } },
 } satisfies Prisma.InquirySelect;
 
 export const messageSelect = { id: true, body: true, createdAt: true, senderId: true } satisfies Prisma.MessageSelect;
 
+// The ids of whichever of the two has blocked the other. An unlinked host has
+// no user, so can neither block nor be blocked.
+export async function blockersBetween(renterId: string, hostUserId: string | null): Promise<string[]> {
+	if (!hostUserId) return [];
+	const rows = await prisma.block.findMany({
+		where: { OR: [{ blockerId: renterId, blockedId: hostUserId }, { blockerId: hostUserId, blockedId: renterId }] },
+		select: { blockerId: true },
+	});
+	return rows.map((row) => row.blockerId);
+}
+
+export function canSendIn(status: InquiryStatus, hostVerified: boolean, blockerIds: readonly string[]): boolean {
+	return isOpen(status) && hostVerified && blockerIds.length === 0;
+}
+
 export async function getParticipation(inquiryId: string, userId: string): Promise<Participation | null> {
 	const row = await prisma.inquiry.findUnique({ where: { id: inquiryId }, select: participationSelect });
 	if (!row) return null;
-	const role: InquiryRole | null =
-		row.renterId === userId ? "RENTER" : row.space.host.userId === userId ? "HOST" : null;
+	const host = row.space.host;
+	const role: InquiryRole | null = row.renterId === userId ? "RENTER" : host.userId === userId ? "HOST" : null;
 	if (!role) return null;
+	const blockers = await blockersBetween(row.renterId, host.userId);
 	return {
 		id: row.id,
 		status: row.status,
 		role,
 		renterId: row.renterId,
 		requesterName: row.requesterName,
-		hostDisplayName: row.space.host.displayName,
+		hostDisplayName: host.displayName,
+		hostUserId: host.userId,
+		canSend: canSendIn(row.status, host.verifiedAt !== null, blockers),
+		blockedByMe: blockers.includes(userId),
 	};
 }
 

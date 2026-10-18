@@ -2,10 +2,12 @@
 // message itself. Runs from after(), so it never delays or fails the request.
 // The throttle slot is claimed with a conditional updateMany: two messages in a
 // row can't both send. Contact addresses are read here only to address the
-// email and are never logged or returned.
+// email and are never logged or returned. Nothing is sent for a thread that
+// can't take messages (closed, blocked, or an unverified host).
 
 import { NOTIFY_COOLDOWN_MINUTES } from "@/app/_lib/constants/inquiries";
 import { prisma } from "@/app/_lib/db";
+import { blockersBetween, canSendIn } from "@/app/_lib/server/inquiryAccess";
 import { inquiryMessageEmail } from "@/app/_lib/server/inquiryEmail";
 import { getMailer } from "@/app/_lib/server/mailer";
 import type { InquiryRole } from "@/app/_lib/types";
@@ -55,16 +57,24 @@ export async function notifyCounterpart(
 			where: { id: inquiryId },
 			select: {
 				id: true,
+				status: true,
+				renterId: true,
 				renter: { select: { email: true } },
-				space: { select: { title: true, host: { select: { contactEmail: true, user: { select: { email: true } } } } } },
+				space: {
+					select: {
+						title: true,
+						host: { select: { userId: true, verifiedAt: true, contactEmail: true, user: { select: { email: true } } } },
+					},
+				},
 			},
 		});
 		if (!row) return;
+		const host = row.space.host;
+		if (!canSendIn(row.status, host.verifiedAt !== null, await blockersBetween(row.renterId, host.userId))) return;
 		if (!(await claim(inquiryId, toHost, now))) return;
 
 		const base = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 		const threadPath = `/inbox/${inquiryId}`;
-		const host = row.space.host;
 		const hostNotLinked = toHost && host.user === null;
 		const message = inquiryMessageEmail({
 			to: toHost ? (host.user?.email ?? host.contactEmail) : row.renter.email,

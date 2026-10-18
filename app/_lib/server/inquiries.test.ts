@@ -6,6 +6,7 @@ const mockInquiryUpdateMany = jest.fn();
 const mockMessageFindFirst = jest.fn();
 const mockMessageFindMany = jest.fn();
 const mockQueryRaw = jest.fn();
+const mockBlockFindMany = jest.fn();
 
 jest.mock("@/app/_lib/db", () => ({
 	prisma: {
@@ -19,6 +20,7 @@ jest.mock("@/app/_lib/db", () => ({
 			findFirst: (...a: unknown[]) => mockMessageFindFirst(...a),
 			findMany: (...a: unknown[]) => mockMessageFindMany(...a),
 		},
+		block: { findMany: (...a: unknown[]) => mockBlockFindMany(...a) },
 		$queryRaw: (...a: unknown[]) => mockQueryRaw(...a),
 	},
 }));
@@ -35,7 +37,7 @@ const participationRow = {
 	status: "NEW",
 	renterId: RENTER,
 	requesterName: "Demo Renter",
-	space: { host: { userId: HOST, displayName: "Demo Host A" } },
+	space: { host: { userId: HOST, displayName: "Demo Host A", verifiedAt: new Date("2026-10-01T00:00:00Z") } },
 };
 const msg = (id: string, senderId: string, at: string, body = "Hello") => ({
 	id,
@@ -64,6 +66,7 @@ const readMarkFor = (side: "hostLastReadAt" | "renterLastReadAt", upTo: Date) =>
 beforeEach(() => {
 	jest.resetAllMocks();
 	mockInquiryUpdateMany.mockResolvedValue({ count: 1 });
+	mockBlockFindMany.mockResolvedValue([]);
 });
 
 describe("participation", () => {
@@ -124,6 +127,7 @@ describe("getInquiryThread", () => {
 			canReply: true,
 			canDecline: true,
 			canClose: true,
+			blockedByMe: false,
 		});
 		// Read up to the newest message shown, not the wall clock.
 		expect(mockInquiryUpdateMany).toHaveBeenCalledTimes(1);
@@ -175,6 +179,7 @@ describe("getMessagesAfter", () => {
 		const result = await getMessagesAfter("inq_1", RENTER, null);
 		expect(result).toEqual({
 			status: "NEW",
+			canReply: true,
 			messages: [{ id: "m1", body: "Hello", sentAt: "2026-10-06T08:00:00.000Z", fromMe: true, senderName: "Demo Renter" }],
 		});
 		expect(mockMessageFindMany).toHaveBeenCalledWith(
@@ -199,7 +204,7 @@ describe("getMessagesAfter", () => {
 		mockInquiryFindUnique.mockResolvedValue(participationRow);
 		mockMessageFindFirst.mockResolvedValue({ id: "m1", createdAt: new Date("2026-10-06T08:00:00Z") });
 		mockMessageFindMany.mockResolvedValue([]);
-		await expect(getMessagesAfter("inq_1", RENTER, "m1")).resolves.toEqual({ status: "NEW", messages: [] });
+		await expect(getMessagesAfter("inq_1", RENTER, "m1")).resolves.toEqual({ status: "NEW", canReply: true, messages: [] });
 		expect(mockInquiryUpdateMany).not.toHaveBeenCalled();
 		expect(mockInquiryUpdate).not.toHaveBeenCalled();
 	});
@@ -228,6 +233,50 @@ describe("getMessagesAfter", () => {
 		mockMessageFindMany.mockResolvedValue([]);
 		await getMessagesAfter("inq_1", RENTER, "m_other_thread");
 		expect(mockMessageFindMany.mock.calls[0][0].where).toEqual({ inquiryId: "inq_1" });
+	});
+});
+
+describe("read-only state", () => {
+	const hostRow = (verifiedAt: Date | null) => ({ ...participationRow, status: "RESPONDED", space: { host: { ...participationRow.space.host, verifiedAt } } });
+	const threadRow = {
+		id: "inq_1",
+		status: "RESPONDED",
+		requesterCompany: null,
+		shootDate: null,
+		durationHours: null,
+		crewSize: null,
+		productionType: "FILM",
+		budgetNote: null,
+		space: { slug: "demo-poblacion-loft", title: "[DEMO] Corner loft", areaName: "Poblacion", city: "MAKATI" },
+		messages: [msg("m1", RENTER, "2026-10-07T10:00:00Z")],
+	};
+
+	it("a renter who blocked the host can read, can't act, and sees blockedByMe", async () => {
+		mockInquiryFindUnique.mockResolvedValueOnce(hostRow(new Date("2026-10-01T00:00:00Z"))).mockResolvedValueOnce(threadRow);
+		mockBlockFindMany.mockResolvedValue([{ blockerId: RENTER }]);
+		const thread = await getInquiryThread("inq_1", RENTER);
+		expect(thread).toMatchObject({ status: "RESPONDED", canReply: false, canDecline: false, canClose: false, blockedByMe: true });
+		expect(thread?.messages).toHaveLength(1);
+	});
+
+	it("the blocked side sees the same read-only state with blockedByMe false", async () => {
+		mockInquiryFindUnique.mockResolvedValueOnce(hostRow(new Date("2026-10-01T00:00:00Z"))).mockResolvedValueOnce(threadRow);
+		mockBlockFindMany.mockResolvedValue([{ blockerId: RENTER }]);
+		const thread = await getInquiryThread("inq_1", HOST);
+		expect(thread).toMatchObject({ canReply: false, canDecline: false, canClose: false, blockedByMe: false });
+	});
+
+	it("an unverified host's thread is read-only for both sides; the poll says canReply false", async () => {
+		mockInquiryFindUnique.mockResolvedValue(hostRow(null));
+		mockMessageFindMany.mockResolvedValue([]);
+		await expect(getMessagesAfter("inq_1", RENTER, null)).resolves.toMatchObject({ status: "RESPONDED", canReply: false });
+	});
+
+	it("re-verifying restores canReply on the next poll with no other write", async () => {
+		mockInquiryFindUnique.mockResolvedValue(hostRow(new Date("2026-10-19T00:00:00Z")));
+		mockMessageFindMany.mockResolvedValue([]);
+		await expect(getMessagesAfter("inq_1", RENTER, null)).resolves.toMatchObject({ canReply: true });
+		expect(mockInquiryUpdate).not.toHaveBeenCalled();
 	});
 });
 
