@@ -186,7 +186,7 @@ export type InquiryApiError = {
 		| "NOT_HOST"
 		| "BLOCKED" // POST /api/inquiries only
 		| "NOT_LINKED"; // POST /api/inquiries/[id]/block: the host hasn't signed in yet
-	fields?: InquiryFieldErrors | ReportFieldErrors;
+	fields?: InquiryFieldErrors;
 };
 ```
 
@@ -204,6 +204,9 @@ export type MessagesResponse = { messages: InquiryMessage[]; status: InquiryStat
 export type NewReportInput = { reason: ReportReason; detail: string | null };
 export type ReportFieldErrors = Partial<Record<keyof NewReportInput, string>>;
 export type CreateReportResponse = { id: string };
+// The report route's errors. Separate from InquiryApiError so the inquiry form's
+// `fields` stays keyed by NewInquiryInput.
+export type ReportApiError = { error: InquiryApiError["error"]; fields?: ReportFieldErrors };
 
 // POST and DELETE /api/inquiries/[id]/block — 200
 export type BlockResponse = { blockedByMe: boolean };
@@ -1435,10 +1438,10 @@ import { validateNewReport } from "@/app/_lib/reportValidation";
 import { getCurrentUser } from "@/app/_lib/server/currentUser";
 import { notifyReport } from "@/app/_lib/server/reportNotify";
 import { createReport } from "@/app/_lib/server/reports";
-import type { CreateReportResponse, InquiryApiError } from "@/app/_lib/types";
+import type { CreateReportResponse, ReportApiError } from "@/app/_lib/types";
 
 type Context = { params: Promise<{ id: string }> };
-const error = (body: InquiryApiError, status: number) => Response.json(body, { status });
+const error = (body: ReportApiError, status: number) => Response.json(body, { status });
 
 export async function POST(request: Request, { params }: Context): Promise<Response> {
 	const user = await getCurrentUser();
