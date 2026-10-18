@@ -87,11 +87,17 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 	const blockedRef = useRef<HTMLParagraphElement>(null);
 	const focusBlocked = useRef(false);
 	const focusMore = useRef(false);
+	// Bumped whenever this client changes the block state, so a poll that
+	// started before the change can't overwrite canReply with a stale answer.
+	const safetyGen = useRef(0);
+	// Set when a poll is asked for while one is in flight: it runs again after,
+	// so a refresh (say, after unblocking) is never dropped.
+	const pollAgain = useRef(false);
 
 	// statusOpen keeps the poller running while a block or an unverified host
 	// makes the thread read-only, so it notices when that lifts.
 	const statusOpen = isOpenStatus(status);
-	const open = statusOpen && sendable;
+	const open = statusOpen && sendable && !blockedByMe;
 	const canDecline = open && thread.role === "HOST";
 	const canClose = open;
 	const signInHref = `/sign-in?next=${encodeURIComponent(`/inbox/${id}`)}`;
@@ -155,8 +161,12 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 		let cancelled = false;
 
 		async function poll() {
-			if (inFlight.current) return;
+			if (inFlight.current) {
+				pollAgain.current = true;
+				return;
+			}
 			inFlight.current = true;
+			const gen = safetyGen.current;
 			try {
 				const cursor = pollCursor(messagesRef.current);
 				const res = await fetch(`/api/inquiries/${id}/messages${cursor ? `?after=${encodeURIComponent(cursor)}` : ""}`, {
@@ -168,7 +178,7 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 					if (cancelled) return;
 					setMessages((prev) => mergeMessages(prev, data.messages));
 					setStatus(data.status);
-					setSendable(data.canReply);
+					if (gen === safetyGen.current) setSendable(data.canReply);
 				} else if (res.status === 401) {
 					setAlert({ kind: "session" });
 					setStopped(true);
@@ -181,6 +191,10 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 				// Network error: the next tick retries.
 			} finally {
 				inFlight.current = false;
+				if (pollAgain.current && !cancelled) {
+					pollAgain.current = false;
+					void poll();
+				}
 			}
 		}
 
@@ -282,22 +296,30 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 			const res = await fetch(`/api/inquiries/${id}/block`, { method: "POST" });
 			if (res.status === 200) {
 				const data: BlockResponse = await res.json();
+				safetyGen.current += 1;
 				focusBlocked.current = data.blockedByMe;
+				// Not blocked after all: the notice won't appear, so land on More.
+				focusMore.current = !data.blockedByMe;
 				setBlockedByMe(data.blockedByMe);
 				if (data.blockedByMe) setSendable(false);
 				setAlert(null);
-			} else if (res.status === 409) {
-				setAlert({ kind: "text", text: NOT_LINKED_TEXT });
-			} else if (res.status === 401) {
-				setAlert({ kind: "session" });
-				setStopped(true);
-			} else if (res.status === 404) {
-				setAlert({ kind: "gone" });
-				setStopped(true);
 			} else {
-				setAlert({ kind: "text", text: STATUS_FAILED_TEXT });
+				// The confirmation goes; give focus back to More once it's enabled.
+				focusMore.current = true;
+				if (res.status === 409) {
+					setAlert({ kind: "text", text: NOT_LINKED_TEXT });
+				} else if (res.status === 401) {
+					setAlert({ kind: "session" });
+					setStopped(true);
+				} else if (res.status === 404) {
+					setAlert({ kind: "gone" });
+					setStopped(true);
+				} else {
+					setAlert({ kind: "text", text: STATUS_FAILED_TEXT });
+				}
 			}
 		} catch {
+			focusMore.current = true;
 			setAlert({ kind: "text", text: STATUS_FAILED_TEXT });
 		} finally {
 			setActing(false);
@@ -313,6 +335,7 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 			const res = await fetch(`/api/inquiries/${id}/block`, { method: "DELETE" });
 			if (res.status === 200) {
 				const data: BlockResponse = await res.json();
+				safetyGen.current += 1;
 				setBlockedByMe(data.blockedByMe);
 				setAlert(null);
 				focusMore.current = true;
@@ -491,6 +514,7 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 					setReporting(false);
 				}}
 				onBlocked={() => {
+					safetyGen.current += 1;
 					setBlockedByMe(true);
 					setSendable(false);
 				}}

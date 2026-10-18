@@ -384,6 +384,8 @@ describe("read-only from canReply", () => {
 	it("keeps polling while read-only on an open status, and brings the reply box back when canReply returns", async () => {
 		mockFetch.mockResolvedValue(reply(200, { status: "RESPONDED", canReply: true, messages: [] }));
 		renderWithTheme(<ThreadView thread={otherSideBlocked} />);
+		expect(screen.getByText("This conversation is closed.")).toBeInTheDocument();
+		expect(screen.queryByLabelText("Reply")).not.toBeInTheDocument();
 		await tick(15);
 		expect(screen.getByLabelText("Reply")).toBeEnabled();
 		expect(screen.queryByText("This conversation is closed.")).not.toBeInTheDocument();
@@ -440,6 +442,27 @@ describe("blocking", () => {
 		expect(screen.getByRole("alert")).toHaveTextContent("You can block this host once they've joined Iskawt.");
 		expect(screen.getByLabelText("Reply")).toBeEnabled();
 		expect(screen.queryByText("You blocked Demo Host A.")).not.toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "More" })).toHaveFocus();
+	});
+
+	it("ignores a stale poll that resolves after a confirmed block", async () => {
+		let resolvePoll: (value: unknown) => void = () => {};
+		route({
+			poll: () => new Promise((resolve) => (resolvePoll = resolve)),
+			block: () => Promise.resolve(reply(200, { blockedByMe: true })),
+		});
+		renderWithTheme(<ThreadView thread={demoThread} />);
+		await tick(15);
+		expect(pollCalls()).toHaveLength(1);
+		await openMenu();
+		await user().click(screen.getByRole("menuitem", { name: "Block Demo Host A" }));
+		await user().click(screen.getByRole("button", { name: "Yes, block Demo Host A" }));
+		await tick(0);
+		await act(async () => resolvePoll(reply(200, { status: "RESPONDED", canReply: true, messages: [] })));
+		await tick(0);
+		expect(screen.getByText("You blocked Demo Host A.")).toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Close conversation" })).not.toBeInTheDocument();
+		expect(screen.queryByLabelText("Reply")).not.toBeInTheDocument();
 	});
 
 	it("can block a closed thread", async () => {
@@ -480,6 +503,29 @@ describe("unblocking", () => {
 		expect(screen.queryByText("You blocked Demo Host A.")).not.toBeInTheDocument();
 		expect(screen.getByText("This conversation is closed.")).toBeInTheDocument();
 		expect(screen.queryByLabelText("Reply")).not.toBeInTheDocument();
+	});
+
+	it("doesn't lose its refresh to a poll already in flight", async () => {
+		let resolveFirst: (value: unknown) => void = () => {};
+		let polls = 0;
+		route({
+			unblock: () => Promise.resolve(reply(200, { blockedByMe: false })),
+			poll: () => {
+				polls += 1;
+				return polls === 1
+					? new Promise((resolve) => (resolveFirst = resolve))
+					: Promise.resolve(reply(200, { status: "RESPONDED", canReply: true, messages: [] }));
+			},
+		});
+		renderWithTheme(<ThreadView thread={blockedThread} />);
+		await tick(15);
+		expect(pollCalls()).toHaveLength(1);
+		await user().click(screen.getByRole("button", { name: "Unblock" }));
+		await tick(0);
+		await act(async () => resolveFirst(reply(200, { status: "RESPONDED", canReply: false, messages: [] })));
+		await tick(0);
+		expect(pollCalls()).toHaveLength(2);
+		expect(screen.getByLabelText("Reply")).toBeEnabled();
 	});
 
 	it("is offered in the More menu too", async () => {
