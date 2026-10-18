@@ -82,6 +82,7 @@ describe("POST /api/inquiries/[id]/report", () => {
 		mockGetCurrentUser.mockResolvedValue(null);
 		const res = await reportRoute(reportReq({ reason: "SPAM" }), ctx);
 		expect(res.status).toBe(401);
+		expect(mockCreateReport).not.toHaveBeenCalled();
 	});
 
 	it("201 { id }, then notifies ops from after()", async () => {

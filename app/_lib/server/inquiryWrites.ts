@@ -43,7 +43,9 @@ export async function createInquiry(userId: string, input: NewInquiryInput, now:
 	if (space.host.userId === userId) return { kind: "own-space" };
 
 	// Before open-thread reuse: a blocked renter is never told their message
-	// was "added to your existing conversation".
+	// was "added to your existing conversation". The check runs outside the
+	// serializable transaction, so a block landing in that gap lets one inquiry
+	// through; the notifier re-checks before emailing.
 	if ((await blockersBetween(userId, space.host.userId)).length > 0) return { kind: "blocked" };
 
 	// Serializable: two parallel submits can't both see "no open thread" and

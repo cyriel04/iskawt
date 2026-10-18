@@ -272,11 +272,19 @@ describe("read-only state", () => {
 		await expect(getMessagesAfter("inq_1", RENTER, null)).resolves.toMatchObject({ status: "RESPONDED", canReply: false });
 	});
 
+	it("status and the can* flags agree when a close lands between the two reads", async () => {
+		mockInquiryFindUnique.mockResolvedValueOnce(hostRow(new Date("2026-10-01T00:00:00Z"))).mockResolvedValueOnce({ ...threadRow, status: "CLOSED" });
+		mockBlockFindMany.mockResolvedValue([]);
+		const thread = await getInquiryThread("inq_1", RENTER);
+		expect(thread).toMatchObject({ status: "CLOSED", canReply: false, canDecline: false, canClose: false });
+	});
+
 	it("re-verifying restores canReply on the next poll with no other write", async () => {
 		mockInquiryFindUnique.mockResolvedValue(hostRow(new Date("2026-10-19T00:00:00Z")));
 		mockMessageFindMany.mockResolvedValue([]);
 		await expect(getMessagesAfter("inq_1", RENTER, null)).resolves.toMatchObject({ canReply: true });
 		expect(mockInquiryUpdate).not.toHaveBeenCalled();
+		expect(mockInquiryUpdateMany).not.toHaveBeenCalled();
 	});
 });
 

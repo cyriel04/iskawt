@@ -2,7 +2,7 @@
 
 import { INBOX_PAGE_SIZE, INBOX_PREVIEW_CHARS } from "@/app/_lib/constants/inquiries";
 import { prisma } from "@/app/_lib/db";
-import { getParticipation, markRead, messageSelect, toInquiryMessage } from "@/app/_lib/server/inquiryAccess";
+import { getParticipation, isOpen, markRead, messageSelect, toInquiryMessage } from "@/app/_lib/server/inquiryAccess";
 import type { InquirySummary, InquiryThread, MessagesResponse } from "@/app/_lib/types";
 
 function preview(body: string): string {
@@ -86,6 +86,8 @@ export async function getInquiryThread(inquiryId: string, userId: string): Promi
 
 	const newest = row.messages.at(-1);
 	if (newest) await markRead(inquiryId, p.role, newest.createdAt);
+	// Status is from the second read, so derive the flags from it too.
+	const open = p.canSend && isOpen(row.status);
 	return {
 		id: row.id,
 		role: p.role,
@@ -99,9 +101,9 @@ export async function getInquiryThread(inquiryId: string, userId: string): Promi
 		productionType: row.productionType,
 		budgetNote: row.budgetNote,
 		messages: row.messages.map((m) => toInquiryMessage(m, userId, p)),
-		canReply: p.canSend,
-		canDecline: p.canSend && p.role === "HOST",
-		canClose: p.canSend,
+		canReply: open,
+		canDecline: open && p.role === "HOST",
+		canClose: open,
 		blockedByMe: p.blockedByMe,
 	};
 }
