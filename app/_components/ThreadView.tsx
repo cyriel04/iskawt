@@ -507,6 +507,7 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 			<ReportDialog
 				inquiryId={id}
 				counterpartName={thread.counterpartName}
+				blockedByMe={blockedByMe}
 				open={reporting}
 				onClose={() => {
 					// The menu item that opened the dialog is gone; land on More.
@@ -517,6 +518,7 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 					safetyGen.current += 1;
 					setBlockedByMe(true);
 					setSendable(false);
+					setAlert(null);
 				}}
 			/>
 		</section>

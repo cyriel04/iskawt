@@ -20,7 +20,7 @@ beforeEach(() => {
 	global.fetch = mockFetch;
 });
 
-const props = { inquiryId: "inq_demo", counterpartName: "Demo Host A", open: true, onClose, onBlocked };
+const props = { inquiryId: "inq_demo", counterpartName: "Demo Host A", open: true, blockedByMe: false, onClose, onBlocked };
 const dialog = () => screen.getByRole("dialog", { name: "Report conversation" });
 const send = () => userEvent.click(screen.getByRole("button", { name: "Send report" }));
 
@@ -89,6 +89,34 @@ it("with Also block: reports, then blocks, then calls onBlocked", async () => {
 	expect(mockFetch.mock.calls.map(([url]: [string]) => url)).toEqual(["/api/inquiries/inq_demo/report", "/api/inquiries/inq_demo/block"]);
 	expect(mockFetch.mock.calls[1][1]).toEqual(expect.objectContaining({ method: "POST" }));
 	expect(onBlocked).toHaveBeenCalledTimes(1);
+	expect(within(dialog()).getByText("You blocked Demo Host A.")).toBeInTheDocument();
+});
+
+it("hides Also block when the host is already blocked, and sends only the report", async () => {
+	route({ report: () => reply(201, { id: "rep_1" }) });
+	renderWithTheme(<ReportDialog {...props} blockedByMe />);
+	expect(screen.queryByLabelText("Also block Demo Host A")).not.toBeInTheDocument();
+	await userEvent.click(screen.getByLabelText("Spam"));
+	await send();
+	expect(await screen.findByText("Thanks. Someone from Iskawt will look at this.")).toBeInTheDocument();
+	expect(mockFetch).toHaveBeenCalledTimes(1);
+});
+
+it("moves focus to the thanks once the report is sent", async () => {
+	route({ report: () => reply(201, { id: "rep_1" }) });
+	renderWithTheme(<ReportDialog {...props} />);
+	await userEvent.click(screen.getByLabelText("Spam"));
+	await send();
+	const thanks = await screen.findByText("Thanks. Someone from Iskawt will look at this.");
+	expect(thanks).toHaveFocus();
+	expect(thanks).toHaveAttribute("role", "status");
+});
+
+it("ties the reason error to the radio group", async () => {
+	renderWithTheme(<ReportDialog {...props} />);
+	await send();
+	const error = screen.getByText("Choose a reason.");
+	expect(within(dialog()).getByRole("radiogroup")).toHaveAttribute("aria-describedby", error.id);
 });
 
 it.each([

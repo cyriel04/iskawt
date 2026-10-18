@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
@@ -33,6 +33,7 @@ const blockFailedText = (name: string) => `We couldn't block ${name}. You can tr
 type Props = {
 	inquiryId: string;
 	counterpartName: string;
+	blockedByMe: boolean;
 	open: boolean;
 	onClose: () => void;
 	onBlocked: () => void;
@@ -44,8 +45,10 @@ type Phase = { kind: "form" } | { kind: "sent"; note: string | null };
 // Report a conversation, and optionally block the other person in the same go.
 // The report and the block are two requests: a failed block never undoes a
 // sent report, it only adds a note.
-export default function ReportDialog({ inquiryId, counterpartName, open, onClose, onBlocked }: Props) {
+export default function ReportDialog({ inquiryId, counterpartName, blockedByMe, open, onClose, onBlocked }: Props) {
 	const titleId = useId();
+	const reasonErrorId = useId();
+	const thanksRef = useRef<HTMLParagraphElement>(null);
 	const [reason, setReason] = useState<ReportReason | "">("");
 	const [detail, setDetail] = useState("");
 	const [alsoBlock, setAlsoBlock] = useState(false);
@@ -53,7 +56,13 @@ export default function ReportDialog({ inquiryId, counterpartName, open, onClose
 	const [notice, setNotice] = useState<Notice>(null);
 	const [sending, setSending] = useState(false);
 	const [phase, setPhase] = useState<Phase>({ kind: "form" });
+	const sent = phase.kind === "sent";
 	const signInHref = `/sign-in?next=${encodeURIComponent(`/inbox/${inquiryId}`)}`;
+
+	// The form unmounts on "sent"; without this, focus drops to <body>.
+	useEffect(() => {
+		if (sent) thanksRef.current?.focus();
+	}, [sent]);
 
 	function close() {
 		onClose();
@@ -70,8 +79,9 @@ export default function ReportDialog({ inquiryId, counterpartName, open, onClose
 			const res = await fetch(`/api/inquiries/${inquiryId}/block`, { method: "POST" });
 			if (res.status === 200) {
 				const data: BlockResponse = await res.json();
-				if (data.blockedByMe) onBlocked();
-				return null;
+				if (!data.blockedByMe) return null;
+				onBlocked();
+				return `You blocked ${counterpartName}.`;
 			}
 			return res.status === 409 ? NOT_LINKED_TEXT : blockFailedText(counterpartName);
 		} catch {
@@ -120,7 +130,7 @@ export default function ReportDialog({ inquiryId, counterpartName, open, onClose
 			{phase.kind === "sent" ? (
 				<>
 					<DialogContent className={styles.content}>
-						<Typography component="p" variant="body1">
+						<Typography ref={thanksRef} component="p" variant="body1" role="status" tabIndex={-1}>
 							{THANKS_TEXT}
 						</Typography>
 						{phase.note && <Alert severity="info">{phase.note}</Alert>}
@@ -141,6 +151,7 @@ export default function ReportDialog({ inquiryId, counterpartName, open, onClose
 							<FormLabel component="legend">Reason</FormLabel>
 							<RadioGroup
 								name="reason"
+								aria-describedby={errors.reason ? reasonErrorId : undefined}
 								value={reason}
 								onChange={(e) => {
 									const next = REASONS.find((r) => r === e.target.value);
@@ -151,7 +162,7 @@ export default function ReportDialog({ inquiryId, counterpartName, open, onClose
 									<FormControlLabel key={r} value={r} control={<Radio />} label={reportReasonLabels[r]} className={styles.option} />
 								))}
 							</RadioGroup>
-							{errors.reason && <FormHelperText>{errors.reason}</FormHelperText>}
+							{errors.reason && <FormHelperText id={reasonErrorId}>{errors.reason}</FormHelperText>}
 						</FormControl>
 						<TextField
 							label="Details (optional)"
@@ -164,11 +175,13 @@ export default function ReportDialog({ inquiryId, counterpartName, open, onClose
 							error={Boolean(errors.detail)}
 							helperText={errors.detail ?? `${[...detail].length}/${REPORT_DETAIL_MAX}`}
 						/>
-						<FormControlLabel
-							control={<Checkbox checked={alsoBlock} onChange={(e) => setAlsoBlock(e.target.checked)} />}
-							label={`Also block ${counterpartName}`}
-							className={styles.option}
-						/>
+						{!blockedByMe && (
+							<FormControlLabel
+								control={<Checkbox checked={alsoBlock} onChange={(e) => setAlsoBlock(e.target.checked)} />}
+								label={`Also block ${counterpartName}`}
+								className={styles.option}
+							/>
+						)}
 						{notice && (
 							<Alert severity="error">
 								{notice.text}

@@ -377,6 +377,7 @@ describe("read-only from canReply", () => {
 		expect(screen.getByText("This conversation is closed.")).toBeInTheDocument();
 		expect(screen.queryByLabelText("Reply")).not.toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Close conversation" })).not.toBeInTheDocument();
+		expect(screen.queryByText(/blocked/i)).not.toBeInTheDocument();
 		await tick(15);
 		expect(pollCalls()).toHaveLength(2);
 	});
@@ -463,6 +464,33 @@ describe("blocking", () => {
 		expect(screen.getByText("You blocked Demo Host A.")).toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Close conversation" })).not.toBeInTheDocument();
 		expect(screen.queryByLabelText("Reply")).not.toBeInTheDocument();
+	});
+
+	it("a stale poll's canReply can't reopen the thread after block then unblock", async () => {
+		let resolvePoll: (value: unknown) => void = () => {};
+		let polls = 0;
+		route({
+			poll: () => {
+				polls += 1;
+				return polls === 1 ? new Promise((resolve) => (resolvePoll = resolve)) : pending();
+			},
+			block: () => Promise.resolve(reply(200, { blockedByMe: true })),
+			unblock: () => Promise.resolve(reply(200, { blockedByMe: false })),
+		});
+		renderWithTheme(<ThreadView thread={demoThread} />);
+		await tick(15);
+		expect(pollCalls()).toHaveLength(1);
+		await openMenu();
+		await user().click(screen.getByRole("menuitem", { name: "Block Demo Host A" }));
+		await user().click(screen.getByRole("button", { name: "Yes, block Demo Host A" }));
+		await tick(0);
+		await act(async () => resolvePoll(reply(200, { status: "RESPONDED", canReply: true, messages: [] })));
+		await tick(0);
+		await user().click(screen.getByRole("button", { name: "Unblock" }));
+		await tick(0);
+		expect(pollCalls()).toHaveLength(2);
+		expect(screen.queryByLabelText("Reply")).not.toBeInTheDocument();
+		expect(screen.getByText("This conversation is closed.")).toBeInTheDocument();
 	});
 
 	it("can block a closed thread", async () => {
@@ -558,5 +586,35 @@ describe("reporting", () => {
 		expect(screen.getByText("You blocked Demo Host A.")).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "More" })).toHaveFocus();
 		expect(screen.queryByLabelText("Reply")).not.toBeInTheDocument();
+	});
+
+	it("report with Also block clears an existing alert", async () => {
+		route({
+			send: () => Promise.resolve(reply(500, {})),
+			report: () => Promise.resolve(reply(201, { id: "rep_1" })),
+			block: () => Promise.resolve(reply(200, { blockedByMe: true })),
+		});
+		renderWithTheme(<ThreadView thread={demoThread} />);
+		await user().type(screen.getByLabelText("Reply"), "Hello");
+		await user().click(screen.getByRole("button", { name: "Send" }));
+		await tick(0);
+		expect(screen.getByRole("alert")).toHaveTextContent("We couldn't send that. Try again.");
+		await openMenu();
+		await user().click(screen.getByRole("menuitem", { name: "Report conversation" }));
+		const dialog = screen.getByRole("dialog", { name: "Report conversation" });
+		await user().click(within(dialog).getByLabelText("Spam"));
+		await user().click(within(dialog).getByLabelText("Also block Demo Host A"));
+		await user().click(within(dialog).getByRole("button", { name: "Send report" }));
+		await tick(0);
+		expect(screen.queryByText("We couldn't send that. Try again.")).not.toBeInTheDocument();
+	});
+
+	it("doesn't offer Also block once the host is already blocked", async () => {
+		route({ report: () => Promise.resolve(reply(201, { id: "rep_1" })) });
+		renderWithTheme(<ThreadView thread={blockedThread} />);
+		await openMenu();
+		await user().click(screen.getByRole("menuitem", { name: "Report conversation" }));
+		const dialog = screen.getByRole("dialog", { name: "Report conversation" });
+		expect(within(dialog).queryByLabelText("Also block Demo Host A")).not.toBeInTheDocument();
 	});
 });
