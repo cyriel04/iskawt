@@ -178,12 +178,12 @@ describe("notifications", () => {
 		for (const cb of afterCallbacks) await cb();
 	};
 
-	it("notifies the host after a new or reused inquiry, with the trimmed message", async () => {
+	it("notifies the host after a new or reused inquiry", async () => {
 		for (const outcome of [{ kind: "created", id: "inq_new" }, { kind: "reused", id: "inq_open" }]) {
 			afterCallbacks.length = 0;
 			mockNotify.mockReset();
 			mockCreateInquiry.mockResolvedValue(outcome);
-			await createRoute(json({ ...validBody, message: "  Free next week?  " }));
+			await createRoute(json(validBody));
 			await runAfter();
 			expect(mockNotify).toHaveBeenCalledWith(outcome.id, "RENTER");
 		}

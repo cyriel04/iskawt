@@ -129,6 +129,13 @@ describe("validateNewInquiry", () => {
 		"visit www.example.com",
 		"example.com",
 		"https://x.io",
+		"Official",
+		"Isk\u0430wt",
+		"Isk\u0430wt PH",
+		"Ad\u200Bmin",
+		"Sup\u00ADport",
+		"\u202Etwaksi",
+		"\uFF45\uFF58\uFF41\uFF4D\uFF50\uFF4C\uFF45\uFF0E\uFF43\uFF4F\uFF4D",
 	])("rejects a name that could pass for Iskawt or carries contact details (%s)", (requesterName) => {
 		expect(validateNewInquiry({ ...valid, requesterName }, today)).toEqual({
 			ok: false,
@@ -147,6 +154,7 @@ describe("validateNewInquiry", () => {
 		"Ella Cruz",
 		"José Rizal",
 		"Demo Renter",
+		"\u0418\u0432\u0430\u043D \u041F\u0435\u0442\u0440\u043E\u0432",
 	])("accepts an ordinary name (%s)", (requesterName) => {
 		expect(validateNewInquiry({ ...valid, requesterName }, today).ok).toBe(true);
 	});

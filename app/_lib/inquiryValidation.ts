@@ -72,7 +72,13 @@ const ROLE_WORDS = new Set(RESERVED_ROLE_WORDS.flatMap(nameWords));
 const CONTACT_LIKE = /@|https?:\/\/|www\.|[\p{L}\d]\.\p{L}{2,}/iu;
 
 function looksOfficial(name: string): boolean {
-	if (CONTACT_LIKE.test(name)) return true;
+	// Invisible format characters (zero-width, soft hyphen, bidi overrides) split words.
+	if (/\p{Cf}/u.test(name)) return true;
+	// Latin mixed with Cyrillic or Greek is a homoglyph disguise; a wholly Cyrillic name is fine.
+	if (/\p{Script=Latin}/u.test(name) && /[\p{Script=Cyrillic}\p{Script=Greek}]/u.test(name)) return true;
+	// URLs and emails, after folding full-width forms to plain ASCII.
+	if (CONTACT_LIKE.test(name.normalize("NFKC"))) return true;
+	// Reserved brand and role words, after lookalike mapping.
 	const words = nameWords(name);
 	const joined = words.join("");
 	return BRAND_WORDS.some((word) => joined.includes(word)) || words.some((word) => ROLE_WORDS.has(word));
