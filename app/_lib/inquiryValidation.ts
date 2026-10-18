@@ -128,6 +128,7 @@ export function validateNewInquiry(
 	const requesterCompany = company.value;
 	if (company.error) errors.requesterCompany = company.error;
 	else if (requesterCompany && chars(requesterCompany) > INQUIRY_COMPANY_MAX) errors.requesterCompany = tooLong(INQUIRY_COMPANY_MAX);
+	else if (requesterCompany && looksOfficial(requesterCompany)) errors.requesterCompany = OFFICIAL_NAME;
 
 	const date = optionalText(raw.shootDate, "Enter a valid date.");
 	const shootDate = date.value;

@@ -122,7 +122,6 @@ describe("validateNewInquiry", () => {
 		"Iskawt Support",
 		"Support",
 		"Admin",
-		"Scout Films",
 		"0fficial Staff",
 		"Mod: moderator",
 		"a@b.co",
@@ -154,9 +153,34 @@ describe("validateNewInquiry", () => {
 		"Ella Cruz",
 		"José Rizal",
 		"Demo Renter",
+		"Ana Reyes, Location Scout",
+		"Scout Films",
+		"Francisco Utrera",
+		"Mas Couture",
 		"\u0418\u0432\u0430\u043D \u041F\u0435\u0442\u0440\u043E\u0432",
 	])("accepts an ordinary name (%s)", (requesterName) => {
 		expect(validateNewInquiry({ ...valid, requesterName }, today).ok).toBe(true);
+	});
+
+	it.each(["Iskawt Support", "Team Iskawt", "www.example.com"])(
+		"rejects a company that could pass for Iskawt or carries contact details (%s)",
+		(requesterCompany) => {
+			expect(validateNewInquiry({ ...valid, requesterCompany }, today)).toEqual({
+				ok: false,
+				errors: { requesterCompany: OFFICIAL },
+			});
+		},
+	);
+
+	it.each(["Reyes Films", "Steam Films Inc."])("accepts an ordinary company (%s)", (requesterCompany) => {
+		expect(validateNewInquiry({ ...valid, requesterCompany }, today).ok).toBe(true);
+	});
+
+	it("accepts an empty company", () => {
+		expect(validateNewInquiry({ ...valid, requesterCompany: "" }, today)).toMatchObject({
+			ok: true,
+			value: { requesterCompany: null },
+		});
 	});
 });
 
