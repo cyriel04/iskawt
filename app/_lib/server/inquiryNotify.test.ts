@@ -2,6 +2,7 @@
 const mockFindUnique = jest.fn();
 const mockUpdateMany = jest.fn();
 const mockSend = jest.fn();
+const mockBlockFindMany = jest.fn();
 
 jest.mock("@/app/_lib/db", () => ({
 	prisma: {
@@ -9,6 +10,7 @@ jest.mock("@/app/_lib/db", () => ({
 			findUnique: (...a: unknown[]) => mockFindUnique(...a),
 			updateMany: (...a: unknown[]) => mockUpdateMany(...a),
 		},
+		block: { findMany: (...a: unknown[]) => mockBlockFindMany(...a) },
 	},
 }));
 jest.mock("@/app/_lib/server/mailer", () => ({ getMailer: () => ({ send: (...a: unknown[]) => mockSend(...a) }) }));
@@ -19,12 +21,14 @@ const now = new Date("2026-10-07T10:00:00Z");
 const cutoff = new Date("2026-10-07T09:50:00Z");
 const row = (hostUser: { email: string } | null = { email: "demo-host@example.invalid" }) => ({
 	id: "inq_1",
+	status: "RESPONDED",
+	renterId: "user_renter",
 	hostNotifiedAt: null,
 	renterNotifiedAt: null,
 	renter: { email: "demo-renter@example.invalid" },
 	space: {
 		title: "[DEMO] Corner loft",
-		host: { contactEmail: "demo-host-contact@example.invalid", user: hostUser },
+		host: { userId: hostUser ? "user_host" : null, verifiedAt: new Date("2026-10-01T00:00:00Z"), contactEmail: "demo-host-contact@example.invalid", user: hostUser },
 	},
 });
 
@@ -35,6 +39,7 @@ beforeEach(() => {
 	mockFindUnique.mockResolvedValue(row());
 	mockUpdateMany.mockResolvedValue({ count: 1 });
 	mockSend.mockResolvedValue(undefined);
+	mockBlockFindMany.mockResolvedValue([]);
 	errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
 });
 afterEach(() => errorSpy.mockRestore());
@@ -118,8 +123,33 @@ it("reads only what the email needs: no names, no message", async () => {
 		where: { id: "inq_1" },
 		select: {
 			id: true,
+			status: true,
+			renterId: true,
 			renter: { select: { email: true } },
-			space: { select: { title: true, host: { select: { contactEmail: true, user: { select: { email: true } } } } } },
+			space: {
+				select: {
+					title: true,
+					host: { select: { userId: true, verifiedAt: true, contactEmail: true, user: { select: { email: true } } } },
+				},
+			},
 		},
 	});
+});
+
+it.each([
+	["the host blocked the renter", { blocks: [{ blockerId: "user_host" }] }],
+	["the renter blocked the host", { blocks: [{ blockerId: "user_renter" }] }],
+	["the host is unverified", { verifiedAt: null }],
+	["the thread is closed", { status: "CLOSED" }],
+])("sends nothing and claims no slot when %s", async (_label, change: { blocks?: { blockerId: string }[]; verifiedAt?: null; status?: string }) => {
+	const base = row();
+	mockFindUnique.mockResolvedValue({
+		...base,
+		status: change.status ?? base.status,
+		space: { ...base.space, host: { ...base.space.host, verifiedAt: change.verifiedAt === null ? null : base.space.host.verifiedAt } },
+	});
+	mockBlockFindMany.mockResolvedValue(change.blocks ?? []);
+	await notifyCounterpart("inq_1", "RENTER", now);
+	expect(mockUpdateMany).not.toHaveBeenCalled();
+	expect(mockSend).not.toHaveBeenCalled();
 });

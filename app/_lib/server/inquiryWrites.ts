@@ -4,7 +4,7 @@
 
 import { INQUIRIES_PER_USER_PER_DAY, MESSAGES_PER_USER_PER_HOUR } from "@/app/_lib/constants/inquiries";
 import { prisma } from "@/app/_lib/db";
-import { getParticipation, isOpen, messageSelect, toInquiryMessage } from "@/app/_lib/server/inquiryAccess";
+import { getParticipation, messageSelect, toInquiryMessage } from "@/app/_lib/server/inquiryAccess";
 import { publishedWhere } from "@/app/_lib/server/spaces";
 import { Prisma } from "@/generated/prisma/client";
 import type { InquiryMessage, InquiryRole, InquiryStatus, NewInquiryInput } from "@/app/_lib/types";
@@ -115,7 +115,7 @@ export async function postMessage(
 ): Promise<PostResult> {
 	const p = await getParticipation(inquiryId, userId);
 	if (!p) return { kind: "not-found" };
-	if (!isOpen(p.status)) return { kind: "closed" };
+	if (!p.canSend) return { kind: "closed" };
 
 	const sent = await prisma.message.count({
 		where: { senderId: userId, createdAt: { gt: new Date(now.getTime() - HOUR_MS) } },
@@ -123,7 +123,9 @@ export async function postMessage(
 	if (sent >= MESSAGES_PER_USER_PER_HOUR) return { kind: "rate-limited" };
 
 	// The open-status guard is re-checked inside the write: a close or decline
-	// that lands after getParticipation must win, not be overwritten.
+	// that lands after getParticipation must win, not be overwritten. A block or
+	// a verification change landing in that window is not re-checked; at most
+	// one message gets through, and the notifier re-checks before emailing.
 	const row = await prisma.$transaction(async (tx) => {
 		const touched = await tx.inquiry.updateMany({
 			where: { id: inquiryId, status: { in: OPEN_STATUSES } },
@@ -150,7 +152,7 @@ export async function changeStatus(
 ): Promise<StatusResult> {
 	const p = await getParticipation(inquiryId, userId);
 	if (!p) return { kind: "not-found" };
-	if (!isOpen(p.status)) return { kind: "closed" };
+	if (!p.canSend) return { kind: "closed" };
 	if (action === "decline" && p.role !== "HOST") return { kind: "not-host" };
 
 	const status: InquiryStatus = action === "decline" ? "DECLINED" : "CLOSED";
