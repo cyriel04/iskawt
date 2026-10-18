@@ -129,6 +129,30 @@ describe("createInquiry", () => {
 		await expect(createInquiry(HOST, input, now)).resolves.toEqual({ kind: "own-space" });
 	});
 
+	it.each([["the host blocked the renter", HOST], ["the renter blocked the host", RENTER]])(
+		"returns blocked when %s, before looking for an open thread",
+		async (_label, blockerId) => {
+			mockSpaceFindFirst.mockResolvedValue({ id: "space_1", host: { userId: HOST } });
+			mockBlockFindMany.mockResolvedValue([{ blockerId }]);
+			await expect(createInquiry(RENTER, input)).resolves.toEqual({ kind: "blocked" });
+			expect(mockBlockFindMany).toHaveBeenCalledWith({
+				where: { OR: [{ blockerId: RENTER, blockedId: HOST }, { blockerId: HOST, blockedId: RENTER }] },
+				select: { blockerId: true },
+			});
+			expect(mockTransaction).not.toHaveBeenCalled();
+			expect(mockInquiryFindFirst).not.toHaveBeenCalled();
+		},
+	);
+
+	it("checks no blocks for an unlinked host and carries on", async () => {
+		mockSpaceFindFirst.mockResolvedValue({ id: "space_1", host: { userId: null } });
+		mockInquiryFindFirst.mockResolvedValue(null);
+		mockInquiryCount.mockResolvedValue(0);
+		mockInquiryCreate.mockResolvedValue({ id: "inq_new" });
+		await expect(createInquiry(RENTER, input)).resolves.toEqual({ kind: "created", id: "inq_new" });
+		expect(mockBlockFindMany).not.toHaveBeenCalled();
+	});
+
 	it("reuses the renter's open thread for the same space and appends the message", async () => {
 		mockInquiryFindFirst.mockResolvedValue({ id: "inq_open" });
 		await expect(createInquiry(RENTER, input, now)).resolves.toEqual({ kind: "reused", id: "inq_open" });

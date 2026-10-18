@@ -4,7 +4,7 @@
 
 import { INQUIRIES_PER_USER_PER_DAY, MESSAGES_PER_USER_PER_HOUR } from "@/app/_lib/constants/inquiries";
 import { prisma } from "@/app/_lib/db";
-import { getParticipation, messageSelect, toInquiryMessage } from "@/app/_lib/server/inquiryAccess";
+import { blockersBetween, getParticipation, messageSelect, toInquiryMessage } from "@/app/_lib/server/inquiryAccess";
 import { publishedWhere } from "@/app/_lib/server/spaces";
 import { Prisma } from "@/generated/prisma/client";
 import type { InquiryMessage, InquiryRole, InquiryStatus, NewInquiryInput } from "@/app/_lib/types";
@@ -17,6 +17,7 @@ export type CreateResult =
 	| { kind: "reused"; id: string }
 	| { kind: "not-found" }
 	| { kind: "own-space" }
+	| { kind: "blocked" }
 	| { kind: "rate-limited" };
 
 export type PostResult =
@@ -40,6 +41,10 @@ export async function createInquiry(userId: string, input: NewInquiryInput, now:
 	});
 	if (!space) return { kind: "not-found" };
 	if (space.host.userId === userId) return { kind: "own-space" };
+
+	// Before open-thread reuse: a blocked renter is never told their message
+	// was "added to your existing conversation".
+	if ((await blockersBetween(userId, space.host.userId)).length > 0) return { kind: "blocked" };
 
 	// Serializable: two parallel submits can't both see "no open thread" and
 	// create two. The loser gets P2034 and is retried once, by which time the

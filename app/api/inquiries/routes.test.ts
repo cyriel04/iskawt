@@ -82,6 +82,14 @@ describe("POST /api/inquiries", () => {
 		expect(await res.json()).toEqual(body);
 	});
 
+	it("403 BLOCKED, with no notification", async () => {
+		mockCreateInquiry.mockResolvedValue({ kind: "blocked" });
+		const res = await createRoute(json(validBody));
+		expect(res.status).toBe(403);
+		expect(await res.json()).toEqual({ error: "BLOCKED" });
+		expect(afterCallbacks).toHaveLength(0);
+	});
+
 	it("passes the signed-in user's id, never a client-supplied one", async () => {
 		mockCreateInquiry.mockResolvedValue({ kind: "created", id: "inq_new" });
 		await createRoute(json({ ...validBody, renterId: "user_someone_else" }));
