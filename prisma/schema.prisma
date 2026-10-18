@@ -181,6 +181,7 @@ model Inquiry {
   renterNotifiedAt DateTime?
 
   messages Message[]
+  reports Report[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -201,6 +202,38 @@ model Message {
 
   @@index([inquiryId, createdAt])
   @@index([senderId, createdAt])
+}
+
+// One user has blocked another. User to user, not per thread: it covers every
+// thread they share and stops new inquiries between them. Unblocking deletes
+// the row. Never shown to the blocked side.
+model Block {
+  id        String   @id @default(cuid())
+  blockerId String
+  blocker   User     @relation("BlocksMade", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   User     @relation("BlocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+// Reviewed by a human in Prisma Studio. Never acted on automatically.
+model Report {
+  id         String       @id @default(cuid())
+  reporterId String
+  reporter   User         @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  inquiryId  String
+  inquiry    Inquiry      @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  reason     ReportReason
+  detail     String?      @db.Text // PRIVATE to ops. 1–1000 chars, trimmed. Never logged, never emailed.
+  createdAt  DateTime     @default(now())
+  reviewedAt DateTime?
+  notes      String?      @db.Text // ops only
+
+  @@index([reviewedAt, createdAt])
+  @@index([reporterId, createdAt])
 }
 
 // Hosts apply to list; a human reviews and creates the Host and Space rows.
@@ -241,6 +274,9 @@ model User {
 
   inquiries Inquiry[] // as renter
   messages  Message[]
+  blocksMade     Block[]  @relation("BlocksMade")
+  blocksReceived Block[]  @relation("BlocksReceived")
+  reports        Report[]
 }
 
 model Session {
@@ -404,6 +440,14 @@ enum InquiryStatus {
   RESPONDED // the host has replied at least once
   DECLINED  // the host declined; read-only
   CLOSED    // either side closed it; read-only
+}
+
+enum ReportReason {
+  SPAM
+  SCAM_OR_PHISHING
+  HARASSMENT
+  NOT_THEIR_SPACE
+  OTHER
 }
 
 enum ApplicationStatus {
