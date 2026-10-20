@@ -16,7 +16,7 @@ beforeEach(() => {
 });
 afterEach(() => errorSpy.mockRestore());
 
-const env = { REPORTS_EMAIL_TO: "ops@example.invalid" } as unknown as NodeJS.ProcessEnv;
+const env = { OPS_EMAIL_TO: "ops@example.invalid" } as unknown as NodeJS.ProcessEnv;
 
 it("builds an email with ids and reason only", () => {
 	const msg = reportEmail({ to: "ops@example.invalid", reportId: "rep_1", inquiryId: "inq_1", reason: "HARASSMENT" });
@@ -28,15 +28,15 @@ it("builds an email with ids and reason only", () => {
 	});
 });
 
-it("reads only id, inquiryId and reason, never the detail, and sends to REPORTS_EMAIL_TO", async () => {
+it("reads only id, inquiryId and reason, never the detail, and sends to OPS_EMAIL_TO", async () => {
 	await notifyReport("rep_1", env);
 	expect(mockFindUnique).toHaveBeenCalledWith({ where: { id: "rep_1" }, select: { id: true, inquiryId: true, reason: true } });
 	expect(mockSend).toHaveBeenCalledWith(expect.objectContaining({ to: "ops@example.invalid", subject: "Report: HARASSMENT" }));
 });
 
-it("logs the fixed line and sends nothing when REPORTS_EMAIL_TO is unset", async () => {
+it("logs the fixed line and sends nothing when OPS_EMAIL_TO is unset", async () => {
 	await notifyReport("rep_1", {} as NodeJS.ProcessEnv);
-	expect(errorSpy).toHaveBeenCalledWith("[report] no REPORTS_EMAIL_TO");
+	expect(errorSpy).toHaveBeenCalledWith("[report] no OPS_EMAIL_TO");
 	expect(mockSend).not.toHaveBeenCalled();
 });
 
@@ -51,4 +51,9 @@ it("does nothing for an unknown report", async () => {
 	mockFindUnique.mockResolvedValue(null);
 	await notifyReport("nope", env);
 	expect(mockSend).not.toHaveBeenCalled();
+});
+
+it("still sends to REPORTS_EMAIL_TO when only the old name is set", async () => {
+	await notifyReport("rep_1", { REPORTS_EMAIL_TO: "old@example.invalid" } as unknown as NodeJS.ProcessEnv);
+	expect(mockSend).toHaveBeenCalledWith(expect.objectContaining({ to: "old@example.invalid" }));
 });

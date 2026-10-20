@@ -5,6 +5,7 @@
 import { prisma } from "@/app/_lib/db";
 import { escapeHtml } from "@/app/_lib/server/escapeHtml";
 import { getMailer, type MailMessage } from "@/app/_lib/server/mailer";
+import { opsAddress } from "@/app/_lib/server/opsEmail";
 import type { ReportReason } from "@/app/_lib/types";
 
 type Args = { to: string; reportId: string; inquiryId: string; reason: ReportReason };
@@ -21,9 +22,9 @@ export function reportEmail({ to, reportId, inquiryId, reason }: Args): MailMess
 
 export async function notifyReport(reportId: string, env: NodeJS.ProcessEnv = process.env): Promise<void> {
 	try {
-		const to = env.REPORTS_EMAIL_TO;
+		const to = opsAddress(env);
 		if (!to) {
-			console.error("[report] no REPORTS_EMAIL_TO");
+			console.error("[report] no OPS_EMAIL_TO");
 			return;
 		}
 		const row = await prisma.report.findUnique({ where: { id: reportId }, select: { id: true, inquiryId: true, reason: true } });
