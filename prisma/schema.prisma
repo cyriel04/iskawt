@@ -37,10 +37,10 @@ model Host {
   about       String? @db.Text
 
   // PRIVATE. Never selected into anything that reaches a page.
-  contactEmail String @unique
+  contactEmail String  @unique
   contactPhone String?
 
-  respondsInHours Int?      // self-reported, shown as a rough signal
+  respondsInHours Int? // self-reported, shown as a rough signal
   verifiedAt      DateTime? // a human spoke to them and confirmed the space is theirs
 
   // Set automatically when a user signs in with this host's contactEmail and
@@ -68,11 +68,11 @@ model Space {
   host   Host   @relation(fields: [hostId], references: [id], onDelete: Cascade)
 
   // where — area only, never the street address
-  city        City
-  areaName    String // "Poblacion", "Kapitolyo", "Cubao" — how people say it
-  barangay    String?
-  latitude    Decimal @db.Decimal(10, 7) // jittered to ~300m for the public map
-  longitude   Decimal @db.Decimal(10, 7)
+  city         City
+  areaName     String // "Poblacion", "Kapitolyo", "Cubao" — how people say it
+  barangay     String?
+  latitude     Decimal @db.Decimal(10, 7) // jittered to ~300m for the public map
+  longitude    Decimal @db.Decimal(10, 7)
   exactAddress String? @db.Text // PRIVATE. Released by the host, not by the listing.
 
   // what it is
@@ -87,15 +87,15 @@ model Space {
   maxCrew        Int? // people the space comfortably holds, crew and talent
 
   // indicative rates — PHP, whole pesos. Shown as "from", never charged here.
-  hourlyRate    Int?
-  halfDayRate   Int?
-  fullDayRate   Int?
-  minimumHours  Int?
-  rateNotes     String? @db.Text // overtime, weekend, equipment, cleaning
+  hourlyRate   Int?
+  halfDayRate  Int?
+  fullDayRate  Int?
+  minimumHours Int?
+  rateNotes    String? @db.Text // overtime, weekend, equipment, cleaning
 
   // production practicalities — the reason a filmmaker picks one space over another
   naturalLight    NaturalLight @default(UNKNOWN)
-  windowDirection String?      // "east-facing", "north light"
+  windowDirection String? // "east-facing", "north light"
   powerOutlets    Int?
   powerAccess     PowerAccess  @default(UNKNOWN)
   blackoutCapable Boolean      @default(false) // can the space be made fully dark
@@ -144,7 +144,7 @@ model Photo {
 model Tag {
   id     String  @id @default(cuid())
   slug   String  @unique
-  label  String  // "brick wall", "rooftop view", "vintage furniture", "white cyc"
+  label  String // "brick wall", "rooftop view", "vintage furniture", "white cyc"
   spaces Space[]
 }
 
@@ -181,7 +181,7 @@ model Inquiry {
   renterNotifiedAt DateTime?
 
   messages Message[]
-  reports Report[]
+  reports  Report[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -241,16 +241,21 @@ model Report {
 model HostApplication {
   id      String            @id @default(cuid())
   status  ApplicationStatus @default(PENDING)
-  payload Json // the form as submitted
+  payload Json // the form as submitted, minus applicantName and address. Never parsed back.
   notes   String?           @db.Text
 
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   applicantName  String
-  applicantEmail String
+  applicantEmail String // PRIVATE. From the session, never typed.
+  address        String @db.Text // PRIVATE. Ops only, in Studio. Clear it when setting REJECTED.
 
   createdAt  DateTime  @default(now())
   reviewedAt DateTime?
 
   @@index([status, createdAt])
+  @@index([userId, createdAt])
 }
 
 // ---------------------------------------------------------------- accounts
@@ -272,11 +277,12 @@ model User {
   accounts Account[]
   host     Host?
 
-  inquiries Inquiry[] // as renter
-  messages  Message[]
-  blocksMade     Block[]  @relation("BlocksMade")
-  blocksReceived Block[]  @relation("BlocksReceived")
-  reports        Report[]
+  inquiries        Inquiry[] // as renter
+  messages         Message[]
+  blocksMade       Block[]           @relation("BlocksMade")
+  blocksReceived   Block[]           @relation("BlocksReceived")
+  reports          Report[]
+  hostApplications HostApplication[]
 }
 
 model Session {
@@ -436,10 +442,10 @@ enum SpaceStatus {
 }
 
 enum InquiryStatus {
-  NEW       // waiting for the host's first reply
+  NEW // waiting for the host's first reply
   RESPONDED // the host has replied at least once
-  DECLINED  // the host declined; read-only
-  CLOSED    // either side closed it; read-only
+  DECLINED // the host declined; read-only
+  CLOSED // either side closed it; read-only
 }
 
 enum ReportReason {
