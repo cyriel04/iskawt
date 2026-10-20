@@ -71,7 +71,8 @@ const BRAND_WORDS = RESERVED_BRAND_WORDS.map((word) => nameWords(word).join(""))
 const ROLE_WORDS = new Set(RESERVED_ROLE_WORDS.flatMap(nameWords));
 const CONTACT_LIKE = /@|https?:\/\/|www\.|[\p{L}\d]\.\p{L}{2,}/iu;
 
-function looksOfficial(name: string): boolean {
+// Shared with hostApplicationValidation.ts.
+export function looksOfficial(name: string): boolean {
 	// Invisible format characters (zero-width, soft hyphen, bidi overrides) split words.
 	if (/\p{Cf}/u.test(name)) return true;
 	// Latin mixed with Cyrillic or Greek is a homoglyph disguise; a wholly Cyrillic name is fine.
