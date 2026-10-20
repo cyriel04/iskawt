@@ -80,7 +80,7 @@ data can reach Sentry:
   - `tracesSampleRate: 0`;
   - `includeLocalVariables: false`;
   - `beforeSend: scrubEvent` and `beforeBreadcrumb: scrubBreadcrumb`.
-- **`app/_lib/server/opsLog.ts`.** `opsError(message: OpsMessage, extra: Record<string, string | number>)` keeps the existing `console.error(message, extra)` and adds `Sentry.captureMessage(message, { level: "error", extra })`. The 7 `console.error` call sites switch to it, and each keeps its current text and fields. They are in `inquiryNotify.ts` (two), `reportNotify.ts` (two), `hostApplicationNotify.ts` (two) and `authHooks.ts` or `hostLink.ts` (one).
+- **`app/_lib/server/opsLog.ts`.** `opsError(message: OpsMessage, extra: Record<string, string | number>)` keeps the existing `console.error(message, extra)` and adds `Sentry.captureMessage(message, { level: "error", extra })`. The 7 `console.error` call sites switch to it, and each keeps its current text and fields. They are in `inquiryNotify.ts` (two), `reportNotify.ts` (two), `hostApplicationNotify.ts` (two) and `authHooks.ts` (one).
 - **The user.** `getCurrentUser()` calls `Sentry.setUser({ id })` when a user is found, and `Sentry.setUser(null)` when none is. The SDK isolates this per request.
 
 **Browser** (`frontend-dev`):
