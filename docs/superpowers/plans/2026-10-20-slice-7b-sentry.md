@@ -36,7 +36,7 @@
   - Nothing may reach Sentry outside the spec's allowlist. That means no email, name, address, message body, report detail or application field, and no request body, query string, cookie, header or IP.
   - `user` is `{ id }` only, set on the server. The browser never sets a user.
 - **Settings, verbatim:**
-  - `sendDefaultPii: false`
+  - `dataCollection` with every category off (spec, **SDK data collection**). `sendDefaultPii` doesn't exist in 11.x.
   - `tracesSampleRate: 0`
   - no Replay integration
   - `includeLocalVariables: false` on the server
@@ -66,6 +66,8 @@
 ---
 
 ### Task 1: Install the SDK; the scrubber and the shared options
+
+> **Amended after review:** `sendDefaultPii` doesn't exist in 11.x, so `SharedSentryOptions` uses `dataCollection` instead. The scrubber also forces `sdk.settings.infer_ip: "never"`, keeps `debug_meta.images` and the cause-chain `mechanism` fields, and drops Node-core and undici error messages that quote their input. The spec's **SDK data collection** section and allowlist table are authoritative; the snippets below are the pre-amendment version.
 
 **Files:**
 - Modify: `package.json`, `pnpm-lock.yaml` (through `pnpm add` only), and `pnpm-workspace.yaml` (through `pnpm approve-builds`, only if pnpm asks)

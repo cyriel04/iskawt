@@ -38,7 +38,7 @@ data can reach Sentry:
 | `exception.values[].type` | as is |
 | `exception.values[].value` | see **Messages** below |
 | `exception.values[].stacktrace.frames[]` | `filename`, `function`, `lineno`, `colno`, `in_app` and `module` only. `vars`, `pre_context`, `context_line` and `post_context` are removed. |
-| `exception.values[].mechanism` | `type` and `handled` only |
+| `exception.values[].mechanism` | `type`, `handled`, `exception_id`, `parent_id`, `source` and `is_exception_group` only. These keep the cause chain; they are numbers, booleans and short fixed strings. |
 | `message` (from `captureMessage`) | kept only if it is one of `OPS_MESSAGES`, the fixed log strings below. Any other message event is dropped entirely (`scrubEvent` returns `null`). |
 | `level`, `platform`, `timestamp`, `event_id`, `release`, `environment`, `fingerprint`, `transaction` | as is. `transaction` is cut to its route pattern, with no query. |
 | `request` | `method`, plus `url` reduced to origin + pathname. No `query_string`, `data`, `cookies`, `headers` or `env`. |
@@ -47,11 +47,16 @@ data can reach Sentry:
 | `tags` | only `runtime` and `route` |
 | `contexts` | only `runtime`, `os`, `browser` and `device` (set by the SDK; no user data) |
 | `breadcrumbs` | see **Breadcrumbs** below |
-| `sdk` | as is |
+| `sdk` | `name`, `version`, `integrations` and `packages`. `settings` is rebuilt as `{ infer_ip: "never" }`, whatever the SDK sent, so Sentry never infers an IP. |
+| `debug_meta` | `images[]` with `type`, `code_file` and `debug_id` only. Needed for source maps; it holds file names and ids, no user data. |
 
 **Messages.** `exception.value` is the most likely place for user data to leak, for example a Prisma error that quotes its arguments. So it follows these rules:
 - **Prisma errors.** The original error's `name` starts with `PrismaClient`. The value becomes `"<name> <code>"`, for example `PrismaClientKnownRequestError P2002`. The code is left out when there isn't one. The original message is never kept.
-- **Engine errors.** The type is `TypeError`, `ReferenceError` or `RangeError`, and the value is at most 200 characters. The value is kept: these are JavaScript engine messages, like "Cannot read properties of undefined (reading 'x')". `SyntaxError` is **not** kept, because JSON parse errors quote their input.
+- **Engine errors.** The type is `TypeError`, `ReferenceError` or `RangeError`, and the value is at most 200 characters. The value is kept: these are JavaScript engine messages, like "Cannot read properties of undefined (reading 'x')". Exceptions, because Node core and undici errors quote their input ("Received type string ('…')", "Failed to parse URL from …"):
+  - the original error has a string `code` (Node internal errors do: `ERR_INVALID_ARG_TYPE`), or
+  - the value contains `Received`, `://` or `@`.
+
+  Either way the value becomes `"[message removed]"`. `SyntaxError` is **not** kept, because JSON parse errors quote their input.
 - **Anything else:** the value becomes `"[message removed]"`.
 
 **Breadcrumbs** (`beforeBreadcrumb`):
@@ -68,6 +73,12 @@ data can reach Sentry:
 - `[host-application] no OPS_EMAIL_TO`
 - `[auth] host link failed`
 
+## SDK data collection
+
+`@sentry/nextjs` 11 has no `sendDefaultPii`. It was replaced by `dataCollection`, whose defaults collect user info, cookies, headers, request bodies, query strings and frame variables. Every init sets all of it off: `userInfo`, `cookies`, `httpHeaders`, `urlQueryParams`, `stackFrameVariables`, `databaseQueryData` and `queues` are `false`; `httpBodies` is `[]`; `frameContextLines` is `0`; `graphQL` and `genAI` have every flag `false`. Use the exact shape of the installed `DataCollectionOptions` type. With `userInfo: false`, the browser SDK also stops adding `{{auto}}` IPs to session envelopes, which never pass through `beforeSend`.
+
+The scrubber still forces `sdk.settings.infer_ip` to `"never"`, so a future default can't undo this.
+
 ## Wiring
 
 **Server and edge** (`backend-dev`):
@@ -76,7 +87,7 @@ data can reach Sentry:
   - `dsn: process.env.SENTRY_DSN`;
   - `enabled: Boolean(process.env.SENTRY_DSN)`;
   - `environment: process.env.VERCEL_ENV ?? "development"`;
-  - `sendDefaultPii: false`;
+  - `dataCollection` with every category off (see **SDK data collection** below);
   - `tracesSampleRate: 0`;
   - `includeLocalVariables: false`;
   - `beforeSend: scrubEvent` and `beforeBreadcrumb: scrubBreadcrumb`.
@@ -87,7 +98,7 @@ data can reach Sentry:
 - **`instrumentation-client.ts`** at the repo root. `Sentry.init` uses:
   - `dsn: process.env.NEXT_PUBLIC_SENTRY_DSN`;
   - `enabled` set from that same DSN;
-  - `sendDefaultPii: false`;
+  - `dataCollection` with every category off;
   - `tracesSampleRate: 0`;
   - no `replayIntegration`;
   - `beforeSend` and `beforeBreadcrumb` from the same scrubber.
@@ -143,7 +154,7 @@ These steps are on the 7c deploy checklist:
 - **The 7 call sites:** their existing tests assert `console.error` calls. They keep passing unchanged, which proves the log text and fields didn't change.
 - **`currentUser.test.ts`:** `setUser({ id })` is called on a hit, `setUser(null)` on a miss, and never with an email.
 - **`error.tsx` / `global-error.tsx`:** `captureException` is called with the error, and the rendered output contains nothing from `error.message`.
-- **Config:** a test asserts the three init option objects have `sendDefaultPii: false`, `tracesSampleRate: 0`, and `beforeSend` set to `scrubEvent`. To make that testable, each config exports its options object.
+- **Config:** a test asserts the shared options have every `dataCollection` category off, `tracesSampleRate: 0`, and `beforeSend` set to `scrubEvent`. To make that testable, each config exports its options object.
 - **Build:** `pnpm build` succeeds with no Sentry env vars set.
 
 ## Out of scope
