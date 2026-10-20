@@ -40,4 +40,12 @@ describe("SiteHeader", () => {
 		renderWithTheme(<SiteHeader user={demoHostUser} />);
 		expect(screen.getByText("Host")).toBeInTheDocument();
 	});
+
+	it("links to List your space, signed in or not", () => {
+		const { unmount } = renderWithTheme(<SiteHeader user={null} />);
+		expect(screen.getByRole("link", { name: "List your space" })).toHaveAttribute("href", "/list-your-space");
+		unmount();
+		renderWithTheme(<SiteHeader user={demoUser} />);
+		expect(screen.getByRole("link", { name: "List your space" })).toHaveAttribute("href", "/list-your-space");
+	});
 });

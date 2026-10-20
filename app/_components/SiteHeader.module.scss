@@ -2,6 +2,9 @@
 
 .header {
 	display: flex;
+	flex-wrap: wrap;
+	column-gap: space(4);
+	row-gap: space(1);
 	align-items: center;
 	min-height: clamp(56px, 5.6vw, 72px);
 	@include gutter-inline;
@@ -13,6 +16,7 @@
 	display: inline-flex;
 	align-items: center;
 	min-height: 44px;
+	white-space: nowrap;
 	color: inherit;
 	text-decoration: none;
 
@@ -26,6 +30,9 @@
 .account {
 	display: flex;
 	align-items: center;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	min-width: 0;
 	gap: space(2);
 	margin-inline-start: auto;
 }
