@@ -185,50 +185,40 @@ describe("exception messages", () => {
 		expect(JSON.stringify(out)).not.toContain(BODY);
 	});
 
-	it.each(["TypeError", "ReferenceError", "RangeError"])("keeps a short %s engine message", (type) => {
-		const value = "Cannot read properties of undefined (reading 'title')";
+	// Engine messages are an allowlist of three V8 templates; everything else is removed.
+	it.each([
+		["TypeError", "Cannot read properties of undefined (reading 'title')"],
+		["TypeError", "Cannot read properties of null (reading 'id')"],
+		["ReferenceError", "foo is not defined"],
+		["TypeError", "thread.messages.map is not a function"],
+		["TypeError", "router.refresh(...) is not a function"],
+	])("keeps the %s template %p exactly", (type, value) => {
 		expect(scrubEvent(withException(type, value))?.exception?.values?.[0]?.value).toBe(value);
 	});
 
-	it("keeps a 200-character engine message and removes a 201-character one", () => {
-		expect(scrubEvent(withException("TypeError", "x".repeat(200)))?.exception?.values?.[0]?.value).toBe("x".repeat(200));
-		expect(scrubEvent(withException("TypeError", "x".repeat(201)))?.exception?.values?.[0]?.value).toBe("[message removed]");
-	});
-
+	// Real V8 and Node strings that quote or embed a runtime value.
 	it.each([
+		["TypeError", "Cannot read properties of null (reading 'It's free, call 0917')"],
+		["TypeError", "Cannot assign to read only property '0' of string 'It's free, call 0917'"],
+		["TypeError", 'string "Free on the 20th? Call 0917" is not a function'],
+		["TypeError", "Cannot create property 'foo' on string 'Free on the 20th? Call 0917'"],
+		["TypeError", "Cannot use 'in' operator to search for 'k' in Free on the 20th? Call 0917"],
+		["TypeError", "Cannot read properties of null (reading 'Free on the 20th?')"],
+		["TypeError", "Iterator value Free on the 20th? is not an entry object"],
+		["TypeError", "Promise resolver Free on the 20th? is not a function"],
+		["TypeError", "Object prototype may only be an Object or null: Free on the 20th?"],
+		["TypeError", "Cannot add property Free, object is not extensible"],
+		["TypeError", `Cannot redefine property: ${EMAIL}`],
+		["RangeError", "Invalid time zone specified: Free on the 20th?"],
+		["RangeError", "Invalid currency code : Free"],
 		["TypeError", 'The "path" argument must be of type string. Received type number (42)'],
 		["TypeError", `Failed to parse URL from http://x y/?email=${EMAIL}`],
-		["RangeError", `Invalid value for ${EMAIL}`],
-	])("removes a Node core or undici %s message that quotes its input: %s", (type, value) => {
+	])("removes the %s message %p", (type, value) => {
 		expect(scrubEvent(withException(type, value))?.exception?.values?.[0]?.value).toBe("[message removed]");
 	});
 
-	it("removes an engine-typed message when the original error has a Node code", () => {
-		const value = "Cannot read properties of undefined (reading 'title')";
-		const original = Object.assign(new TypeError(value), { code: "ERR_INVALID_ARG_TYPE" });
-		expect(scrubEvent(withException("TypeError", value), { originalException: original })?.exception?.values?.[0]?.value).toBe("[message removed]");
-	});
-
-	it("still keeps an engine message whose original error has no code", () => {
-		const value = "Cannot read properties of undefined (reading 'title')";
-		expect(scrubEvent(withException("TypeError", value), { originalException: new TypeError(value) })?.exception?.values?.[0]?.value).toBe(value);
-	});
-
-	it.each([
-		"Cannot create property 'foo' on string 'Free on the 20th? Call 0917'",
-		"Cannot use 'in' operator to search for 'k' in Free on the 20th? Call 0917",
-	])("removes a V8 TypeError that quotes a runtime value: %s", (value) => {
-		expect(scrubEvent(withException("TypeError", value))?.exception?.values?.[0]?.value).toBe("[message removed]");
-	});
-
-	it("redacts a quoted segment that is not identifier-shaped", () => {
-		const out = scrubEvent(withException("TypeError", "Cannot read properties of null (reading 'Free on the 20th?')"));
-		expect(out?.exception?.values?.[0]?.value).toBe("Cannot read properties of null (reading '…')");
-	});
-
-	it("keeps a quoted identifier", () => {
-		const value = "Cannot read properties of undefined (reading 'title')";
-		expect(scrubEvent(withException("TypeError", value))?.exception?.values?.[0]?.value).toBe(value);
+	it("removes a template message when the type is not an engine error", () => {
+		expect(scrubEvent(withException("Error", "foo is not defined"))?.exception?.values?.[0]?.value).toBe("[message removed]");
 	});
 
 	it.each([

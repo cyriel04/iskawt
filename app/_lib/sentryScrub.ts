@@ -26,11 +26,14 @@ const TAG_KEYS: readonly string[] = ["runtime", "route"];
 const CONTEXT_KEYS = ["runtime", "os", "browser", "device"] as const;
 const ENGINE_ERRORS: readonly string[] = ["TypeError", "ReferenceError", "RangeError"];
 const REMOVED = "[message removed]";
-// Node core and undici quote their input: "Received type string ('…')", "Failed to parse URL from …".
-const QUOTES_INPUT = ["Received", "://", "@"];
-const QUOTES_VALUE = [" on string '", "operator to search for"];
-const QUOTED = /'([^']*)'/g;
-const IDENTIFIER = /^[A-Za-z_$][\w$]{0,40}$/;
+// Engine messages are an allowlist too: a denylist can't cover every V8 shape that
+// quotes a value. A message is kept only if it is wholly one of these templates.
+const IDENT = "[A-Za-z_$][\\w$]{0,40}";
+const ENGINE_TEMPLATES: readonly RegExp[] = [
+	new RegExp(`^Cannot read properties of (null|undefined) \\(reading '${IDENT}'\\)$`),
+	new RegExp(`^${IDENT} is not defined$`),
+	new RegExp(`^${IDENT}(\\.${IDENT}){0,4}(\\(\\.\\.\\.\\))? is not a function$`),
+];
 
 // "https://h/p?q" → "https://h/p"; "/p?q" → "/p". Anything unparseable is dropped.
 function withoutQuery(url: unknown, keepOrigin: boolean): string | undefined {
@@ -66,14 +69,8 @@ function safeValue(exception: Exception, original: unknown): string | undefined 
 		return code ? `${type} ${code}` : type;
 	}
 	if (value === undefined) return undefined;
-	if (!type || !ENGINE_ERRORS.includes(type) || value.length > 200) return REMOVED;
-	// A string code marks a Node internal error (ERR_INVALID_ARG_TYPE), which quotes its arguments.
-	if (stringCode(original) !== undefined) return REMOVED;
-	if (QUOTES_INPUT.some((marker) => value.includes(marker))) return REMOVED;
-	// V8 quotes the value itself here: "on string '…'", "operator to search for 'k' in …".
-	if (QUOTES_VALUE.some((marker) => value.includes(marker))) return REMOVED;
-	// Elsewhere a quoted segment is a property or variable name; anything else is redacted.
-	return value.replace(QUOTED, (segment, inner: string) => (IDENTIFIER.test(inner) ? segment : "'…'"));
+	if (!type || !ENGINE_ERRORS.includes(type)) return REMOVED;
+	return ENGINE_TEMPLATES.some((template) => template.test(value)) ? value : REMOVED;
 }
 
 const frame = ({ filename, function: fn, lineno, colno, in_app, module }: StackFrame): StackFrame => ({

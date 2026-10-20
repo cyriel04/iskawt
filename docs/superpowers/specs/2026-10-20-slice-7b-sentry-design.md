@@ -52,11 +52,12 @@ data can reach Sentry:
 
 **Messages.** `exception.value` is the most likely place for user data to leak, for example a Prisma error that quotes its arguments. So it follows these rules:
 - **Prisma errors.** The original error's `name` starts with `PrismaClient`. The value becomes `"<name> <code>"`, for example `PrismaClientKnownRequestError P2002`. The code is left out when there isn't one. The original message is never kept.
-- **Engine errors.** The type is `TypeError`, `ReferenceError` or `RangeError`, and the value is at most 200 characters. The value is kept: these are JavaScript engine messages, like "Cannot read properties of undefined (reading 'x')". Exceptions, because Node core and undici errors quote their input ("Received type string ('…')", "Failed to parse URL from …"):
-  - the original error has a string `code` (Node internal errors do: `ERR_INVALID_ARG_TYPE`), or
-  - the value contains `Received`, `://` or `@`.
+- **Engine errors.** The type is `TypeError`, `ReferenceError` or `RangeError`, and the value wholly matches one of three templates, where `IDENT` is `[A-Za-z_$][\w$]{0,40}`:
+  1. `^Cannot read properties of (null|undefined) \(reading 'IDENT'\)$`
+  2. `^IDENT is not defined$`
+  3. `^IDENT(\.IDENT){0,4}(\(\.\.\.\))? is not a function$`
 
-  Either way the value becomes `"[message removed]"`. `SyntaxError` is **not** kept, because JSON parse errors quote their input.
+  The value is kept only then; otherwise it becomes `"[message removed]"`. Engine messages are an allowlist too: a denylist can't cover every V8 shape that quotes a value.
 - **Anything else:** the value becomes `"[message removed]"`.
 
 **Breadcrumbs** (`beforeBreadcrumb`):
@@ -147,7 +148,7 @@ These steps are on the 7c deploy checklist:
   - **No leaks:** `JSON.stringify(scrubEvent(event, hint))` contains none of the demo strings.
   - **Allowed fields survive:** the allowlisted fields come through, including the type, frames without vars, the route pattern, `user.id` and the allowed `extra` keys.
   - **Prisma:** a Prisma error whose message quotes the body becomes `PrismaClientValidationError` or `PrismaClientKnownRequestError P2002`.
-  - **Engine and other errors:** `TypeError` messages are kept, and `SyntaxError` and plain `Error` messages are removed.
+  - **Engine and other errors:** engine messages matching one of the three templates are kept exactly; real V8 and Node messages that embed a value, `SyntaxError`, and plain `Error` messages are removed.
   - **Messages:** an `OPS_MESSAGES` message is kept. An event carrying any other `message` returns `null`.
   - **Breadcrumbs:** `scrubBreadcrumb` returns `null` for console and ui crumbs, and strips queries from navigation and fetch crumbs.
 - **`opsLog.test.ts`:** `opsError` writes the same `console.error` line as today and calls `captureMessage` with the same data.
