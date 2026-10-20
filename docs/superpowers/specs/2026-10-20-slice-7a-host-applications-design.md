@@ -110,7 +110,7 @@ The name reuses `INQUIRY_NAME_MAX`.
 **Validation:** `app/_lib/hostApplicationValidation.ts` is pure, shared by the form
 and the route, and mirrors `inquiryValidation.ts`:
 - Every text field is trimmed. A NUL character gives "Remove unsupported characters." Lengths are counted in code points.
-- `applicantName` uses the 6-1 name filter. Export `looksOfficial` from `inquiryValidation.ts`, so both validators share one implementation.
+- `applicantName` uses the 6-1 name filter. Export `looksOfficial` from `inquiryValidation.ts`, so both validators share one implementation. A name that trips it gives "Use your own name or your business's name."
 - `city` must be one of the 17 `City` values, and `spaceType` a `SpaceType`. Anything else gives "Choose a city." or "Choose a space type."
 - `description` shorter than 20 gives "Tell us a little more about the space (at least 20 characters)."
 - `hourlyRate`: empty means null. Otherwise it must be a whole number from 1 to 1,000,000, or "Enter a whole number of pesos."
@@ -125,7 +125,8 @@ and the route, and mirrors `inquiryValidation.ts`:
 **Ops notification** (`app/_lib/server/hostApplicationNotify.ts`), sent from `after()`:
 - The address is `env.OPS_EMAIL_TO ?? env.REPORTS_EMAIL_TO`.
 - If neither is set, the application is still saved and `[host-application] no OPS_EMAIL_TO` is logged.
-- The email reads only `id`, `payload` (for city, type and area) and whether the user is already a linked host.
+- The route passes the notifier `{ applicationId, spaceType, city, areaName, existingHost }`, taken from the validated input and from `CurrentUser.host`. The notifier reads nothing from the database, so `payload` is never parsed back.
+- Both notifiers get the address from one helper, `opsAddress(env)`, in `app/_lib/server/opsEmail.ts`.
 - Subject: `New host application: {CITY} {SPACE_TYPE}`.
 - Text: `Application {id}: {SPACE_TYPE} in {areaName}, {CITY}.`, then `Existing host.` if applicable, then `Review in Prisma Studio.`
 - Never the address, name, email or description.
