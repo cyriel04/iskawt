@@ -70,7 +70,7 @@ Copy `.env.example` to `.env` and fill it in. Every variable the app reads is li
 cp .env.example .env
 ```
 
-The `DATABASE_URL` default already points at the Docker database. Set `BETTER_AUTH_SECRET` to 32+ random characters. In production you also need `RESEND_API_KEY` and `EMAIL_FROM` for email. Set `REPORTS_EMAIL_TO` to the ops address that gets report notices (ids and reason only). Without it, reports still save, but nobody is emailed.
+The `DATABASE_URL` default already points at the Docker database. Set `BETTER_AUTH_SECRET` to 32+ random characters. In production you also need `RESEND_API_KEY` and `EMAIL_FROM` for email. Set `OPS_EMAIL_TO` to the ops address that gets report and host-application notices (ids and a few public facts only). Without it, everything still saves, but nobody is emailed. `REPORTS_EMAIL_TO`, its old name, still works.
 
 Then generate the Prisma client, create the tables and load the demo data:
 
