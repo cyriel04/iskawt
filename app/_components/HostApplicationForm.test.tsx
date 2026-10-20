@@ -19,14 +19,18 @@ async function choose(label: string, option: string) {
 	await userEvent.click(within(screen.getByRole("listbox")).getByRole("option", { name: option }));
 }
 
+// Paste, not type: one input event instead of a re-render per keystroke, so slow CI stays under the timeout.
+async function pasteInto(label: string, text: string) {
+	await userEvent.click(screen.getByLabelText(label));
+	await userEvent.paste(text);
+}
 async function fillValid() {
-	await userEvent.type(screen.getByLabelText("Your name or business name"), "Demo Host");
+	await pasteInto("Your name or business name", "Demo Host");
 	await choose("Space type", "Studio");
 	await choose("City", "Makati");
-	await userEvent.type(screen.getByLabelText("Area"), "Poblacion");
-	// In user-event's type(), "[[" types a literal "[" (a single "[" starts a key descriptor).
-	await userEvent.type(screen.getByLabelText("Address"), ADDRESS.replaceAll("[", "[["));
-	await userEvent.type(screen.getByLabelText("About the space"), "A daylight studio with a white cyc and blackout curtains.");
+	await pasteInto("Area", "Poblacion");
+	await pasteInto("Address", ADDRESS);
+	await pasteInto("About the space", "A daylight studio with a white cyc and blackout curtains.");
 	await userEvent.click(screen.getByLabelText("This space is mine to list, or I have the owner's permission."));
 }
 const submit = () => userEvent.click(screen.getByRole("button", { name: "Send application" }));
