@@ -17,6 +17,14 @@ const leaky = (): ErrorEvent => ({
 	timestamp: 1760000000,
 	release: "abc123",
 	environment: "production",
+	fingerprint: ["{{ default }}", "inquiry-post"],
+	sdk: {
+		name: "sentry.javascript.nextjs",
+		version: "11.4.0",
+		integrations: ["InboundFilters"],
+		packages: [{ name: "npm:@sentry/nextjs", version: "11.4.0" }],
+		settings: { infer_ip: "auto" },
+	},
 	transaction: "POST /api/inquiries/[id]/messages?after=m1",
 	server_name: "host-1",
 	exception: {
@@ -82,6 +90,10 @@ it("keeps the allowlisted fields", () => {
 	expect(out).toMatchObject({
 		event_id: "evt_1",
 		level: "error",
+		platform: "node",
+		timestamp: 1760000000,
+		fingerprint: ["{{ default }}", "inquiry-post"],
+		sdk: { name: "sentry.javascript.nextjs", version: "11.4.0" },
 		release: "abc123",
 		environment: "production",
 		transaction: "POST /api/inquiries/[id]/messages",
@@ -112,6 +124,54 @@ it("keeps the allowlisted fields", () => {
 	]);
 });
 
+it("forces IP inference off, whatever the SDK sent", () => {
+	expect(scrubEvent(leaky())?.sdk).toEqual({
+		name: "sentry.javascript.nextjs",
+		version: "11.4.0",
+		integrations: ["InboundFilters"],
+		packages: [{ name: "npm:@sentry/nextjs", version: "11.4.0" }],
+		settings: { infer_ip: "never" },
+	});
+	expect(scrubEvent({ type: undefined })?.sdk).toEqual({ settings: { infer_ip: "never" } });
+});
+
+it("drops allowed extra and tag keys whose values are too long or not scalars", () => {
+	const out = scrubEvent({
+		type: undefined,
+		extra: { inquiryId: "i".repeat(65), status: { code: 503, body: BODY } },
+		tags: { route: "r".repeat(65) },
+	});
+	expect(out?.extra).toBeUndefined();
+	expect(out?.tags).toBeUndefined();
+});
+
+it("keeps debug_meta images as type, code_file and debug_id only", () => {
+	// A non-literal, so the extra field reaches the scrubber as the SDK could send it.
+	const image = { type: "sourcemap" as const, code_file: "app:///_next/server/chunks/1.js", debug_id: "dbg-1", note: EMAIL };
+	const out = scrubEvent({ type: undefined, debug_meta: { images: [image] } });
+	expect(out?.debug_meta).toEqual({
+		images: [{ type: "sourcemap", code_file: "app:///_next/server/chunks/1.js", debug_id: "dbg-1" }],
+	});
+	expect(JSON.stringify(out)).not.toContain(EMAIL);
+});
+
+it("keeps the cause-chain fields of a linked error's mechanism", () => {
+	const out = scrubEvent({
+		type: undefined,
+		exception: {
+			values: [
+				{ type: "Error", value: BODY, mechanism: { type: "chained", source: "cause", exception_id: 1, parent_id: 0, handled: true, synthetic: true, data: { body: BODY } } },
+				{ type: "Error", value: EMAIL, mechanism: { type: "onRequestError", handled: false, exception_id: 0, is_exception_group: false } },
+			],
+		},
+	});
+	expect(out?.exception?.values?.map((e) => e.mechanism)).toEqual([
+		{ type: "chained", source: "cause", exception_id: 1, parent_id: 0, handled: true },
+		{ type: "onRequestError", handled: false, exception_id: 0, is_exception_group: false },
+	]);
+	expect(JSON.stringify(out)).not.toContain(BODY);
+});
+
 describe("exception messages", () => {
 	const withException = (type: string, value: string): ErrorEvent => ({ type: undefined, exception: { values: [{ type, value }] } });
 
@@ -130,8 +190,28 @@ describe("exception messages", () => {
 		expect(scrubEvent(withException(type, value))?.exception?.values?.[0]?.value).toBe(value);
 	});
 
-	it("removes a long engine message", () => {
+	it("keeps a 200-character engine message and removes a 201-character one", () => {
+		expect(scrubEvent(withException("TypeError", "x".repeat(200)))?.exception?.values?.[0]?.value).toBe("x".repeat(200));
 		expect(scrubEvent(withException("TypeError", "x".repeat(201)))?.exception?.values?.[0]?.value).toBe("[message removed]");
+	});
+
+	it.each([
+		["TypeError", 'The "path" argument must be of type string. Received type number (42)'],
+		["TypeError", `Failed to parse URL from http://x y/?email=${EMAIL}`],
+		["RangeError", `Invalid value for ${EMAIL}`],
+	])("removes a Node core or undici %s message that quotes its input: %s", (type, value) => {
+		expect(scrubEvent(withException(type, value))?.exception?.values?.[0]?.value).toBe("[message removed]");
+	});
+
+	it("removes an engine-typed message when the original error has a Node code", () => {
+		const value = "Cannot read properties of undefined (reading 'title')";
+		const original = Object.assign(new TypeError(value), { code: "ERR_INVALID_ARG_TYPE" });
+		expect(scrubEvent(withException("TypeError", value), { originalException: original })?.exception?.values?.[0]?.value).toBe("[message removed]");
+	});
+
+	it("still keeps an engine message whose original error has no code", () => {
+		const value = "Cannot read properties of undefined (reading 'title')";
+		expect(scrubEvent(withException("TypeError", value), { originalException: new TypeError(value) })?.exception?.values?.[0]?.value).toBe(value);
 	});
 
 	it.each([
@@ -170,6 +250,13 @@ describe("scrubBreadcrumb", () => {
 		expect(scrubBreadcrumb({ category: "navigation", data: { from: "/sign-in?next=%2Finbox", to: "/inbox" } })).toEqual({
 			category: "navigation",
 			data: { from: "/sign-in", to: "/inbox" },
+		});
+	});
+
+	it("reduces an absolute navigation URL to its path, dropping credentials and query", () => {
+		expect(scrubBreadcrumb({ category: "navigation", data: { from: "/inbox", to: "https://u:p@iskawt.example/inbox?x=1" } })).toEqual({
+			category: "navigation",
+			data: { from: "/inbox", to: "/inbox" },
 		});
 	});
 
