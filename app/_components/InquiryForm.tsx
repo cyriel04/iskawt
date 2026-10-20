@@ -21,6 +21,8 @@ const NOT_FOUND_TEXT = "This listing isn't taking inquiries right now.";
 const RATE_LIMITED_TEXT = "You've sent a lot of messages. Try again later.";
 const SEND_FAILED_TEXT = "We couldn't send that. Try again.";
 const SESSION_ENDED_TEXT = "Your session ended. Sign in again to send this.";
+// Neutral on purpose: never says which side blocked, or that anyone did.
+const BLOCKED_TEXT = "You can't send inquiries to this host.";
 
 // Fields the form shows. A server field error on anything else (spaceSlug,
 // website) has nowhere to go, so it falls back to the generic alert.
@@ -64,6 +66,8 @@ function errorText(error: InquiryApiError["error"] | undefined): string {
 			return NOT_FOUND_TEXT;
 		case "RATE_LIMITED":
 			return RATE_LIMITED_TEXT;
+		case "BLOCKED":
+			return BLOCKED_TEXT;
 		default:
 			return SEND_FAILED_TEXT;
 	}

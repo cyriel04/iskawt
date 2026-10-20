@@ -7,10 +7,13 @@ import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import ReportDialog from "@/app/_components/ReportDialog";
+import ThreadMenu from "@/app/_components/ThreadMenu";
 import { formatSentAt, isOpenStatus, mergeMessages, pollCursor } from "@/app/_components/threadMessages";
 import { THREAD_POLL_SECONDS } from "@/app/_lib/constants/inquiries";
 import { validateMessageBody } from "@/app/_lib/inquiryValidation";
 import type {
+	BlockResponse,
 	InquiryMessage,
 	InquiryStatus,
 	InquiryThread,
@@ -23,6 +26,7 @@ import styles from "./ThreadView.module.scss";
 const RATE_LIMITED_TEXT = "You've sent a lot of messages. Try again later.";
 const SEND_FAILED_TEXT = "We couldn't send that. Try again.";
 const STATUS_FAILED_TEXT = "We couldn't update this conversation. Try again.";
+const NOT_LINKED_TEXT = "You can block this host once they've joined Iskawt.";
 
 type AlertState =
 	| { kind: "session" }
@@ -31,16 +35,26 @@ type AlertState =
 	| { kind: "text"; text: string }
 	| null;
 
-type Action = "close" | "decline";
+type Action = "close" | "decline" | "block";
 
-const CONFIRM: Record<Action, { question: string; yes: string }> = {
-	close: { question: "Close this conversation? Neither of you can send more messages.", yes: "Yes, close it" },
-	decline: { question: "Decline this inquiry? The renter will see it's declined and can't reply.", yes: "Yes, decline" },
-};
+function confirmCopy(action: Action, name: string): { question: string; yes: string } {
+	switch (action) {
+		case "close":
+			return { question: "Close this conversation? Neither of you can send more messages.", yes: "Yes, close it" };
+		case "decline":
+			return { question: "Decline this inquiry? The renter will see it's declined and can't reply.", yes: "Yes, decline" };
+		case "block":
+			return {
+				question: `Block ${name}? Neither of you will be able to send messages in your conversations, and they won't be able to send you new inquiries. They won't be told.`,
+				yes: `Yes, block ${name}`,
+			};
+	}
+}
 
-// The live part of a thread: messages, the poller, the reply box and the
-// status actions. The status in state is the source of truth once it changes;
-// the server's can* flags only describe the first render.
+// The live part of a thread: messages, the poller, the reply box, the status
+// actions and the safety menu. Whether you can write is the server's call
+// (canReply, refreshed by every poll); a block you made is shown as such, any
+// other read-only state reads as "closed", so nobody learns they were blocked.
 export default function ThreadView({ thread }: { thread: InquiryThread }) {
 	const { id } = thread;
 	const router = useRouter();
@@ -53,6 +67,9 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 	const [acting, setActing] = useState(false);
 	const [confirming, setConfirming] = useState<Action | null>(null);
 	const [stopped, setStopped] = useState(false);
+	const [sendable, setSendable] = useState(thread.canReply);
+	const [blockedByMe, setBlockedByMe] = useState(thread.blockedByMe);
+	const [reporting, setReporting] = useState(false);
 
 	const messagesRef = useRef(messages);
 	const inFlight = useRef(false);
@@ -66,8 +83,21 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 	const focusClosed = useRef(false);
 	const refreshedFor = useRef<InquiryStatus>(thread.status);
 	const pollNow = useRef<(() => Promise<void>) | null>(null);
+	const moreRef = useRef<HTMLButtonElement>(null);
+	const blockedRef = useRef<HTMLParagraphElement>(null);
+	const focusBlocked = useRef(false);
+	const focusMore = useRef(false);
+	// Bumped whenever this client changes the block state, so a poll that
+	// started before the change can't overwrite canReply with a stale answer.
+	const safetyGen = useRef(0);
+	// Set when a poll is asked for while one is in flight: it runs again after,
+	// so a refresh (say, after unblocking) is never dropped.
+	const pollAgain = useRef(false);
 
-	const open = isOpenStatus(status);
+	// statusOpen keeps the poller running while a block or an unverified host
+	// makes the thread read-only, so it notices when that lifts.
+	const statusOpen = isOpenStatus(status);
+	const open = statusOpen && sendable && !blockedByMe;
 	const canDecline = open && thread.role === "HOST";
 	const canClose = open;
 	const signInHref = `/sign-in?next=${encodeURIComponent(`/inbox/${id}`)}`;
@@ -85,7 +115,8 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 		if (confirming) {
 			confirmRef.current?.focus();
 		} else if (returnFocusTo.current) {
-			(returnFocusTo.current === "close" ? closeRef : declineRef).current?.focus();
+			const target = returnFocusTo.current === "close" ? closeRef : returnFocusTo.current === "decline" ? declineRef : moreRef;
+			target.current?.focus();
 			returnFocusTo.current = null;
 		}
 	}, [confirming]);
@@ -106,13 +137,36 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 		}
 	}, [open]);
 
+	// After a confirmed block, focus the notice that replaced the reply box.
 	useEffect(() => {
-		if (!open || stopped) return;
+		if (blockedByMe && focusBlocked.current) {
+			focusBlocked.current = false;
+			blockedRef.current?.focus();
+		}
+	}, [blockedByMe]);
+
+	// After unblocking, give focus back to More, once it's enabled again
+	// (it's disabled while the request is in flight). After the report dialog,
+	// likewise once it has closed: focusing More from its onClose would lose to
+	// the dialog's focus trap, which is still active then.
+	useEffect(() => {
+		if (!acting && !reporting && focusMore.current) {
+			focusMore.current = false;
+			moreRef.current?.focus();
+		}
+	}, [acting, reporting]);
+
+	useEffect(() => {
+		if (!statusOpen || stopped) return;
 		let cancelled = false;
 
 		async function poll() {
-			if (inFlight.current) return;
+			if (inFlight.current) {
+				pollAgain.current = true;
+				return;
+			}
 			inFlight.current = true;
+			const gen = safetyGen.current;
 			try {
 				const cursor = pollCursor(messagesRef.current);
 				const res = await fetch(`/api/inquiries/${id}/messages${cursor ? `?after=${encodeURIComponent(cursor)}` : ""}`, {
@@ -124,6 +178,7 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 					if (cancelled) return;
 					setMessages((prev) => mergeMessages(prev, data.messages));
 					setStatus(data.status);
+					if (gen === safetyGen.current) setSendable(data.canReply);
 				} else if (res.status === 401) {
 					setAlert({ kind: "session" });
 					setStopped(true);
@@ -136,6 +191,10 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 				// Network error: the next tick retries.
 			} finally {
 				inFlight.current = false;
+				if (pollAgain.current && !cancelled) {
+					pollAgain.current = false;
+					void poll();
+				}
 			}
 		}
 
@@ -153,7 +212,7 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 			clearInterval(timer);
 			document.removeEventListener("visibilitychange", onVisibility);
 		};
-	}, [id, open, stopped]);
+	}, [id, statusOpen, stopped]);
 
 	async function onSend(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -197,7 +256,7 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 		}
 	}
 
-	async function onConfirm(action: Action) {
+	async function onStatusChange(action: "close" | "decline") {
 		setActing(true);
 		try {
 			const res = await fetch(`/api/inquiries/${id}/status`, {
@@ -231,16 +290,98 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 		}
 	}
 
+	async function onBlock() {
+		setActing(true);
+		try {
+			const res = await fetch(`/api/inquiries/${id}/block`, { method: "POST" });
+			if (res.status === 200) {
+				const data: BlockResponse = await res.json();
+				safetyGen.current += 1;
+				focusBlocked.current = data.blockedByMe;
+				// Not blocked after all: the notice won't appear, so land on More.
+				focusMore.current = !data.blockedByMe;
+				setBlockedByMe(data.blockedByMe);
+				if (data.blockedByMe) setSendable(false);
+				setAlert(null);
+			} else {
+				// The confirmation goes; give focus back to More once it's enabled.
+				focusMore.current = true;
+				if (res.status === 409) {
+					setAlert({ kind: "text", text: NOT_LINKED_TEXT });
+				} else if (res.status === 401) {
+					setAlert({ kind: "session" });
+					setStopped(true);
+				} else if (res.status === 404) {
+					setAlert({ kind: "gone" });
+					setStopped(true);
+				} else {
+					setAlert({ kind: "text", text: STATUS_FAILED_TEXT });
+				}
+			}
+		} catch {
+			focusMore.current = true;
+			setAlert({ kind: "text", text: STATUS_FAILED_TEXT });
+		} finally {
+			setActing(false);
+			setConfirming(null);
+		}
+	}
+
+	// No confirmation: unblocking takes nothing away. The server decides whether
+	// replies are allowed again (the other side may still block), so ask it.
+	async function onUnblock() {
+		setActing(true);
+		try {
+			const res = await fetch(`/api/inquiries/${id}/block`, { method: "DELETE" });
+			if (res.status === 200) {
+				const data: BlockResponse = await res.json();
+				safetyGen.current += 1;
+				setBlockedByMe(data.blockedByMe);
+				setAlert(null);
+				focusMore.current = true;
+				void pollNow.current?.();
+			} else if (res.status === 401) {
+				setAlert({ kind: "session" });
+				setStopped(true);
+			} else if (res.status === 404) {
+				setAlert({ kind: "gone" });
+				setStopped(true);
+			} else {
+				setAlert({ kind: "text", text: STATUS_FAILED_TEXT });
+			}
+		} catch {
+			setAlert({ kind: "text", text: STATUS_FAILED_TEXT });
+		} finally {
+			setActing(false);
+		}
+	}
+
+	function onConfirm(action: Action) {
+		if (action === "block") void onBlock();
+		else void onStatusChange(action);
+	}
+
 	function onCancel() {
 		returnFocusTo.current = confirming;
 		setConfirming(null);
 	}
 
 	const closedOnSend = alert?.kind === "closed-on-send";
-	const showBox = open || closedOnSend;
+	const showBox = (open || closedOnSend) && !blockedByMe;
 
 	return (
 		<section aria-label="Conversation" className={styles.root}>
+			<div className={styles.header}>
+				<ThreadMenu
+					counterpartName={thread.counterpartName}
+					blockedByMe={blockedByMe}
+					disabled={acting}
+					triggerRef={moreRef}
+					onReport={() => setReporting(true)}
+					onBlock={() => setConfirming("block")}
+					onUnblock={() => void onUnblock()}
+				/>
+			</div>
 			<ol aria-label="Messages" className={styles.messages}>
 				{messages.map((message, index) => (
 					<li
@@ -286,10 +427,22 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 				</Alert>
 			)}
 
-			{!open && !closedOnSend && (
-				<Typography ref={closedRef} component="p" variant="body1" tabIndex={-1} className={styles.closed}>
-					This conversation is closed.
-				</Typography>
+			{blockedByMe ? (
+				<div className={styles.blocked}>
+					<Typography ref={blockedRef} component="p" variant="body1" tabIndex={-1} className={styles.closed}>
+						You blocked {thread.counterpartName}.
+					</Typography>
+					<Button variant="outlined" disabled={acting} onClick={() => void onUnblock()} className={styles.button}>
+						Unblock
+					</Button>
+				</div>
+			) : (
+				!open &&
+				!closedOnSend && (
+					<Typography ref={closedRef} component="p" variant="body1" tabIndex={-1} className={styles.closed}>
+						This conversation is closed.
+					</Typography>
+				)
 			)}
 
 			{showBox && (
@@ -312,12 +465,12 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 				</form>
 			)}
 
-			{open && (
+			{(open || confirming) && (
 				<div className={styles.actions}>
 					{confirming ? (
 						<div role="group" aria-label="Confirm" className={styles.confirm}>
 							<Typography component="p" variant="body1">
-								{CONFIRM[confirming].question}
+								{confirmCopy(confirming, thread.counterpartName).question}
 							</Typography>
 							<div className={styles.buttons}>
 								<Button
@@ -325,10 +478,10 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 									variant="contained"
 									color="error"
 									disabled={acting}
-									onClick={() => void onConfirm(confirming)}
+									onClick={() => onConfirm(confirming)}
 									className={styles.button}
 								>
-									{CONFIRM[confirming].yes}
+									{confirmCopy(confirming, thread.counterpartName).yes}
 								</Button>
 								<Button variant="text" disabled={acting} onClick={onCancel} className={styles.button}>
 									Cancel
@@ -351,6 +504,23 @@ export default function ThreadView({ thread }: { thread: InquiryThread }) {
 					)}
 				</div>
 			)}
+			<ReportDialog
+				inquiryId={id}
+				counterpartName={thread.counterpartName}
+				blockedByMe={blockedByMe}
+				open={reporting}
+				onClose={() => {
+					// The menu item that opened the dialog is gone; land on More.
+					focusMore.current = true;
+					setReporting(false);
+				}}
+				onBlocked={() => {
+					safetyGen.current += 1;
+					setBlockedByMe(true);
+					setSendable(false);
+					setAlert(null);
+				}}
+			/>
 		</section>
 	);
 }
