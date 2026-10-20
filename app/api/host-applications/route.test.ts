@@ -100,6 +100,14 @@ it("spam trap: same 201, nothing saved, nothing sent", async () => {
 	expect(afterCallbacks).toHaveLength(0);
 });
 
+it("spam trap runs before validation: a bad field still gets the same 201", async () => {
+	const res = await POST(req({ ...body, city: "CEBU", website: "http://spam.example" }));
+	expect(res.status).toBe(201);
+	expect(await res.json()).toEqual({ received: true });
+	expect(mockCreate).not.toHaveBeenCalled();
+	expect(afterCallbacks).toHaveLength(0);
+});
+
 it("logs nothing about the applicant", async () => {
 	await POST(req(body));
 	await afterCallbacks[0]();

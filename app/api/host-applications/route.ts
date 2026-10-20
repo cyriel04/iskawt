@@ -15,11 +15,12 @@ export async function POST(request: Request): Promise<Response> {
 	if (!user) return error({ error: "UNAUTHENTICATED" }, 401);
 
 	const body: unknown = await request.json().catch(() => null);
+
+	// Spam trap: answer as if it worked, before validation, so a bot learns nothing from field errors.
+	if (typeof body === "object" && body !== null && "website" in body && typeof body.website === "string" && body.website.trim() !== "") return received();
+
 	const result = validateNewHostApplication(body);
 	if (!result.ok) return error({ error: "VALIDATION", fields: result.errors }, 400);
-
-	// Spam trap: answer as if it worked, keep nothing.
-	if (result.value.website) return received();
 
 	const outcome = await createHostApplication({ id: user.id, email: user.email }, result.value);
 	if (outcome.kind === "rate-limited") return error({ error: "RATE_LIMITED" }, 429);

@@ -249,7 +249,7 @@ model HostApplication {
 
   applicantName  String
   applicantEmail String // PRIVATE. From the session, never typed.
-  address        String @db.Text // PRIVATE. Ops only, in Studio. Clear it when setting REJECTED.
+  address        String @db.Text // PRIVATE. Ops only, in Studio. Set it to an empty string when setting REJECTED.
 
   createdAt  DateTime  @default(now())
   reviewedAt DateTime?
