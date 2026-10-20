@@ -1,3 +1,4 @@
+import { opsError } from "@/app/_lib/server/opsLog";
 import { prisma } from "@/app/_lib/db";
 import { MAGIC_LINK_REQUESTS_PER_IP_PER_HOUR, MAGIC_LINK_TTL_MINUTES } from "@/app/_lib/constants/limits";
 import { getMailer } from "@/app/_lib/server/mailer";
@@ -37,7 +38,7 @@ export async function onSessionCreated(session: { userId: string }): Promise<voi
 	} catch {
 		// Fixed string and id only. Never the error: its message and query
 		// parameters can carry the email address.
-		console.error("[auth] host link failed", { userId: session.userId });
+		opsError("[auth] host link failed", { userId: session.userId });
 	}
 }
 

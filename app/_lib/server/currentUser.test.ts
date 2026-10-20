@@ -1,6 +1,8 @@
 /** @jest-environment node */
 const mockGetSession = jest.fn();
 const mockUserFindUnique = jest.fn();
+const mockSetUser = jest.fn();
+jest.mock("@sentry/nextjs", () => ({ setUser: (...a: unknown[]) => mockSetUser(...a) }));
 
 // A pass-through cache() that records what it wraps. Not a jest.fn, so
 // resetAllMocks can't clear the record of the module-load call.
@@ -84,4 +86,28 @@ it("returns null when the session's user row no longer exists", async () => {
 	mockGetSession.mockResolvedValue({ user: { id: "gone" } });
 	mockUserFindUnique.mockResolvedValue(null);
 	await expect(getCurrentUser()).resolves.toBeNull();
+});
+
+it("sets Sentry's user to the opaque id only, never the email or name", async () => {
+	mockGetSession.mockResolvedValue({ user: { id: "user_demo" } });
+	mockUserFindUnique.mockResolvedValue({ id: "user_demo", email: "demo-user@example.invalid", name: "Demo", host: null });
+	await getCurrentUser();
+	expect(mockSetUser).toHaveBeenCalledWith({ id: "user_demo" });
+	expect(JSON.stringify(mockSetUser.mock.calls)).not.toContain("@");
+	for (const [arg] of mockSetUser.mock.calls) {
+		if (arg !== null) expect(Object.keys(arg)).toEqual(["id"]);
+	}
+});
+
+it("clears Sentry's user with no session", async () => {
+	mockGetSession.mockResolvedValue(null);
+	await getCurrentUser();
+	expect(mockSetUser).toHaveBeenCalledWith(null);
+});
+
+it("clears Sentry's user when the session has no row", async () => {
+	mockGetSession.mockResolvedValue({ user: { id: "gone" } });
+	mockUserFindUnique.mockResolvedValue(null);
+	await getCurrentUser();
+	expect(mockSetUser).toHaveBeenCalledWith(null);
 });

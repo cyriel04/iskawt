@@ -2,6 +2,7 @@
 // the request. Ids and the reason only: the reporter's detail is read in
 // Prisma Studio, never emailed or logged.
 
+import { opsError } from "@/app/_lib/server/opsLog";
 import { prisma } from "@/app/_lib/db";
 import { escapeHtml } from "@/app/_lib/server/escapeHtml";
 import { getMailer, type MailMessage } from "@/app/_lib/server/mailer";
@@ -24,13 +25,13 @@ export async function notifyReport(reportId: string, env: NodeJS.ProcessEnv = pr
 	try {
 		const to = opsAddress(env);
 		if (!to) {
-			console.error("[report] no OPS_EMAIL_TO");
+			opsError("[report] no OPS_EMAIL_TO");
 			return;
 		}
 		const row = await prisma.report.findUnique({ where: { id: reportId }, select: { id: true, inquiryId: true, reason: true } });
 		if (!row) return;
 		await getMailer().send(reportEmail({ to, reportId: row.id, inquiryId: row.inquiryId, reason: row.reason }));
 	} catch {
-		console.error("[report] notify failed", { reportId });
+		opsError("[report] notify failed", { reportId });
 	}
 }
