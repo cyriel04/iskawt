@@ -1,0 +1,41 @@
+@use "../_styles/tokens" as *;
+
+.page {
+	@include page;
+}
+
+// A readable measure for the intro and the form.
+.column {
+	display: flex;
+	flex-direction: column;
+	gap: space(4);
+	max-width: 60ch;
+
+	p {
+		margin: 0;
+	}
+}
+
+// The sign-in link, drawn as an outlined button. 44px tall for touch.
+.action {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	align-self: flex-start;
+	min-height: space(11);
+	padding-inline: space(5);
+	border: 1px solid $color-stamp;
+	border-radius: $radius-md;
+	color: $color-stamp;
+	font: var(--mui-font-button);
+	text-decoration: none;
+
+	&:hover {
+		background: $color-canvas;
+	}
+
+	&:focus-visible {
+		outline: 2px solid $color-stamp;
+		outline-offset: 2px;
+	}
+}

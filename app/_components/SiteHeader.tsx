@@ -15,6 +15,9 @@ export default function SiteHeader({ user }: { user: CurrentUser | null }) {
 				</Typography>
 			</Link>
 			<div className={styles.account}>
+				<Link href="/list-your-space" className={styles.link}>
+					List your space
+				</Link>
 				{user ? (
 					<>
 						<Link href="/inbox" className={styles.link}>
