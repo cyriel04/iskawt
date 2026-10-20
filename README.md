@@ -70,7 +70,7 @@ Copy `.env.example` to `.env` and fill it in. Every variable the app reads is li
 cp .env.example .env
 ```
 
-The `DATABASE_URL` default already points at the Docker database. Set `BETTER_AUTH_SECRET` to 32+ random characters. In production you also need `RESEND_API_KEY` and `EMAIL_FROM` for email. Set `OPS_EMAIL_TO` to the ops address that gets report and host-application notices (ids and a few public facts only). Without it, everything still saves, but nobody is emailed. `REPORTS_EMAIL_TO`, its old name, still works.
+The `DATABASE_URL` default already points at the Docker database. Set `BETTER_AUTH_SECRET` to 32+ random characters. In production you also need `RESEND_API_KEY` and `EMAIL_FROM` for email. Set `OPS_EMAIL_TO` to the ops address that gets report and host-application notices (ids and a few public facts only). Without it, everything still saves, but nobody is emailed. `REPORTS_EMAIL_TO`, its old name, still works. For error monitoring, set `SENTRY_DSN` and `NEXT_PUBLIC_SENTRY_DSN` (the same value). Leave them empty and Sentry stays off. Source maps upload at build time only when `SENTRY_ORG`, `SENTRY_PROJECT` and the secret `SENTRY_AUTH_TOKEN` are set. Events are scrubbed to an allowlist in `app/_lib/sentryScrub.ts`, so no email, address, message or form field reaches Sentry.
 
 Then generate the Prisma client, create the tables and load the demo data:
 
