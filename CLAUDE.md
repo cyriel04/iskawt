@@ -183,6 +183,11 @@ worse than useless.
   store the true coordinates in those columns.
 - Inquiries are relayed. A renter never sees host contact details from the app, and
   a host's reply is their own choice to make.
+- **Sentry gets an allowlist, nothing more.** Every event and breadcrumb goes through
+  `app/_lib/sentryScrub.ts`; widen the allowlist only with a test that proves the new
+  field can't carry user data. `Sentry.setUser` only ever receives `{ id }` or `null`.
+  Session envelopes and spans don't pass the scrubber. Tracing stays off with
+  `tracesSampler: () => 0`, because a zero `tracesSampleRate` still continues incoming traces.
 
 ## Domain rules
 

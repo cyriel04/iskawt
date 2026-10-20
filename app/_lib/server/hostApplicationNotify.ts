@@ -4,6 +4,7 @@
 // The route passes these fields from the validated input; nothing here reads
 // the database, so the stored payload is never parsed back.
 
+import { opsError } from "@/app/_lib/server/opsLog";
 import { escapeHtml } from "@/app/_lib/server/escapeHtml";
 import { getMailer, type MailMessage } from "@/app/_lib/server/mailer";
 import { opsAddress } from "@/app/_lib/server/opsEmail";
@@ -35,11 +36,11 @@ export async function notifyHostApplication(notice: HostApplicationNotice, env: 
 	try {
 		const to = opsAddress(env);
 		if (!to) {
-			console.error("[host-application] no OPS_EMAIL_TO");
+			opsError("[host-application] no OPS_EMAIL_TO");
 			return;
 		}
 		await getMailer().send(hostApplicationEmail({ ...notice, to }));
 	} catch {
-		console.error("[host-application] notify failed", { applicationId: notice.applicationId });
+		opsError("[host-application] notify failed", { applicationId: notice.applicationId });
 	}
 }

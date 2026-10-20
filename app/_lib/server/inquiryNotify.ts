@@ -5,6 +5,7 @@
 // email and are never logged or returned. Nothing is sent for a thread that
 // can't take messages (closed, blocked, or an unverified host).
 
+import { opsError } from "@/app/_lib/server/opsLog";
 import { NOTIFY_COOLDOWN_MINUTES } from "@/app/_lib/constants/inquiries";
 import { prisma } from "@/app/_lib/db";
 import { blockersBetween, canSendIn } from "@/app/_lib/server/inquiryAccess";
@@ -12,14 +13,14 @@ import { inquiryMessageEmail } from "@/app/_lib/server/inquiryEmail";
 import { getMailer } from "@/app/_lib/server/mailer";
 import type { InquiryRole } from "@/app/_lib/types";
 
-const fail = (inquiryId: string) => console.error("[inquiry] notify failed", { inquiryId });
+const fail = (inquiryId: string) => opsError("[inquiry] notify failed", { inquiryId });
 
 // Only ResendMailer's own fixed-format error is trusted enough to log a field
 // from; any other error message may carry an address or body.
 const RESEND_STATUS = /^Resend responded (\d+)$/;
 function sendFailed(inquiryId: string, error: unknown): void {
 	const match = error instanceof Error ? RESEND_STATUS.exec(error.message) : null;
-	if (match) console.error("[inquiry] notify failed", { inquiryId, status: Number(match[1]) });
+	if (match) opsError("[inquiry] notify failed", { inquiryId, status: Number(match[1]) });
 	else fail(inquiryId);
 }
 
