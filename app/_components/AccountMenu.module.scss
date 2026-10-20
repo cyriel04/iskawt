@@ -6,7 +6,7 @@
 }
 
 .label {
-	max-width: 24ch;
+	max-width: min(24ch, 40vw);
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;

@@ -42,6 +42,8 @@ export default function HostApplicationForm({ email }: { email: string }) {
 	const [fieldErrors, setFieldErrors] = useState<HostApplicationFieldErrors>({});
 	const [state, setState] = useState<State>({ kind: "idle" });
 	const statusRef = useRef<HTMLParagraphElement>(null);
+	const formRef = useRef<HTMLFormElement>(null);
+	const focusFirstError = useRef(false);
 	const confirmErrorId = useId();
 
 	const sent = state.kind === "sent";
@@ -51,6 +53,22 @@ export default function HostApplicationForm({ email }: { email: string }) {
 	useEffect(() => {
 		if (sent) statusRef.current?.focus();
 	}, [sent]);
+
+	// After a submit sets errors, move focus to the first invalid field. Editing
+	// a field clears its error but must not steal focus, hence the flag.
+	useEffect(() => {
+		if (!focusFirstError.current) return;
+		focusFirstError.current = false;
+		if (Object.keys(fieldErrors).length > 0) formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+	}, [fieldErrors]);
+
+	const clearError = (key: keyof HostApplicationFieldErrors) =>
+		setFieldErrors((prev) => {
+			if (!(key in prev)) return prev;
+			const rest = { ...prev };
+			delete rest[key];
+			return rest;
+		});
 
 	async function onSubmit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -69,6 +87,7 @@ export default function HostApplicationForm({ email }: { email: string }) {
 		};
 		const checked = validateNewHostApplication(input);
 		if (!checked.ok) {
+			focusFirstError.current = true;
 			setFieldErrors(checked.errors);
 			setState({ kind: "idle" });
 			return;
@@ -88,6 +107,7 @@ export default function HostApplicationForm({ email }: { email: string }) {
 			const body: Partial<HostApplicationApiError> = await res.json().catch(() => ({}));
 			if (res.status === 401 || body.error === "UNAUTHENTICATED") setState({ kind: "signed-out" });
 			else if (body.error === "VALIDATION" && body.fields && Object.keys(body.fields).length > 0) {
+				focusFirstError.current = true;
 				setFieldErrors(body.fields);
 				setState({ kind: "idle" });
 			} else if (res.status === 429 || body.error === "RATE_LIMITED") setState({ kind: "error", message: RATE_LIMITED_TEXT });
@@ -113,7 +133,7 @@ export default function HostApplicationForm({ email }: { email: string }) {
 				{sent && `Thanks. We'll email you at ${email} after we've had a look.`}
 			</p>
 			{!sent && (
-				<form noValidate onSubmit={onSubmit} className={styles.form}>
+				<form noValidate ref={formRef} onSubmit={onSubmit} className={styles.form}>
 					{state.kind === "error" && <Alert severity="error">{state.message}</Alert>}
 					{state.kind === "signed-out" && (
 						<Alert severity="error">
@@ -127,7 +147,10 @@ export default function HostApplicationForm({ email }: { email: string }) {
 						label="Your name or business name"
 						autoComplete="name"
 						value={applicantName}
-						onChange={(e) => setApplicantName(e.target.value)}
+						onChange={(e) => {
+							setApplicantName(e.target.value);
+							clearError("applicantName");
+						}}
 						{...field("applicantName")}
 					/>
 					<div className={styles.pair}>
@@ -138,6 +161,7 @@ export default function HostApplicationForm({ email }: { email: string }) {
 							onChange={(e) => {
 								const next = SPACE_TYPES.find((type) => type === e.target.value);
 								if (next) setSpaceType(next);
+								clearError("spaceType");
 							}}
 							{...field("spaceType")}
 						>
@@ -154,6 +178,7 @@ export default function HostApplicationForm({ email }: { email: string }) {
 							onChange={(e) => {
 								const next = CITIES.find((c) => c === e.target.value);
 								if (next) setCity(next);
+								clearError("city");
 							}}
 							{...field("city")}
 						>
@@ -164,14 +189,20 @@ export default function HostApplicationForm({ email }: { email: string }) {
 							))}
 						</TextField>
 					</div>
-					<TextField label="Area" value={areaName} onChange={(e) => setAreaName(e.target.value)} {...field("areaName", "Like Poblacion or Kapitolyo.")} />
+					<TextField label="Area" value={areaName} onChange={(e) => {
+							setAreaName(e.target.value);
+							clearError("areaName");
+						}} {...field("areaName", "Like Poblacion or Kapitolyo.")} />
 					<TextField
 						label="Address"
 						autoComplete="street-address"
 						multiline
 						minRows={2}
 						value={address}
-						onChange={(e) => setAddress(e.target.value)}
+						onChange={(e) => {
+							setAddress(e.target.value);
+							clearError("address");
+						}}
 						{...field("address", "Only the Iskawt team sees this. Listings show just the area and city.")}
 					/>
 					<TextField
@@ -179,22 +210,40 @@ export default function HostApplicationForm({ email }: { email: string }) {
 						multiline
 						minRows={4}
 						value={description}
-						onChange={(e) => setDescription(e.target.value)}
+						onChange={(e) => {
+							setDescription(e.target.value);
+							clearError("description");
+						}}
 						{...field("description")}
 					/>
 					<TextField
 						label="Hourly rate (optional)"
 						slotProps={{ htmlInput: { inputMode: "numeric" } }}
 						value={hourlyRate}
-						onChange={(e) => setHourlyRate(e.target.value)}
+						onChange={(e) => {
+							setHourlyRate(e.target.value);
+							clearError("hourlyRate");
+						}}
 						{...field("hourlyRate", "Indicative, in pesos per hour. Nothing is charged here.")}
 					/>
 					<FormControl error={Boolean(fieldErrors.confirmsRightToList)}>
 						<FormControlLabel
-							control={<Checkbox checked={confirmsRightToList} onChange={(e) => setConfirms(e.target.checked)}
+							control={
+								<Checkbox
+									checked={confirmsRightToList}
+									onChange={(e) => {
+										setConfirms(e.target.checked);
+										clearError("confirmsRightToList");
+									}}
 									disabled={sending}
-									slotProps={{ input: { "aria-describedby": fieldErrors.confirmsRightToList ? confirmErrorId : undefined } }}
-								/>}
+									slotProps={{
+										input: {
+											"aria-describedby": fieldErrors.confirmsRightToList ? confirmErrorId : undefined,
+											"aria-invalid": fieldErrors.confirmsRightToList ? true : undefined,
+										},
+									}}
+								/>
+							}
 							label="This space is mine to list, or I have the owner's permission."
 							className={styles.check}
 						/>

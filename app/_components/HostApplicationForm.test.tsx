@@ -166,3 +166,36 @@ it("links the confirmation error to the checkbox so it is announced", async () =
 	expect(error.id).not.toBe("");
 	expect(checkbox).toHaveAttribute("aria-describedby", error.id);
 });
+
+it("moves focus to the first invalid field after a failed submit", async () => {
+	renderWithTheme(<HostApplicationForm email={email} />);
+	await submit();
+	expect(screen.getByLabelText("Your name or business name")).toHaveFocus();
+});
+
+it("focuses the confirmation checkbox, marked invalid, when it is the only gap", async () => {
+	renderWithTheme(<HostApplicationForm email={email} />);
+	await fillValid();
+	const checkbox = screen.getByLabelText("This space is mine to list, or I have the owner's permission.");
+	await userEvent.click(checkbox);
+	await submit();
+	expect(checkbox).toHaveFocus();
+	expect(checkbox).toHaveAttribute("aria-invalid", "true");
+});
+
+it("focuses the field a server 400 names", async () => {
+	reply(400, { error: "VALIDATION", fields: { address: "Enter the address." } });
+	renderWithTheme(<HostApplicationForm email={email} />);
+	await fillValid();
+	await submit();
+	await screen.findByText("Enter the address.");
+	expect(screen.getByLabelText("Address")).toHaveFocus();
+});
+
+it("clears a field's error as soon as the user edits that field", async () => {
+	renderWithTheme(<HostApplicationForm email={email} />);
+	await submit();
+	await userEvent.type(screen.getByLabelText("Your name or business name"), "D");
+	expect(screen.queryByText("Enter your name.")).not.toBeInTheDocument();
+	expect(screen.getByText("Choose a city.")).toBeInTheDocument();
+});
