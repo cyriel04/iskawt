@@ -24,6 +24,7 @@ async function fillValid() {
 	await choose("Space type", "Studio");
 	await choose("City", "Makati");
 	await userEvent.type(screen.getByLabelText("Area"), "Poblacion");
+	// In user-event's type(), "[[" types a literal "[" (a single "[" starts a key descriptor).
 	await userEvent.type(screen.getByLabelText("Address"), ADDRESS.replaceAll("[", "[["));
 	await userEvent.type(screen.getByLabelText("About the space"), "A daylight studio with a white cyc and blackout curtains.");
 	await userEvent.click(screen.getByLabelText("This space is mine to list, or I have the owner's permission."));
@@ -154,4 +155,14 @@ it("on a network failure says so; the button is disabled while sending", async (
 	expect(screen.getByRole("button", { name: "Sending…" })).toBeDisabled();
 	fail(new Error("offline"));
 	expect(await screen.findByText("We couldn't send that. Try again.")).toBeInTheDocument();
+});
+
+it("links the confirmation error to the checkbox so it is announced", async () => {
+	renderWithTheme(<HostApplicationForm email={email} />);
+	const checkbox = screen.getByLabelText("This space is mine to list, or I have the owner's permission.");
+	expect(checkbox).not.toHaveAttribute("aria-describedby");
+	await submit();
+	const error = screen.getByText("Confirm that this space is yours to list.");
+	expect(error.id).not.toBe("");
+	expect(checkbox).toHaveAttribute("aria-describedby", error.id);
 });

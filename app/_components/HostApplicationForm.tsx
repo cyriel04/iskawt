@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
@@ -42,6 +42,7 @@ export default function HostApplicationForm({ email }: { email: string }) {
 	const [fieldErrors, setFieldErrors] = useState<HostApplicationFieldErrors>({});
 	const [state, setState] = useState<State>({ kind: "idle" });
 	const statusRef = useRef<HTMLParagraphElement>(null);
+	const confirmErrorId = useId();
 
 	const sent = state.kind === "sent";
 	const sending = state.kind === "sending";
@@ -190,11 +191,14 @@ export default function HostApplicationForm({ email }: { email: string }) {
 					/>
 					<FormControl error={Boolean(fieldErrors.confirmsRightToList)}>
 						<FormControlLabel
-							control={<Checkbox checked={confirmsRightToList} onChange={(e) => setConfirms(e.target.checked)} disabled={sending} />}
+							control={<Checkbox checked={confirmsRightToList} onChange={(e) => setConfirms(e.target.checked)}
+									disabled={sending}
+									slotProps={{ input: { "aria-describedby": fieldErrors.confirmsRightToList ? confirmErrorId : undefined } }}
+								/>}
 							label="This space is mine to list, or I have the owner's permission."
 							className={styles.check}
 						/>
-						{fieldErrors.confirmsRightToList && <FormHelperText>{fieldErrors.confirmsRightToList}</FormHelperText>}
+						{fieldErrors.confirmsRightToList && <FormHelperText id={confirmErrorId}>{fieldErrors.confirmsRightToList}</FormHelperText>}
 					</FormControl>
 					{/* Spam trap. People never see it; bots fill it in. */}
 					<div aria-hidden="true" className={styles.trap}>
