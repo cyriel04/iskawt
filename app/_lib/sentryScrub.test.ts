@@ -215,6 +215,23 @@ describe("exception messages", () => {
 	});
 
 	it.each([
+		"Cannot create property 'foo' on string 'Free on the 20th? Call 0917'",
+		"Cannot use 'in' operator to search for 'k' in Free on the 20th? Call 0917",
+	])("removes a V8 TypeError that quotes a runtime value: %s", (value) => {
+		expect(scrubEvent(withException("TypeError", value))?.exception?.values?.[0]?.value).toBe("[message removed]");
+	});
+
+	it("redacts a quoted segment that is not identifier-shaped", () => {
+		const out = scrubEvent(withException("TypeError", "Cannot read properties of null (reading 'Free on the 20th?')"));
+		expect(out?.exception?.values?.[0]?.value).toBe("Cannot read properties of null (reading '…')");
+	});
+
+	it("keeps a quoted identifier", () => {
+		const value = "Cannot read properties of undefined (reading 'title')";
+		expect(scrubEvent(withException("TypeError", value))?.exception?.values?.[0]?.value).toBe(value);
+	});
+
+	it.each([
 		["SyntaxError", `Unexpected token 'F', "${BODY}" is not valid JSON`],
 		["Error", `Resend responded 503 for ${EMAIL}`],
 		["AbortError", "The operation was aborted"],

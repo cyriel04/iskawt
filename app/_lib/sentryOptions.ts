@@ -34,7 +34,7 @@ export type SharedSentryOptions = {
 	enabled: boolean;
 	environment: string;
 	dataCollection: DataCollectionOff;
-	tracesSampleRate: 0;
+	tracesSampler: () => 0;
 	beforeSend: typeof scrubEvent;
 	beforeBreadcrumb: typeof scrubBreadcrumb;
 };
@@ -46,7 +46,9 @@ export function sentryOptions(dsn: string | undefined): SharedSentryOptions {
 		environment: process.env.VERCEL_ENV ?? "development",
 		// A fresh copy per call, so no runtime can mutate another's settings.
 		dataCollection: { ...DATA_COLLECTION_OFF, httpBodies: [], graphQL: { ...DATA_COLLECTION_OFF.graphQL }, genAI: { ...DATA_COLLECTION_OFF.genAI } },
-		tracesSampleRate: 0,
+		// Not `tracesSampleRate: 0`: a zero rate still continues a sampled incoming
+		// trace and sends its spans, which skip beforeSend. A sampler's 0 always wins.
+		tracesSampler: () => 0,
 		beforeSend: scrubEvent,
 		beforeBreadcrumb: scrubBreadcrumb,
 	} satisfies SharedSentryOptions & InitOptions;

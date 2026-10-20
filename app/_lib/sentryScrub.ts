@@ -28,6 +28,9 @@ const ENGINE_ERRORS: readonly string[] = ["TypeError", "ReferenceError", "RangeE
 const REMOVED = "[message removed]";
 // Node core and undici quote their input: "Received type string ('…')", "Failed to parse URL from …".
 const QUOTES_INPUT = ["Received", "://", "@"];
+const QUOTES_VALUE = [" on string '", "operator to search for"];
+const QUOTED = /'([^']*)'/g;
+const IDENTIFIER = /^[A-Za-z_$][\w$]{0,40}$/;
 
 // "https://h/p?q" → "https://h/p"; "/p?q" → "/p". Anything unparseable is dropped.
 function withoutQuery(url: unknown, keepOrigin: boolean): string | undefined {
@@ -67,7 +70,10 @@ function safeValue(exception: Exception, original: unknown): string | undefined 
 	// A string code marks a Node internal error (ERR_INVALID_ARG_TYPE), which quotes its arguments.
 	if (stringCode(original) !== undefined) return REMOVED;
 	if (QUOTES_INPUT.some((marker) => value.includes(marker))) return REMOVED;
-	return value;
+	// V8 quotes the value itself here: "on string '…'", "operator to search for 'k' in …".
+	if (QUOTES_VALUE.some((marker) => value.includes(marker))) return REMOVED;
+	// Elsewhere a quoted segment is a property or variable name; anything else is redacted.
+	return value.replace(QUOTED, (segment, inner: string) => (IDENTIFIER.test(inner) ? segment : "'…'"));
 }
 
 const frame = ({ filename, function: fn, lineno, colno, in_app, module }: StackFrame): StackFrame => ({

@@ -11,7 +11,8 @@ import styles from "@/app/_styles/message.module.scss";
 // but never renders it: in development its message can carry query details.
 export default function ErrorPage({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
 	useEffect(() => {
-		Sentry.captureException(error);
+		// A digest means a server render failed, which onRequestError has already reported.
+		if (!error.digest) Sentry.captureException(error);
 	}, [error]);
 
 	return (

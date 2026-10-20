@@ -17,6 +17,13 @@ describe("ErrorPage", () => {
 		expect(screen.queryByText(/Free on the 20th/)).not.toBeInTheDocument();
 	});
 
+	it("does not report a server-render error again; onRequestError already did", () => {
+		const error = Object.assign(new Error("boom"), { digest: "d1" });
+		renderWithTheme(<ErrorPage error={error} retry={jest.fn()} />);
+
+		expect(mockCapture).not.toHaveBeenCalled();
+	});
+
 	it("explains the failure without exposing the error", () => {
 		renderWithTheme(<ErrorPage error={new Error("select contactEmail failed")} retry={jest.fn()} />);
 

@@ -10,7 +10,8 @@ import styles from "@/app/_styles/message.module.scss";
 // variables). Reports to Sentry; never renders the error.
 export default function GlobalError({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
 	useEffect(() => {
-		Sentry.captureException(error);
+		// A digest means a server render failed, which onRequestError has already reported.
+		if (!error.digest) Sentry.captureException(error);
 	}, [error]);
 
 	return (

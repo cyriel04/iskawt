@@ -20,11 +20,18 @@ beforeEach(() => {
 });
 afterEach(() => jest.restoreAllMocks());
 
-it("reports the error to Sentry and shows nothing from it", () => {
-	const error = Object.assign(new Error(SECRET), { digest: "d1" });
+it("reports a browser error to Sentry and shows nothing from it", () => {
+	const error = new Error(SECRET);
 	render(<GlobalError error={error} retry={() => {}} />, { container: document.documentElement });
 	expect(mockCapture).toHaveBeenCalledWith(error);
 	expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+	expect(document.body.textContent).not.toContain("Free on the 20th");
+});
+
+it("does not report a server-render error again; onRequestError already did", () => {
+	const error = Object.assign(new Error(SECRET), { digest: "d1" });
+	render(<GlobalError error={error} retry={() => {}} />, { container: document.documentElement });
+	expect(mockCapture).not.toHaveBeenCalled();
 	expect(document.body.textContent).not.toContain("Free on the 20th");
 });
 

@@ -31,10 +31,19 @@ it("is off without a DSN and on with one; no SDK data collection, never tracing"
 	expect(sentryOptions("https://k@o1.ingest.sentry.io/1")).toMatchObject({
 		enabled: true,
 		dataCollection: DATA_COLLECTION_OFF,
-		tracesSampleRate: 0,
 		beforeSend: scrubEvent,
 		beforeBreadcrumb: scrubBreadcrumb,
 	});
+});
+
+it("never samples a trace, even one an incoming request marked sampled", () => {
+	const options = sentryOptions("https://k@o1.ingest.sentry.io/1");
+	// A zero rate still continues a sampled incoming trace; a sampler returning 0 does not.
+	expect(options).not.toHaveProperty("tracesSampleRate");
+	const sampler: (context: unknown) => unknown = options.tracesSampler;
+	for (const context of [{}, { parentSampled: true }, { parentSampled: true, parentSampleRate: 1, name: "GET /" }]) {
+		expect(sampler(context)).toBe(0);
+	}
 });
 
 it("takes the environment from VERCEL_ENV, defaulting to development", () => {

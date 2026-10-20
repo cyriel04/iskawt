@@ -21,7 +21,7 @@ data can reach Sentry:
 
 | Question | Decision |
 | --- | --- |
-| Scope | **Errors only.** No performance tracing (`tracesSampleRate: 0`), no Session Replay, no profiling. |
+| Scope | **Errors only.** No performance tracing (`tracesSampler: () => 0`; a zero `tracesSampleRate` still continues a sampled incoming `sentry-trace` and sends its spans, which skip `beforeSend`), no Session Replay, no profiling. |
 | Identifying users | An **opaque user id only** (`User.id`), set on the server. Never an email, name or IP. The browser never sends an id. |
 | Keeping private data out | An **allowlist** in one pure, tested function, `scrubEvent`. It runs as `beforeSend` and `beforeBreadcrumb` everywhere. Sentry's project-side data scrubbing is switched on as a backstop. |
 | Package | `@sentry/nextjs`, the official Next.js SDK. A new dependency, approved by the human for this slice. Pin the version installed, and confirm Next 16 support against its docs before wiring. |
@@ -88,7 +88,7 @@ The scrubber still forces `sdk.settings.infer_ip` to `"never"`, so a future defa
   - `enabled: Boolean(process.env.SENTRY_DSN)`;
   - `environment: process.env.VERCEL_ENV ?? "development"`;
   - `dataCollection` with every category off (see **SDK data collection** below);
-  - `tracesSampleRate: 0`;
+  - `tracesSampler: () => 0`;
   - `includeLocalVariables: false`;
   - `beforeSend: scrubEvent` and `beforeBreadcrumb: scrubBreadcrumb`.
 - **`app/_lib/server/opsLog.ts`.** `opsError(message: OpsMessage, extra: Record<string, string | number>)` keeps the existing `console.error(message, extra)` and adds `Sentry.captureMessage(message, { level: "error", extra })`. The 7 `console.error` call sites switch to it, and each keeps its current text and fields. They are in `inquiryNotify.ts` (two), `reportNotify.ts` (two), `hostApplicationNotify.ts` (two) and `authHooks.ts` (one).
@@ -99,7 +99,7 @@ The scrubber still forces `sdk.settings.infer_ip` to `"never"`, so a future defa
   - `dsn: process.env.NEXT_PUBLIC_SENTRY_DSN`;
   - `enabled` set from that same DSN;
   - `dataCollection` with every category off;
-  - `tracesSampleRate: 0`;
+  - `tracesSampler: () => 0`;
   - no `replayIntegration`;
   - `beforeSend` and `beforeBreadcrumb` from the same scrubber.
   - It never calls `setUser`.
@@ -154,7 +154,7 @@ These steps are on the 7c deploy checklist:
 - **The 7 call sites:** their existing tests assert `console.error` calls. They keep passing unchanged, which proves the log text and fields didn't change.
 - **`currentUser.test.ts`:** `setUser({ id })` is called on a hit, `setUser(null)` on a miss, and never with an email.
 - **`error.tsx` / `global-error.tsx`:** `captureException` is called with the error, and the rendered output contains nothing from `error.message`.
-- **Config:** a test asserts the shared options have every `dataCollection` category off, `tracesSampleRate: 0`, and `beforeSend` set to `scrubEvent`. To make that testable, each config exports its options object.
+- **Config:** a test asserts the shared options have every `dataCollection` category off, `tracesSampler` returning 0 for any context and no `tracesSampleRate`, and `beforeSend` set to `scrubEvent`; `sentryTracing.test.ts` runs the real SDK with a capturing transport and asserts a sampled incoming trace sends no span or transaction envelope. To make that testable, each config exports its options object.
 - **Build:** `pnpm build` succeeds with no Sentry env vars set.
 
 ## Out of scope
