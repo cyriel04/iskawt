@@ -18,3 +18,9 @@
 .screen > * {
 	max-width: 60ch;
 }
+
+// Plain-element button (global-error has no MUI): 44px touch target.
+.button {
+	min-height: 44px;
+	padding-inline: space(4);
+}
