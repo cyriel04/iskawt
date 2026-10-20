@@ -286,3 +286,23 @@ export type ReportApiError = { error: InquiryApiError["error"]; fields?: ReportF
 
 // POST and DELETE /api/inquiries/[id]/block — 200
 export type BlockResponse = { blockedByMe: boolean };
+
+// ---- Host applications (POST /api/host-applications)
+
+export type NewHostApplicationInput = {
+	applicantName: string; // 1–100, trimmed, name filter
+	spaceType: SpaceType;
+	city: City;
+	areaName: string; // 1–100, trimmed
+	address: string; // 1–300, trimmed. PRIVATE: never echoed back
+	description: string; // 20–2000, trimmed
+	hourlyRate: number | null; // whole pesos, 1–1,000,000
+	confirmsRightToList: true;
+	website: string; // spam trap: hidden field, must be empty
+};
+export type HostApplicationFieldErrors = Partial<Record<keyof NewHostApplicationInput, string>>;
+export type CreateHostApplicationResponse = { received: true }; // 201; no id
+export type HostApplicationApiError = {
+	error: "UNAUTHENTICATED" | "VALIDATION" | "RATE_LIMITED";
+	fields?: HostApplicationFieldErrors;
+};
