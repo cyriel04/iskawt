@@ -127,7 +127,10 @@ for de-verified hosts. Spec: `docs/superpowers/specs/2026-10-18-slice-6-safety-d
 ## Slice 7 — Host applications and ship
 
 7a, host applications: `docs/superpowers/specs/2026-10-20-slice-7a-host-applications-design.md`.
-7b, ship: Vercel, Neon and the README. It gets its own spec.
+7b, error monitoring with Sentry: `docs/superpowers/specs/2026-10-20-slice-7b-sentry-design.md`.
+  Errors only, scrubbed by an allowlist. No tracing or replay. An opaque user id at most. Off when no DSN is set.
+7c, ship: Vercel, Neon and the README. It gets its own spec. The deploy checklist includes the Sentry project
+  settings (data scrubbing and IP scrubbing on) and confirming `HostApplication` is empty before `migrate deploy`.
 
 
 - **backend-dev:** `POST /api/host-applications` → `HostApplication` in `PENDING`.
