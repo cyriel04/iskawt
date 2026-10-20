@@ -17,7 +17,7 @@ own — not the rate, not the photos, not the host.
 
 So there are two tracks, and only one of them is code:
 
-- **Code track:** slices 0 through 6 below.
+- **Code track:** slices 0 through 7 below.
 - **Host track:** find real spaces. Start with people you know — friends with
   photogenic apartments, a café owner, a co-working space, a studio that rents by
   the hour anyway. Ten real listings is a product. Two is a demo.
@@ -119,7 +119,16 @@ The product's whole reason to exist. Nothing else matters if this is unreliable.
 
 ---
 
-## Slice 6 — Host applications and ship
+## Slice 6 — Safety (done)
+
+Blocking, reporting, text-free emails, a requester-name filter, and read-only threads
+for de-verified hosts. Spec: `docs/superpowers/specs/2026-10-18-slice-6-safety-design.md`.
+
+## Slice 7 — Host applications and ship
+
+7a, host applications: `docs/superpowers/specs/2026-10-20-slice-7a-host-applications-design.md`.
+7b, ship: Vercel, Neon and the README. It gets its own spec.
+
 
 - **backend-dev:** `POST /api/host-applications` → `HostApplication` in `PENDING`.
   Never creates a `Host` or `Space` directly.
