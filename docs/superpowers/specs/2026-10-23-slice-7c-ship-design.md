@@ -144,13 +144,15 @@ pooled URL serves the app; migrations need the direct one. Local and CI are unch
 
 - `OPS_TEST_KEY` unset, or header `x-ops-key` missing or not equal (constant-time
   compare) → **404**, same body as any unknown route.
-- Key matches → schedules `opsError("sentry smoke test")` in `after()`, then throws
-  `new Error("Sentry smoke test")` so the route's 500 is captured too. The message is
-  a fixed string; nothing from the request is attached.
-- `"sentry smoke test"` joins the `OpsMessage` union.
+- Key matches, default mode → schedules `opsError("[ops] sentry smoke test")` in
+  `after()` and returns 202 `{ scheduled: true }`. Proves `after()` flushes on Vercel.
+- Key matches, `?mode=throw` → throws `new Error("Sentry smoke test")`. Proves route
+  errors are captured. Two modes, so a missing event points at one path, not two.
+- Fixed strings only; nothing from the request is attached. The ops message joins
+  `OPS_MESSAGES`.
 
-Tests: 404 with no env, 404 with wrong key, 404 with no header; throws with the right
-key and schedules exactly one `opsError`.
+Tests: 404 with no env, no header, wrong key (both lengths); 202 + exactly one
+scheduled `opsError`; throw mode throws and schedules nothing.
 
 ### Env and rules
 
