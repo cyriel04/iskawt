@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" role="img">
+	<title>Demo placeholder</title>
+	<rect width="1200" height="600" fill="#ececec"/>
+	<path d="M0 600 V420 Q0 380 40 380 H1160 Q1200 380 1200 420 V600 Z" fill="#d6d6d6"/>
+	<path d="M100 120 H1100 V380 Q1100 440 1040 440 H160 Q100 440 100 380 Z" fill="none" stroke="#cfcfcf" stroke-width="10"/>
+	<text x="600" y="330" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="96" font-weight="700" letter-spacing="12" fill="#444444">DEMO</text>
+</svg>

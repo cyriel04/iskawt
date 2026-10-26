@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" role="img">
+	<title>Demo placeholder</title>
+	<rect width="1200" height="600" fill="#e8e2d9"/>
+	<rect x="140" y="90" width="120" height="120" fill="#c9bfae"/>
+	<rect x="280" y="90" width="120" height="120" fill="#c9bfae"/>
+	<rect x="140" y="230" width="120" height="120" fill="#c9bfae"/>
+	<rect x="280" y="230" width="120" height="120" fill="#c9bfae"/>
+	<text x="600" y="330" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="96" font-weight="700" letter-spacing="12" fill="#5a5248">DEMO</text>
+</svg>

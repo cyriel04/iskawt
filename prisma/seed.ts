@@ -3,7 +3,11 @@
  *
  * ============================ READ THIS FIRST ============================
  * Every host and space in this file is DEMO DATA. No real person has agreed
- * to any of it. Rates, specs and photo slots are illustrative.
+ * to any of it. Rates and specs are illustrative. Every space is seeded with
+ * isDemo = true, and its photos come from the committed folder
+ * public/demo/<slug>/ (1.jpg, 2.jpg, ...). Those photos are AI-generated and
+ * marked as demo on the site. A space with no folder gets an SVG placeholder
+ * from public/demo/placeholders/, so it still has the photo it needs to be public.
  *
  * What is real: the city, the barangay or area name, and the street. Those
  * are public Metro Manila geography and safe to name.
@@ -28,6 +32,8 @@
 // Load .env before app/_lib/db.ts reads DATABASE_URL. Must stay the first import.
 import "dotenv/config";
 import { prisma } from "../app/_lib/db";
+import { spaceTypeLabels } from "../app/_lib/constants/labels";
+import { assertNoRealSpaces, buildDemoPhotos, readDemoPhotoFiles } from "./demoPhotos";
 
 const DEMO_MARKER = "[DEMO]";
 
@@ -116,6 +122,11 @@ const spaces = [
 		houseRules: "No smoke machines. No open flame. Shoes off past the entry mat.",
 		availabilityNotes: "Weekdays only. Nothing before 9am.",
 		tags: ["large-windows", "wood-floors", "mid-century", "high-ceilings"],
+		alts: [
+			"Demo photo: open-plan loft with a long wall of steel-framed windows and afternoon sun across a concrete floor",
+			"Demo photo: the loft seen from the windows, a leather sofa and a wooden work table",
+			"Demo photo: steel-framed windows at golden hour over low-rise rooftops",
+		],
 	},
 	{
 		hostKey: "demo-host-a",
@@ -154,6 +165,11 @@ const spaces = [
 		houseRules: "No furniture moved between floors. No shooting past 8pm.",
 		availabilityNotes: "Weekends preferred.",
 		tags: ["greenery", "street-level", "wood-floors"],
+		alts: [
+			"Demo photo: rowhouse ground floor with patterned tiles, a wooden dining set and a concrete staircase",
+			"Demo photo: small back yard with potted plants against a painted concrete wall",
+			"Demo photo: upstairs bedroom with a wooden bed and jalousie windows",
+		],
 	},
 	{
 		hostKey: "demo-host-b",
@@ -192,6 +208,11 @@ const spaces = [
 		houseRules: "Nothing drilled or taped to original surfaces. No repainting.",
 		availabilityNotes: "Weekday daytime. After-hours by arrangement.",
 		tags: ["high-ceilings", "large-windows", "industrial"],
+		alts: [
+			"Demo photo: empty heritage office floor with terrazzo, tall casement windows and peeling green paint",
+			"Demo photo: long view between concrete columns with light across the floor",
+			"Demo photo: old cage-style elevator with brass fittings",
+		],
 	},
 	{
 		hostKey: "demo-host-b",
@@ -230,6 +251,11 @@ const spaces = [
 		houseRules: "No welding. No paint on the floor without a drop sheet.",
 		availabilityNotes: "Most days. Two days' notice preferred.",
 		tags: ["industrial", "high-ceilings", "street-level"],
+		alts: [
+			"Demo photo: empty warehouse bay with steel trusses and a half-open roller door",
+			"Demo photo: open roller door onto a concrete yard, a white van parked inside",
+			"Demo photo: steel roof trusses with a row of high-bay lights",
+		],
 	},
 	{
 		hostKey: "demo-host-b",
@@ -268,6 +294,11 @@ const spaces = [
 		houseRules: "Nothing removed from the walls. No shooting in the neighbour's stairwell.",
 		availabilityNotes: "Weekday mornings.",
 		tags: ["wood-floors", "street-level"],
+		alts: [
+			"Demo photo: lived-in living room with patterned cement tiles, books and plants",
+			"Demo photo: narrow galley kitchen with old cabinets and window light",
+			"Demo photo: small balcony with a wrought-iron railing over a leafy street",
+		],
 	},
 	{
 		hostKey: "demo-host-c",
@@ -306,6 +337,11 @@ const spaces = [
 		houseRules: "Nothing moved behind the bar. No food styling with the café's own stock.",
 		availabilityNotes: "Mornings only, 6am to 10:30am.",
 		tags: ["large-windows", "street-level", "wood-floors"],
+		alts: [
+			"Demo photo: small café with a full glass frontage, empty before opening",
+			"Demo photo: espresso bar and wooden tables inside the café",
+			"Demo photo: view from inside the café out to a quiet tree-lined street",
+		],
 	},
 	{
 		hostKey: "demo-host-c",
@@ -344,6 +380,11 @@ const spaces = [
 		houseRules: "Nothing anchored to the parapet. No drones without written clearance.",
 		availabilityNotes: "Daylight hours. Cancelled in rain.",
 		tags: ["city-view", "greenery"],
+		alts: [
+			"Demo photo: concrete rooftop deck at golden hour with a low parapet and city view",
+			"Demo photo: the same rooftop at midday in hard sun",
+			"Demo photo: parapet edge at dusk with city lights starting",
+		],
 	},
 	{
 		hostKey: "demo-host-c",
@@ -382,6 +423,11 @@ const spaces = [
 		houseRules: "Cyc repainted between bookings — no shoes on the cove.",
 		availabilityNotes: "Any day, subject to existing bookings.",
 		tags: ["white-walls", "high-ceilings", "industrial"],
+		alts: [
+			"Demo photo: white cyclorama studio with two softboxes and a lighting grid",
+			"Demo photo: wider view of the studio with a grip cart and black walls",
+			"Demo photo: the curve where the white cyc meets the floor",
+		],
 	},
 ] as const;
 
@@ -422,8 +468,17 @@ async function main() {
 	}
 	console.log(`Hosts: ${hosts.length}`);
 
+	// Never overwrite a real listing that happens to share a demo slug.
+	const real = await prisma.space.findMany({
+		where: { slug: { in: spaces.map((s) => s.slug) }, isDemo: false },
+		select: { slug: true },
+	});
+	assertNoRealSpaces(real.map((r) => r.slug));
+
+	let photoCount = 0;
+
 	for (const space of spaces) {
-		const { hostKey, tags: tagSlugs, ...fields } = space;
+		const { hostKey, tags: tagSlugs, alts, ...fields } = space;
 		const hostId = hostIds.get(hostKey);
 		if (!hostId) throw new Error(`No host for key ${hostKey}`);
 
@@ -431,19 +486,36 @@ async function main() {
 		const base = {
 			...fields,
 			hostId,
+			isDemo: true,
 			status: "PUBLISHED" as const,
 			verifiedAt: new Date(),
 			listedAt: new Date(),
 		};
-
-		await prisma.space.upsert({
-			where: { slug: space.slug },
-			// `set` replaces the tag list on re-runs; `create` can only `connect`.
-			update: { ...base, tags: { set: tagRefs } },
-			create: { ...base, tags: { connect: tagRefs } },
+		const photos = buildDemoPhotos({
+			slug: space.slug,
+			title: space.title,
+			typeLabel: spaceTypeLabels[space.type],
+			placeholder: `/demo/placeholders/${space.type.toLowerCase()}.svg`,
+			alts,
+			files: readDemoPhotoFiles(space.slug),
 		});
+
+		await prisma.$transaction(async (tx) => {
+			const record = await tx.space.upsert({
+				where: { slug: space.slug },
+				// `set` replaces the tag list on re-runs; `create` can only `connect`.
+				update: { ...base, tags: { set: tagRefs } },
+				create: { ...base, tags: { connect: tagRefs } },
+				select: { id: true },
+			});
+			// Replace, never append: the photos are exactly what's on disk now.
+			await tx.photo.deleteMany({ where: { spaceId: record.id } });
+			await tx.photo.createMany({ data: photos.map((p) => ({ ...p, spaceId: record.id })) });
+		});
+		photoCount += photos.length;
 	}
 	console.log(`Spaces: ${spaces.length}`);
+	console.log(`Photos: ${photoCount}`);
 
 	const cities = new Set(spaces.map((s) => s.city));
 	console.log(`\nDone. ${cities.size} cities represented.`);
