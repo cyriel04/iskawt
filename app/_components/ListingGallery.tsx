@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import PhotoFrame from "@/app/_components/PhotoFrame";
@@ -11,7 +11,6 @@ import styles from "./ListingGallery.module.scss";
 // starting at the current index, so Next walks through every photo and wraps.
 export default function ListingGallery({ photos, demo }: { photos: PublicPhoto[]; demo: boolean }) {
 	const [index, setIndex] = useState(0);
-	const bigRef = useRef<HTMLDivElement>(null);
 
 	if (photos.length === 0) {
 		return <PhotoFrame shape="gallery" photo={null} sizes="100vw" />;
@@ -27,14 +26,7 @@ export default function ListingGallery({ photos, demo }: { photos: PublicPhoto[]
 	return (
 		<section aria-label="Photos" className={styles.gallery}>
 			<div className={[styles.grid, styles[`small${smallOffsets.length}`]].filter(Boolean).join(" ")}>
-				<div
-					ref={bigRef}
-					tabIndex={-1}
-					role="group"
-					aria-label={`Photo ${current + 1} of ${count}`}
-					data-testid="gallery-big"
-					className={styles.big}
-				>
+				<div data-testid="gallery-big" className={styles.big}>
 					<PhotoFrame
 						shape="fill"
 						photo={photos[current]}
@@ -45,19 +37,9 @@ export default function ListingGallery({ photos, demo }: { photos: PublicPhoto[]
 				{smallOffsets.map((offset) => {
 					const target = at(offset);
 					return (
-						<button
-							key={photos[target].url}
-							type="button"
-							className={styles.small}
-							aria-label={`Show photo ${target + 1}: ${photos[target].alt}`}
-							onClick={() => {
-								setIndex(target);
-								// The clicked button is about to unmount; keep focus in the gallery.
-								bigRef.current?.focus();
-							}}
-						>
+						<div key={photos[target].url} data-testid="gallery-small" className={styles.small}>
 							<PhotoFrame shape="fill" photo={photos[target]} sizes="(min-width: 600px) 20vw, 50vw" />
-						</button>
+						</div>
 					);
 				})}
 			</div>
