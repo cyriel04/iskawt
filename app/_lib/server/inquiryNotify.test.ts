@@ -138,6 +138,7 @@ it("reads only what the email needs: no names, no message", async () => {
 			renter: { select: { email: true } },
 			space: {
 				select: {
+					isDemo: true,
 					title: true,
 					host: { select: { userId: true, verifiedAt: true, contactEmail: true, user: { select: { email: true } } } },
 				},

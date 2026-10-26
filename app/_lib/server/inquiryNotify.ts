@@ -64,6 +64,7 @@ export async function notifyCounterpart(
 				space: {
 					select: {
 						title: true,
+						isDemo: true,
 						host: { select: { userId: true, verifiedAt: true, contactEmail: true, user: { select: { email: true } } } },
 					},
 				},
