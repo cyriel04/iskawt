@@ -2,11 +2,9 @@ import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import { ThemeProvider, CssBaseline, InitColorSchemeScript } from "@mui/material";
 import theme from "@/app/_lib/theme";
 import SiteHeader from "@/app/_components/SiteHeader";
-import DemoBanner from "@/app/_components/DemoBanner";
 import SiteFooter from "@/app/_components/SiteFooter";
 import ScrollToTop from "@/app/_components/ScrollToTop";
 import { getCurrentUser } from "@/app/_lib/server/currentUser";
-import { hasPublicDemoSpaces } from "@/app/_lib/server/spaces";
 import shell from "@/app/_styles/shell.module.scss";
 import localFont from "next/font/local";
 
@@ -38,9 +36,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 	// No global-error.tsx sits above this layout, so a throw here would replace
 	// every page with Next's bare error screen. Degrade to signed-out instead.
 	const user = await getCurrentUser().catch(() => null);
-	// Same reasoning as the user lookup: a failed check hides the banner rather
-	// than breaking every page.
-	const showDemoBanner = await hasPublicDemoSpaces().catch(() => false);
 	return (
 		<html lang="en" className={`${archivo.variable} ${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
 			<body className={shell.body}>
@@ -49,7 +44,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 					<ThemeProvider theme={theme}>
 						<CssBaseline />
 						<SiteHeader user={user} />
-						{showDemoBanner && <DemoBanner />}
 						<div className={shell.content}>{children}</div>
 						<SiteFooter />
 						<ScrollToTop />

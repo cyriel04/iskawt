@@ -9,21 +9,21 @@ export default function PhotoFrame({
 	photo,
 	sizes,
 	shape,
-	demo = false,
+	badge,
 }: {
 	photo: PublicPhoto | null;
 	sizes: string;
-	shape: "card" | "gallery";
-	demo?: boolean;
+	shape: "card" | "gallery" | "fill";
+	badge?: string;
 }) {
 	return (
 		<div className={`${styles.frame} ${styles[shape]}`}>
 			{photo ? (
 				<>
 					<Image src={photo.url} alt={photo.alt} fill sizes={sizes} unoptimized />
-					{demo && (
+					{badge && (
 						<Typography variant="label" className={styles.badge}>
-							Demo photo · not a real space
+							{badge}
 						</Typography>
 					)}
 				</>

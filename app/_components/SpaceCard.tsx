@@ -18,7 +18,7 @@ export default function SpaceCard({ space }: { space: SpaceCardData }) {
 	return (
 		<Card component="article" className={styles.card}>
 			<Link href={`/spaces/${space.slug}`} className={styles.link}>
-				<PhotoFrame shape="card" photo={space.coverPhoto} demo={space.isDemo} sizes="(min-width: 900px) 33vw, (min-width: 600px) 50vw, 100vw" />
+				<PhotoFrame shape="card" photo={space.coverPhoto} badge={space.isDemo ? "Demo photo · not a real space" : undefined} sizes="(min-width: 900px) 33vw, (min-width: 600px) 50vw, 100vw" />
 				<div className={styles.body}>
 					<Typography variant="label" className={styles.verified}>
 						Verified host

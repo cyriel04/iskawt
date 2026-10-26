@@ -1,0 +1,83 @@
+@use "../_styles/tokens" as *;
+
+.gallery {
+	display: flex;
+	flex-direction: column;
+	gap: space(2);
+	container-type: inline-size;
+}
+
+// Wide: big photo takes two thirds, the small ones stack on the right.
+.grid {
+	display: grid;
+	gap: space(2);
+	grid-template-columns: 2fr 1fr;
+	grid-template-rows: 1fr 1fr;
+	aspect-ratio: 3 / 2;
+	border-radius: $radius-lg;
+	overflow: hidden;
+}
+
+.big {
+	grid-row: 1 / 3;
+	min-height: 0;
+}
+
+.small0 .big {
+	grid-column: 1 / -1;
+}
+
+.small1 .small {
+	grid-row: 1 / 3;
+}
+
+.small {
+	display: block;
+	position: relative;
+	min-height: 0;
+	padding: 0;
+	border: 0;
+	background: none;
+	cursor: pointer;
+
+	&:focus-visible {
+		outline: 2px solid currentColor;
+		outline-offset: -2px;
+	}
+}
+
+.controls {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: space(2);
+
+	button {
+		min-height: 44px;
+		min-width: 44px;
+	}
+}
+
+// Narrow: big photo full width, the small ones side by side under it.
+@container (max-width: 560px) {
+	.grid {
+		aspect-ratio: auto;
+		grid-template-columns: 1fr 1fr;
+		grid-template-rows: auto;
+	}
+
+	.big {
+		grid-row: auto;
+		grid-column: 1 / -1;
+		aspect-ratio: 3 / 2;
+	}
+
+	.small {
+		aspect-ratio: 3 / 2;
+	}
+
+	.small1 .small {
+		grid-row: auto;
+		grid-column: 1 / -1;
+	}
+}
