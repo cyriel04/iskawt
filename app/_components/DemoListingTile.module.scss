@@ -1,0 +1,10 @@
+@use "../_styles/tokens" as *;
+
+.tile {
+	aspect-ratio: 2 / 1;
+	display: grid;
+	place-items: center;
+	text-align: center;
+	padding: space(4);
+	background: $color-canvas;
+}

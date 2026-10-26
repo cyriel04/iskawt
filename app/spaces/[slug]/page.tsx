@@ -8,6 +8,7 @@ import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 import InquiryPanel from "@/app/_components/InquiryPanel";
 import PhotoFrame from "@/app/_components/PhotoFrame";
+import DemoListingTile from "@/app/_components/DemoListingTile";
 import RatePanel from "@/app/_components/RatePanel";
 import SpaceFacts from "@/app/_components/SpaceFacts";
 import { cityLabels, settingLabels, spaceTypeLabels } from "@/app/_lib/constants/labels";
@@ -61,11 +62,18 @@ export default async function SpacePage({ params }: Props) {
 			<div className={styles.gallery}>
 				{space.photos.length > 0 ? (
 					space.photos.map((photo) => (
-						<PhotoFrame shape="gallery" key={photo.url} photo={photo} sizes="(min-width: 900px) 50vw, 100vw" />
+						<PhotoFrame
+							shape="gallery"
+							key={photo.url}
+							photo={photo}
+							demo={space.isDemo}
+							sizes="(min-width: 900px) 50vw, 100vw"
+						/>
 					))
 				) : (
 					<PhotoFrame shape="gallery" photo={null} sizes="100vw" />
 				)}
+				{space.isDemo && <DemoListingTile />}
 			</div>
 
 			<div className={styles.columns}>

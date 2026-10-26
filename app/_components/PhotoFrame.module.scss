@@ -25,3 +25,14 @@
 	display: grid;
 	place-items: center;
 }
+
+// Solid surface and strong ink, so it reads over any photo.
+.badge {
+	position: absolute;
+	top: space(2);
+	left: space(2);
+	padding: space(1) space(2);
+	border-radius: $radius-sm;
+	background: $color-paper;
+	color: $color-ink;
+}
