@@ -25,7 +25,7 @@
  * them with properly jittered values when real listings land.
  * =========================================================================
  *
- * Run with `pnpm db:seed` (the seed command lives in prisma7.config.ts).
+ * Run with `pnpm db:seed` (the seed command lives in prisma.config.ts).
  * Safe to re-run: everything upserts on slug or contactEmail.
  */
 
@@ -434,6 +434,13 @@ const spaces = [
 async function main() {
 	console.log("Seeding DEMO data. No real hosts or spaces are in this file.\n");
 
+	// Never overwrite a real listing that happens to share a demo slug.
+	const real = await prisma.space.findMany({
+		where: { slug: { in: spaces.map((s) => s.slug) }, isDemo: false },
+		select: { slug: true },
+	});
+	assertNoRealSpaces(real.map((r) => r.slug));
+
 	for (const tag of tags) {
 		await prisma.tag.upsert({
 			where: { slug: tag.slug },
@@ -468,13 +475,6 @@ async function main() {
 	}
 	console.log(`Hosts: ${hosts.length}`);
 
-	// Never overwrite a real listing that happens to share a demo slug.
-	const real = await prisma.space.findMany({
-		where: { slug: { in: spaces.map((s) => s.slug) }, isDemo: false },
-		select: { slug: true },
-	});
-	assertNoRealSpaces(real.map((r) => r.slug));
-
 	let photoCount = 0;
 
 	for (const space of spaces) {
@@ -500,17 +500,14 @@ async function main() {
 			files: readDemoPhotoFiles(space.slug),
 		});
 
-		await prisma.$transaction(async (tx) => {
-			const record = await tx.space.upsert({
-				where: { slug: space.slug },
-				// `set` replaces the tag list on re-runs; `create` can only `connect`.
-				update: { ...base, tags: { set: tagRefs } },
-				create: { ...base, tags: { connect: tagRefs } },
-				select: { id: true },
-			});
-			// Replace, never append: the photos are exactly what's on disk now.
-			await tx.photo.deleteMany({ where: { spaceId: record.id } });
-			await tx.photo.createMany({ data: photos.map((p) => ({ ...p, spaceId: record.id })) });
+		// One statement, so it is atomic without an interactive transaction (5s default timeout).
+		// `set` replaces the tag list on re-runs; `create` can only `connect`.
+		// Photos are replaced, never appended: they are exactly what's on disk now.
+		await prisma.space.upsert({
+			where: { slug: space.slug },
+			update: { ...base, tags: { set: tagRefs }, photos: { deleteMany: {}, create: photos } },
+			create: { ...base, tags: { connect: tagRefs }, photos: { create: photos } },
+			select: { id: true },
 		});
 		photoCount += photos.length;
 	}
