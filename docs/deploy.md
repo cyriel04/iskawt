@@ -77,8 +77,8 @@ The Preview values are placeholders like the ones CI uses. `prisma generate` and
 
 Run this after the first deploy, and after any deploy that changes auth, email or Sentry.
 
-- [ ] **Browse** `/`: 8 spaces, each with a photo and the "Demo photo · not a real space" badge. The "This is a demo" banner sits under the header.
-- [ ] **Listing** `/spaces/demo-poblacion-loft`: the gallery ends with the "Demo listing, for internal use only" tile. No exact address, no host email or phone anywhere on the page (view source too).
+- [ ] **Browse** `/`: 8 spaces, each with a photo and the "Demo photo · not a real space" badge.
+- [ ] **Listing** `/spaces/demo-poblacion-loft`: a big photo with two beside it. The ‹ › arrows on the big photo change it, and its counter reads "1 / 3", "2 / 3", and so on. The big photo carries one "Demo photos · not a real space" badge, and the "Demo listing, for internal use only" strip sits under the gallery. No exact address, no host email or phone anywhere on the page (view source too).
 - [ ] **Sign in** with your email: the magic link arrives from `EMAIL_FROM` and signs you in.
 - [ ] **Inquiry and host reply** (needs a verified Resend domain and a second inbox):
   1. Sign in as account B (your second address) once, then sign out.
@@ -103,4 +103,4 @@ Run this after the first deploy, and after any deploy that changes auth, email o
 
 1. Delete `DEMO_SEED` in Vercel.
 2. In Prisma Studio, delete every `Space` with `isDemo = true` (their photos go with them), then the three `Demo Host` rows.
-3. Redeploy. The banner disappears on its own once no demo space is public. The badges and the final tile only ever showed on demo spaces.
+3. Redeploy. The badges and the disclaimer strip only ever showed on demo spaces, so nothing else needs changing.
