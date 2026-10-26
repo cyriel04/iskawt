@@ -63,9 +63,32 @@ describe("ListingGallery", () => {
 		expect(screen.getAllByRole("button").map((b) => b.getAttribute("aria-label"))).toEqual(["Previous photo", "Next photo"]);
 	});
 
+	it("overlays the arrows and a visible counter on the big photo", async () => {
+		const user = userEvent.setup();
+		renderWithTheme(<ListingGallery photos={photos} demo={false} />);
+		const big = screen.getByTestId("gallery-big");
+		expect(within(big).getByRole("button", { name: "Previous photo" })).toBeInTheDocument();
+		expect(within(big).getByRole("button", { name: "Next photo" })).toBeInTheDocument();
+		expect(within(big).getByText("1 / 3")).toBeInTheDocument();
+		await user.click(screen.getByRole("button", { name: "Next photo" }));
+		expect(within(big).getByText("2 / 3")).toBeInTheDocument();
+	});
+
+	it("hides the arrow icons from assistive tech", () => {
+		renderWithTheme(<ListingGallery photos={photos} demo={false} />);
+		for (const name of ["Previous photo", "Next photo"]) {
+			expect(screen.getByRole("button", { name }).querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+		}
+	});
+
+	it("shows no counter for a single photo", () => {
+		renderWithTheme(<ListingGallery photos={[photo(1)]} demo={false} />);
+		expect(screen.queryByText("1 / 1")).not.toBeInTheDocument();
+	});
+
 	it("announces the position politely", () => {
 		renderWithTheme(<ListingGallery photos={photos} demo={false} />);
-		expect(screen.getByText("Photo 1 of 3")).toHaveAttribute("aria-live", "polite");
+		expect(screen.getByText("Photo 1 of 3").closest("[aria-live]")).toHaveAttribute("aria-live", "polite");
 	});
 
 	it("shows one photo with no buttons", () => {

@@ -1,11 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import PhotoFrame from "@/app/_components/PhotoFrame";
 import type { PublicPhoto } from "@/app/_lib/types";
 import styles from "./ListingGallery.module.scss";
+
+function Chevron({ direction }: { direction: "left" | "right" }) {
+	return (
+		<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+			<path d={direction === "left" ? "M15 5l-7 7 7 7" : "M9 5l7 7-7 7"} />
+		</svg>
+	);
+}
 
 // One big photo with up to two beside it. The order is a rotation of `photos`
 // starting at the current index, so Next walks through every photo and wraps.
@@ -33,6 +40,30 @@ export default function ListingGallery({ photos, demo }: { photos: PublicPhoto[]
 						badge={badge}
 						sizes="(min-width: 600px) 40vw, 100vw"
 					/>
+					{count > 1 && (
+						<>
+							<button
+								type="button"
+								className={`${styles.arrow} ${styles.prev}`}
+								aria-label="Previous photo"
+								onClick={() => setIndex(at(count - 1))}
+							>
+								<Chevron direction="left" />
+							</button>
+							<button
+								type="button"
+								className={`${styles.arrow} ${styles.next}`}
+								aria-label="Next photo"
+								onClick={() => setIndex(at(1))}
+							>
+								<Chevron direction="right" />
+							</button>
+							<Typography variant="label" className={styles.counter} aria-live="polite">
+								<span aria-hidden="true">{`${current + 1} / ${count}`}</span>
+								<span className={styles.srOnly}>{`Photo ${current + 1} of ${count}`}</span>
+							</Typography>
+						</>
+					)}
 				</div>
 				{smallOffsets.map((offset) => {
 					const target = at(offset);
@@ -43,17 +74,6 @@ export default function ListingGallery({ photos, demo }: { photos: PublicPhoto[]
 					);
 				})}
 			</div>
-			{count > 1 && (
-				<div className={styles.controls}>
-					<Button variant="outlined" aria-label="Previous photo" onClick={() => setIndex(at(count - 1))}>
-						Previous
-					</Button>
-					<Typography variant="label" aria-live="polite">{`Photo ${current + 1} of ${count}`}</Typography>
-					<Button variant="outlined" aria-label="Next photo" onClick={() => setIndex(at(1))}>
-						Next
-					</Button>
-				</div>
-			)}
 		</section>
 	);
 }
