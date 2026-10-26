@@ -143,7 +143,7 @@ pooled URL serves the app; migrations need the direct one. Local and CI are unch
 `GET /api/ops/sentry-test` (backend):
 
 - `OPS_TEST_KEY` unset, or header `x-ops-key` missing or not equal (constant-time
-  compare) → **404**, same body as any unknown route.
+  compare) → **404** with an empty body.
 - Key matches, default mode → schedules `opsError("[ops] sentry smoke test")` in
   `after()` and returns 202 `{ scheduled: true }`. Proves `after()` flushes on Vercel.
 - Key matches, `?mode=throw` → throws `new Error("Sentry smoke test")`. Proves route
