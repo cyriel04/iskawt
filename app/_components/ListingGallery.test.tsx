@@ -70,6 +70,7 @@ describe("ListingGallery", () => {
 		expect(within(big).getByRole("button", { name: "Previous photo" })).toBeInTheDocument();
 		expect(within(big).getByRole("button", { name: "Next photo" })).toBeInTheDocument();
 		expect(within(big).getByText("1 / 3")).toBeInTheDocument();
+		expect(screen.getByText("1 / 3")).toHaveAttribute("aria-hidden", "true");
 		await user.click(screen.getByRole("button", { name: "Next photo" }));
 		expect(within(big).getByText("2 / 3")).toBeInTheDocument();
 	});
@@ -84,6 +85,7 @@ describe("ListingGallery", () => {
 	it("shows no counter for a single photo", () => {
 		renderWithTheme(<ListingGallery photos={[photo(1)]} demo={false} />);
 		expect(screen.queryByText("1 / 1")).not.toBeInTheDocument();
+		expect(screen.queryByText("Photo 1 of 1")).not.toBeInTheDocument();
 	});
 
 	it("announces the position politely", () => {
