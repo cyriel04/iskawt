@@ -20,6 +20,7 @@ import {
 	cardSelect,
 	detailSelect,
 	getPublishedSpaceBySlug,
+	hasPublicDemoSpaces,
 	matchLabels,
 	publishedWhere,
 	searchPublishedSpaces,
@@ -38,6 +39,7 @@ const cardRow = {
 	floorAreaSqm: 68,
 	maxCrew: 12,
 	naturalLight: "ABUNDANT",
+	isDemo: true,
 	hourlyRate: 1800,
 	halfDayRate: 7000,
 	fullDayRate: 12000,
@@ -132,10 +134,11 @@ describe("privacy", () => {
 });
 
 describe("publishedWhere", () => {
-	it("requires a published space with a verified host", () => {
+	it("requires a published space with a verified host and at least one photo", () => {
 		expect(publishedWhere).toEqual({
 			status: "PUBLISHED",
 			host: { verifiedAt: { not: null } },
+			photos: { some: {} },
 		});
 	});
 });
@@ -527,6 +530,7 @@ describe("searchPublishedSpaces", () => {
 					floorAreaSqm: 68,
 					maxCrew: 12,
 					naturalLight: "ABUNDANT",
+					isDemo: true,
 				},
 			],
 			total: 1,
@@ -628,5 +632,35 @@ describe("searchPublishedSpaces", () => {
 		expect(json).not.toContain("Polaris St");
 		expect(json).not.toContain("14.565");
 		expect(json).not.toContain("0000");
+	});
+});
+
+describe("isDemo", () => {
+	it("is selected for cards and details", () => {
+		expect(cardSelect.isDemo).toBe(true);
+		expect(detailSelect.isDemo).toBe(true);
+	});
+
+	it("is mapped onto the card", async () => {
+		mockFindMany.mockResolvedValue([{ ...cardRow, isDemo: false }]);
+		mockCount.mockResolvedValue(1);
+		const result = await searchPublishedSpaces(noFilters);
+		expect(result.spaces[0].isDemo).toBe(false);
+	});
+});
+
+describe("hasPublicDemoSpaces", () => {
+	it("looks for a public demo space and selects only its id", async () => {
+		mockFindFirst.mockResolvedValue({ id: "space_1" });
+		await expect(hasPublicDemoSpaces()).resolves.toBe(true);
+		expect(mockFindFirst).toHaveBeenCalledWith({
+			where: { ...publishedWhere, isDemo: true },
+			select: { id: true },
+		});
+	});
+
+	it("is false when there is none", async () => {
+		mockFindFirst.mockResolvedValue(null);
+		await expect(hasPublicDemoSpaces()).resolves.toBe(false);
 	});
 });

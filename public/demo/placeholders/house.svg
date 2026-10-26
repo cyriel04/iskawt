@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" role="img">
+	<title>Demo placeholder</title>
+	<rect width="1200" height="600" fill="#e3e8e0"/>
+	<polygon points="800,120 1020,300 580,300" fill="#b9c4b2"/>
+	<rect x="650" y="300" width="300" height="200" fill="#cdd6c7"/>
+	<rect x="780" y="380" width="60" height="120" fill="#b9c4b2"/>
+	<text x="600" y="330" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="96" font-weight="700" letter-spacing="12" fill="#4d5648">DEMO</text>
+</svg>

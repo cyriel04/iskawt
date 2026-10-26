@@ -64,12 +64,15 @@ export async function notifyCounterpart(
 				space: {
 					select: {
 						title: true,
+						isDemo: true,
 						host: { select: { userId: true, verifiedAt: true, contactEmail: true, user: { select: { email: true } } } },
 					},
 				},
 			},
 		});
 		if (!row) return;
+		// Demo hosts have no real inbox; mailing their @example.invalid address only bounces.
+		if (toHost && row.space.isDemo) return;
 		const host = row.space.host;
 		if (!canSendIn(row.status, host.verifiedAt !== null, await blockersBetween(row.renterId, host.userId))) return;
 		if (!(await claim(inquiryId, toHost, now))) return;

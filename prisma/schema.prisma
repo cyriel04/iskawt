@@ -116,6 +116,9 @@ model Space {
   verifiedAt DateTime?
   listedAt   DateTime?
 
+  // Seed data for the portfolio demo. Marked as such everywhere it shows.
+  isDemo Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

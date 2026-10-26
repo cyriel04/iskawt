@@ -92,7 +92,7 @@ describe("createInquiry", () => {
 	it("creates the inquiry and its first message for a published space", async () => {
 		await expect(createInquiry(RENTER, input, now)).resolves.toEqual({ kind: "created", id: "inq_new" });
 		expect(mockSpaceFindFirst).toHaveBeenCalledWith({
-			where: { slug: "demo-poblacion-loft", status: "PUBLISHED", host: { verifiedAt: { not: null } } },
+			where: { slug: "demo-poblacion-loft", status: "PUBLISHED", host: { verifiedAt: { not: null } }, photos: { some: {} } },
 			select: { id: true, host: { select: { userId: true } } },
 		});
 		expect(mockInquiryCreate).toHaveBeenCalledWith({

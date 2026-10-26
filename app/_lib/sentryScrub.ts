@@ -15,6 +15,7 @@ export const OPS_MESSAGES = [
 	"[host-application] notify failed",
 	"[host-application] no OPS_EMAIL_TO",
 	"[auth] host link failed",
+	"[ops] sentry smoke test",
 ] as const;
 export type OpsMessage = (typeof OPS_MESSAGES)[number];
 
