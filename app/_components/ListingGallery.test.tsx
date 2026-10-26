@@ -43,9 +43,38 @@ describe("ListingGallery", () => {
 	it("makes a clicked small photo the big one", async () => {
 		const user = userEvent.setup();
 		renderWithTheme(<ListingGallery photos={photos} demo={false} />);
-		await user.click(screen.getByRole("button", { name: "Show photo 3" }));
+		await user.click(screen.getByRole("button", { name: /^Show photo 3/ }));
 		expect(order()[0]).toBe("Photo alt 3");
 		expect(screen.getByText("Photo 3 of 3")).toBeInTheDocument();
+	});
+
+	it("moves focus to the big photo when a small one is clicked", async () => {
+		const user = userEvent.setup();
+		renderWithTheme(<ListingGallery photos={photos} demo={false} />);
+		await user.click(screen.getByRole("button", { name: /^Show photo 3/ }));
+		expect(document.activeElement).not.toBe(document.body);
+		expect(screen.getByRole("group", { name: "Photo 3 of 3" })).toHaveFocus();
+	});
+
+	it("describes each small photo in its button name", () => {
+		renderWithTheme(<ListingGallery photos={photos} demo={false} />);
+		expect(screen.getByRole("button", { name: "Show photo 3: Photo alt 3" })).toBeInTheDocument();
+	});
+
+	it("does not break when the photos array shrinks", () => {
+		const { rerender } = renderWithTheme(<ListingGallery photos={[1, 2, 3, 4].map(photo)} demo={false} />);
+		rerender(<ListingGallery photos={photos.slice(0, 2)} demo={false} />);
+		expect(screen.getByText("Photo 1 of 2")).toBeInTheDocument();
+	});
+
+	it("does not put an undefined class on the grid", () => {
+		renderWithTheme(<ListingGallery photos={[1, 2, 3, 4].map(photo)} demo={false} />);
+		expect(screen.getByTestId("gallery-big").parentElement?.className).not.toContain("undefined");
+	});
+
+	it("uses the singular badge for a single demo photo", () => {
+		renderWithTheme(<ListingGallery photos={[photo(1)]} demo />);
+		expect(screen.getByText("Demo photo · not a real space")).toBeInTheDocument();
 	});
 
 	it("announces the position politely", () => {
