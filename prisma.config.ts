@@ -16,6 +16,8 @@ export default defineConfig({
 	},
 
 	datasource: {
-		url: env("DATABASE_URL"),
+		// Neon: the app uses the pooled DATABASE_URL; migrations need the direct
+		// connection. Unset locally and in CI, where there is only one URL.
+		url: process.env.DIRECT_DATABASE_URL || env("DATABASE_URL"),
 	},
 });
