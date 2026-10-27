@@ -10,7 +10,9 @@ Vercel runs `pnpm vercel-build` (`scripts/vercel-build.sh`, chosen by `vercel.js
 2. **Production only** (`VERCEL_ENV=production`): `prisma migrate deploy`, then `pnpm db:seed` if `DEMO_SEED=true`.
 3. `next build`, always.
 
-If any step fails, the build fails and the previous deployment stays live. Previews skip step 2 and never touch the production database.
+If any step fails, the build fails and the previous deployment stays live.
+
+Only `main` deploys. `vercel.json` sets `git.deploymentEnabled` to `false` for every other branch, so PRs get no preview deployment and no Vercel check. CI on the PR is the gate.
 
 Migrations run before the new code goes live, so for about a minute the old code runs against the new schema. Keep migrations additive. A rename or drop ships in two deploys: first add the new column and stop using the old one, then drop the old one.
 
@@ -47,24 +49,26 @@ The app scrubs every event to an allowlist before sending (`app/_lib/sentryScrub
 
 1. Import the GitHub repo. Framework preset **Next.js**. Leave the build command alone: `vercel.json` sets it.
 2. Note the production URL, for example `https://<project>.vercel.app`. Sign-in links point there.
-3. **Settings → Environment Variables.** Scope each variable exactly as shown:
+3. **Settings → Environment Variables.**
 
-| Variable | Production | Preview |
-|---|---|---|
-| `DATABASE_URL` | Neon pooled URL | `postgresql://preview:preview@localhost:5432/unused` |
-| `DIRECT_DATABASE_URL` | Neon direct URL | — |
-| `BETTER_AUTH_SECRET` | `openssl rand -base64 32` | any placeholder, e.g. `preview-placeholder-not-a-secret` |
-| `BETTER_AUTH_URL` | the production URL | `http://localhost:3000` |
-| `RESEND_API_KEY` | from step 2 | — |
-| `EMAIL_FROM` | from step 2 | — |
-| `OPS_EMAIL_TO` | the inbox that gets report and host-application notices | — |
-| `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | the DSN | — |
-| `SENTRY_ORG`, `SENTRY_PROJECT` | the slugs | — |
-| `SENTRY_AUTH_TOKEN` | the token (mark it **Sensitive**) | — |
-| `DEMO_SEED` | `true` | — |
-| `OPS_TEST_KEY` | `openssl rand -hex 32` | — |
+Every variable is **Production** only:
 
-The Preview values are placeholders like the ones CI uses. `prisma generate` and Better Auth need a value to build. Nothing connects with them, so a preview build passes, and its data pages show the error state. Never give Preview the Neon URLs: a preview would then read, and could write, production data.
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | Neon pooled URL |
+| `DIRECT_DATABASE_URL` | Neon direct URL |
+| `BETTER_AUTH_SECRET` | `openssl rand -base64 32` |
+| `BETTER_AUTH_URL` | the production URL |
+| `RESEND_API_KEY` | from step 2 |
+| `EMAIL_FROM` | from step 2 |
+| `OPS_EMAIL_TO` | the inbox that gets report and host-application notices |
+| `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | the DSN |
+| `SENTRY_ORG`, `SENTRY_PROJECT` | the slugs |
+| `SENTRY_AUTH_TOKEN` | the token (mark it **Sensitive**) |
+| `DEMO_SEED` | `true` |
+| `OPS_TEST_KEY` | `openssl rand -hex 32` |
+
+Never scope the Neon URLs to Preview. If previews are ever switched back on, a preview would then read, and could write, production data.
 
 `REPORTS_EMAIL_TO` is the old name for `OPS_EMAIL_TO`. Don't set it on a new deploy.
 
