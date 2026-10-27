@@ -1,151 +1,116 @@
 # Iskawt
 
-**Private shoot spaces in Metro Manila.** Iskawt is a listing directory of apartments, studios, rooftops, cafés and warehouses whose owners are open to film and photo shoots. Hosts list a space; renters browse, filter and send an inquiry; the two arrange the rest between themselves.
+**Private shoot spaces in Metro Manila.** A listing directory of apartments, studios, rooftops, cafés and warehouses whose owners are open to film and photo shoots. Renters browse and send an inquiry. Host and renter talk in an in-app thread, and arrange the rest themselves.
 
 *Iskawt* is the Filipino respelling of "scout", as in location scouting.
 
-> **Demo data.** Every listing in this repository is demo data. No real host has agreed to any of it. Titles carry a `[DEMO]` marker, hosts are named "Demo Host A", "Demo Host B" and so on, rates are illustrative, and anything that would identify a property (unit, house number, building name) is written in `[BRACKETS]`. Only public geography is real: city, area and street.
+**Live demo: https://iskawt-dev.vercel.app**
 
-## What it does, and what it doesn't
+![Browse page of the live demo, showing demo spaces with photo badges](docs/screenshots/browse.jpg)
 
-- **Inquiry only.** No payments, bookings, calendars or reviews. Rates are **indicative**: hosts report them, and nothing is charged here.
-- **Metro Manila only**: the 16 cities plus Pateros.
-- **Private spaces only.** Public locations, streets and government permits are out of scope.
+> **This is a demo.** Every listing is sample data. No real host has agreed to any of it. The photos are AI-generated. Every browse card carries a "Demo photo · not a real space" badge, and every listing has a "Demo photos" badge on its gallery and a disclaimer under it. Titles carry a `[DEMO]` marker, hosts are "Demo Host A", "Demo Host B" and so on, rates are illustrative, and anything that would identify a property is written in `[BRACKETS]`. Only public geography (city, area, street) is real. An inquiry on a demo listing is saved, but it reaches nobody.
 
-### Privacy model
+## Why it exists
 
-A listing is about someone's home or business, so privacy is designed into the data layer. It isn't left to the UI.
+Shoots in Manila find locations through friends of friends and Facebook groups. A space owner who'd happily rent out a loft for a day has no safe way to say so without posting their address and phone number to strangers. Iskawt is the narrow version of that marketplace: a directory and a relay. There are no payments, bookings or calendars. A listing never shows an address or a contact detail, and a host decides in the thread whether to share them.
 
-- **Host contact details are never public.** Host emails and phone numbers live in a separate table and are never selected by any public query. Every public read uses an explicit `select`; `include: { host: true }` on a public path is treated as a bug. Tests check that no public result carries these fields.
-- **Exact addresses are never public.** A listing shows its area and city. The host shares the address privately after accepting an inquiry.
-- **Coordinates are approximate.** Stored latitude and longitude are only area-level (the demo data uses rounded area centres), so a future map can never lead to a doorstep.
-- **Inquiries are relayed.** Renters never see host contact details, and a host's reply is their own choice to make.
-- **Every published space has a verified host.** A space is public only when it is published and a person has confirmed the host really owns it.
+It's also a portfolio piece. It shows how I scope a product, design privacy into the data layer, and run an AI-agent workflow with review gates.
 
-## Features
+## What it does
 
-- **Browse** published spaces, each card showing its cover photo, area, space type, headline rate, size, crew capacity and light.
-- **Listing detail** with photos, practical specs (ceiling height, power, blackout, noise, parking, load-in), indicative rates, house rules and past film credits.
-- **Search** across title, description, area, tags, city names and space types. Every word you type must match somewhere. Matching ignores case, accents and hyphens, so `marikina`, `quezon-city`, `las pinas` and `studios` all work.
-- **Filters**: city, space type, indoor or outdoor, natural light, minimum crew and hourly rate range, with a removable chip for each active filter and paginated results.
-- **Shareable URLs.** Every filter lives in the URL, so a filtered link pasted into a new tab shows the same results, for example `/?city=makati&type=studio&crew=10`.
+- **Browse and search**: filter by city, space type, indoor or outdoor, natural light, crew size and rate. Every filter lives in the URL, so a link reproduces the view.
+- **Listing pages**: photos, practical specs (ceiling height, power, blackout, noise, parking, load-in), indicative rates, house rules and past credits.
+- **Accounts**: magic-link sign-in. Browsing never needs an account.
+- **Inquiries and threads**: a signed-in renter sends an inquiry, and host and renter message each other in `/inbox`.
+- **Safety**: either side can block the other or report a conversation. A host who loses verification can no longer message anyone.
+- **List your space**: a host application form. A person reviews every application. Nothing becomes a listing automatically.
 
-**Coming next:** the inquiry form and relay (slice 5), then host applications and deployment (slice 6). See [`PLAN.md`](PLAN.md).
+![Listing page: a large photo with two beside it, a demo badge, and the demo disclaimer under the gallery](docs/screenshots/listing.jpg)
 
-## Tech stack
+Rates are **indicative**: hosts report them, and nothing is charged here. Metro Manila only: the 16 cities plus Pateros.
+
+## Privacy, designed in
+
+A listing is about someone's home or business. The rules below are enforced in the data layer and tested. They aren't left to the UI.
+
+- **Host contact details are never public.** Every public query uses an explicit `select`. `include: { host: true }` on a public path is a bug, and tests assert that no public result carries a host email or phone.
+- **Exact addresses are never public.** A listing shows area and city. The host shares the address in the thread, if they choose to.
+- **Coordinates are approximate.** The demo data stores rough area centres. Real listings will store coordinates jittered by about 300m, so a future map can't point at a doorstep.
+- **Inquiries are relayed.** Neither side sees the other's email or phone unless they type it into a message.
+- **Emails carry no typed text.** Notification emails contain the space title and a link: no sender name, no message body. Someone can't use Iskawt's domain to deliver their own words to a stranger's inbox. Requester names that impersonate Iskawt, or contain URLs, emails or mixed-script lookalikes, are rejected.
+- **Every public space has a verified host and at least one photo.** A person confirms that a host really controls the space before it's published.
+- **Error monitoring sees an allowlist.** Every Sentry event passes through one pure, tested function (`app/_lib/sentryScrub.ts`). It keeps error types, stack frames, the request method and path, opaque ids and a fixed set of ops messages, and drops everything else: no request bodies, headers, queries, cookies or IPs. Tracing and replay are off. The user is an opaque id or nothing.
+
+## How it's built
 
 | | |
 |---|---|
-| Framework | Next.js 16 (App Router, Turbopack), React 19, TypeScript (strict) |
-| UI | MUI 9 with Emotion; styling in SCSS modules that read theme tokens |
-| Data | Prisma 7 with the `@prisma/adapter-pg` driver adapter, PostgreSQL 16 |
-| Tests | Jest and React Testing Library |
-| CI | GitHub Actions: typecheck, lint, test, build, and migration checks on every PR |
-| Package manager | pnpm 12 (pinned in `package.json`) |
+| Framework | Next.js 16 (App Router, Turbopack), React 19, TypeScript strict |
+| UI | MUI 9; styling in SCSS modules that read theme tokens, with no `sx` or inline styles |
+| Data | Prisma 7 with the `@prisma/adapter-pg` driver adapter, PostgreSQL (Neon in production) |
+| Auth and email | Better Auth magic links; Resend over `fetch` |
+| Errors | Sentry, errors only, scrubbed to an allowlist |
+| Tests | Jest and React Testing Library, written before the code they cover |
+| Hosting | Vercel (Singapore) and Neon (Singapore) |
+
+**Agent workflow.** The repository is built with [Claude Code](https://claude.com/claude-code). Each slice goes brainstorm → written spec → written plan → execution. A `frontend-dev` and a `backend-dev` agent implement it, each owning its own files, and a fresh read-only `reviewer` checks every task and then the whole branch. The rules the agents follow (privacy, styling, ownership, definition of done) are in [`CLAUDE.md`](CLAUDE.md). Specs and plans are in [`docs/superpowers/`](docs/superpowers), and the slice history is in [`PLAN.md`](PLAN.md).
+
+**CI.** Every PR runs typecheck, lint, tests and a production build. A second job applies every migration to a throwaway Postgres, fails if `schema.prisma` has changes with no migration, and loads the seed.
+
+**Deploys.** A merge to `main` deploys to Vercel. The build applies migrations to Neon and re-seeds the demo data, in production only. If any step fails, the previous version stays live. Migrations run before the new code goes live, so they're kept additive, and a rename or drop ships in two deploys. The full checklist is [`docs/deploy.md`](docs/deploy.md).
 
 ## Getting started
 
-### Prerequisites
-
-- **Node.js 24**
-- **pnpm 12.6.0**: run `corepack enable` and the version pinned in `package.json` is used automatically
-- **Docker**, for the local Postgres database
-
-### Setup
+You need **Node.js 24**, **pnpm** (run `corepack enable`; the version is pinned in `package.json`) and **Docker** for the local Postgres.
 
 ```bash
 git clone https://github.com/cyriel04/iskawt.git
 cd iskawt
-
 corepack enable
 pnpm install
-
-# Start Postgres 16 in Docker (user, password and database are in docker-compose.yml)
-docker compose up -d
+docker compose up -d          # Postgres 16 on port 5432
+cp .env.example .env          # every variable is listed there with a note
 ```
 
-Copy `.env.example` to `.env` and fill it in. Every variable the app reads is listed there with a note:
+In `.env`, set `BETTER_AUTH_SECRET` to 32+ random characters (`openssl rand -base64 32`). The other defaults work locally. Without Resend keys, emails, including sign-in links, print to the terminal.
 
 ```bash
-cp .env.example .env
+pnpm exec prisma generate         # writes the client to /generated (gitignored)
+pnpm exec prisma migrate deploy   # creates the tables
+pnpm db:seed                      # loads the 8 demo spaces; safe to re-run
+pnpm dev                          # http://localhost:3000
 ```
 
-The `DATABASE_URL` default already points at the Docker database. Set `BETTER_AUTH_SECRET` to 32+ random characters. In production you also need `RESEND_API_KEY` and `EMAIL_FROM` for email. Set `OPS_EMAIL_TO` to the ops address that gets report and host-application notices (ids and a few public facts only). Without it, everything still saves, but nobody is emailed. `REPORTS_EMAIL_TO`, its old name, still works. For error monitoring, set `SENTRY_DSN` and `NEXT_PUBLIC_SENTRY_DSN` (the same value). Leave them empty and Sentry stays off. Source maps upload at build time only when `SENTRY_ORG`, `SENTRY_PROJECT` and the secret `SENTRY_AUTH_TOKEN` are set. Events are scrubbed to an allowlist in `app/_lib/sentryScrub.ts`, so no email, address, message or form field reaches Sentry.
-
-Then generate the Prisma client, create the tables and load the demo data:
+**Seed stops with "Refusing to seed: these slugs belong to non-demo spaces"?** Your local database is older than the `isDemo` flag. Mark the old demo rows, then re-run the seed:
 
 ```bash
-pnpm exec prisma generate          # writes the client to /generated (gitignored)
-pnpm exec prisma migrate deploy    # applies prisma/migrations to the empty database
-pnpm db:seed                       # loads the demo spaces; safe to re-run
+docker exec iskawt-db psql -U iskawt -d iskawt -c "UPDATE \"Space\" SET \"isDemo\" = true WHERE slug LIKE 'demo-%';"
 ```
 
-Start the app:
-
-```bash
-pnpm dev
-```
-
-Open <http://localhost:3000>. You should see the demo spaces. Try <http://localhost:3000/?q=rooftop> or <http://localhost:3000/?city=manila>.
-
-## Scripts
+### Scripts
 
 | Command | What it does |
 |---|---|
-| `pnpm dev` | Start the development server on port 3000 |
-| `pnpm build` | Production build |
-| `pnpm start` | Serve the production build |
-| `pnpm typecheck` | Type-check with `tsc --noEmit` |
-| `pnpm lint` | Lint with ESLint (flat config) |
-| `pnpm lint:fix` | Lint and apply automatic fixes |
-| `pnpm test` | Run the Jest suite |
-| `pnpm test:watch` | Run Jest in watch mode |
-| `pnpm db:migrate` | Create and apply a new migration after editing `prisma/schema.prisma` (`prisma migrate dev`) |
-| `pnpm db:push` | Push the schema to the database without creating a migration (prototyping only) |
+| `pnpm dev` | Development server on port 3000 |
+| `pnpm build` / `pnpm start` | Production build, and serving it |
+| `pnpm typecheck` | `tsc --noEmit` |
+| `pnpm lint` / `pnpm lint:fix` | ESLint (flat config) |
+| `pnpm test` / `pnpm test:watch` | Jest |
+| `pnpm db:migrate` | Create and apply a migration after editing `prisma/schema.prisma` |
 | `pnpm db:seed` | Load the demo data |
-| `pnpm db:studio` | Open Prisma Studio to browse and edit the database |
+| `pnpm db:studio` | Prisma Studio, which is also the admin UI in v1 |
 
-Before opening a pull request, run `pnpm typecheck && pnpm lint && pnpm test`. CI runs the same checks, plus `pnpm build` and the database checks below.
+Before a PR: `pnpm typecheck && pnpm lint && pnpm test`.
 
-## Project structure
+## Adding demo photos
 
-```
-app/
-  (browse)/page.tsx         browse, search and filters at /
-  spaces/[slug]/page.tsx    listing detail
-  api/                      route handlers, the only write paths (from slice 5)
-  _components/              UI components, each with its own Name.module.scss
-  _styles/                  SCSS token names and shared styles
-  _lib/
-    types.ts                the public types shared by pages and queries
-    constants/              display labels, limits, site copy
-    spaceFilters.ts         URL search params ↔ filters
-    server/                 database queries (explicit selects only)
-    db.ts                   the one PrismaClient
-    theme.ts                design tokens, the only place colour and spacing values live
-prisma/                     schema, migrations, demo seed
-docs/mockups/               static HTML mockups (layout reference only)
-```
+Demo photos live in `public/demo/<slug>/1.jpg`, `2.jpg`, `3.jpg`. The lowest number is the cover. The prompts used to generate them, and the rules they follow (no people, no text or logos, no real landmarks), are in [`docs/demo-photos.md`](docs/demo-photos.md). Save JPEGs about 1600px wide and under 400 KB, then run `pnpm db:seed`. It replaces each space's photos with whatever is in its folder. A space with no files gets an SVG placeholder for its type.
 
-Folders that start with `_` are Next.js private folders, so they sit inside `app/` without becoming URLs.
+Only `isDemo` spaces may use generated photos. Real spaces get real photos from their host.
 
-## Continuous integration
+## What's next
 
-`.github/workflows/ci.yml` runs two jobs on every pull request to `main` and every push to `main`:
-
-- **checks**: frozen-lockfile install, Prisma client generation, typecheck, lint, tests and production build.
-- **database**: on a throwaway Postgres, applies every migration, fails if `schema.prisma` has changes with no migration for them, and loads the seed.
-
-If the drift check fails, run `pnpm db:migrate` and commit the migration it creates.
-
-## Contributing
-
-The conventions this codebase follows are written down in [`CLAUDE.md`](CLAUDE.md): styling rules, ownership boundaries, the privacy rules and the definition of done. Read it first. A few that matter most:
-
-- Public queries use explicit `select`, never `include` on `Host`.
-- No `any`, no `@ts-ignore`, no non-null `!`. Write tests first.
-- Style with SCSS modules and theme tokens: no `sx`, no inline styles, no raw colours.
-- Keep filter and search state in the URL, not in React state.
-- Never edit applied migrations, lockfiles or `.env` files by hand.
-
-This repository is also set up for [Claude Code](https://claude.com/claude-code). `.claude/agents/` defines a `frontend-dev`, a `backend-dev` and a read-only `reviewer`, and each slice follows the loop in [`PLAN.md`](PLAN.md).
+- **Real hosts, and the end of the demo phase.** Turn off `DEMO_SEED`, delete the demo rows, and list spaces whose owners said yes in writing. Steps are in [`docs/deploy.md`](docs/deploy.md#ending-the-demo-phase).
+- **A map**, once real coordinates are stored jittered, with a privacy review first.
+- **An admin review screen** for host applications and reports. Today that's Prisma Studio.
+- **End-to-end tests** with Cypress.
