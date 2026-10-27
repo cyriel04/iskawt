@@ -1,0 +1,8 @@
+@use "../_styles/tokens" as *;
+
+.tile {
+	padding: space(3) space(4);
+	border-radius: $radius-lg;
+	background: $color-canvas;
+	text-align: center;
+}

@@ -15,10 +15,12 @@ import type {
 	SpaceSearchResult,
 } from "@/app/_lib/types";
 
-// A space is public only when it is published AND a human has verified its host.
+// A space is public only when it is published, a human has verified its host,
+// and it has at least one photo.
 export const publishedWhere = {
 	status: "PUBLISHED",
 	host: { verifiedAt: { not: null } },
+	photos: { some: {} },
 } satisfies Prisma.SpaceWhereInput;
 
 // Cover photo first, then the host's order.
@@ -36,6 +38,7 @@ export const cardSelect = {
 	floorAreaSqm: true,
 	maxCrew: true,
 	naturalLight: true,
+	isDemo: true,
 	hourlyRate: true,
 	halfDayRate: true,
 	fullDayRate: true,
@@ -99,6 +102,7 @@ export function toSpaceCard(row: CardRow): SpaceCard {
 		floorAreaSqm: row.floorAreaSqm,
 		maxCrew: row.maxCrew,
 		naturalLight: row.naturalLight,
+		isDemo: row.isDemo,
 	};
 }
 

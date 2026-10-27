@@ -9,15 +9,24 @@ export default function PhotoFrame({
 	photo,
 	sizes,
 	shape,
+	badge,
 }: {
 	photo: PublicPhoto | null;
 	sizes: string;
-	shape: "card" | "gallery";
+	shape: "card" | "gallery" | "fill";
+	badge?: string;
 }) {
 	return (
 		<div className={`${styles.frame} ${styles[shape]}`}>
 			{photo ? (
-				<Image src={photo.url} alt={photo.alt} fill sizes={sizes} unoptimized />
+				<>
+					<Image src={photo.url} alt={photo.alt} fill sizes={sizes} unoptimized />
+					{badge && (
+						<Typography variant="label" className={styles.badge}>
+							{badge}
+						</Typography>
+					)}
+				</>
 			) : (
 				<div className={styles.empty}>
 					<Typography variant="label" color="text.secondary">

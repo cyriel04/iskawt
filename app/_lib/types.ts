@@ -65,6 +65,8 @@ export type SpaceCard = {
 	floorAreaSqm: number | null;
 	maxCrew: number | null;
 	naturalLight: NaturalLight;
+	// Demo data for the portfolio site. Public; drives the demo badges and the disclaimer strip.
+	isDemo: boolean;
 };
 
 export type PublicFilmCredit = {

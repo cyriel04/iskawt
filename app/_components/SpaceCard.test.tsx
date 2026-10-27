@@ -82,4 +82,14 @@ describe("SpaceCard", () => {
 
 		expect(screen.getByRole("img", { name: "Demo photo placeholder" })).toBeInTheDocument();
 	});
+
+	it("badges the cover of a demo space", () => {
+		renderWithTheme(<SpaceCard space={{ ...demoCard, coverPhoto: demoPhoto, isDemo: true }} />);
+		expect(screen.getByText("Demo photo · not a real space")).toBeInTheDocument();
+	});
+
+	it("doesn't badge a real space", () => {
+		renderWithTheme(<SpaceCard space={{ ...demoCard, coverPhoto: demoPhoto, isDemo: false }} />);
+		expect(screen.queryByText("Demo photo · not a real space")).not.toBeInTheDocument();
+	});
 });

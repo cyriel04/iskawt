@@ -27,6 +27,7 @@ const row = (hostUser: { email: string } | null = { email: "demo-host@example.in
 	renterNotifiedAt: null,
 	renter: { email: "demo-renter@example.invalid" },
 	space: {
+		isDemo: false,
 		title: "[DEMO] Corner loft",
 		host: { userId: hostUser ? "user_host" : null, verifiedAt: new Date("2026-10-01T00:00:00Z"), contactEmail: "demo-host-contact@example.invalid", user: hostUser },
 	},
@@ -58,6 +59,15 @@ it("emails the linked host when the renter writes, after claiming the host's thr
 		}),
 	);
 	expect(mockSend.mock.calls[0][0].text).toContain("http://localhost:3000/inbox/inq_1");
+});
+
+it("skips the host email for a demo space: no send, no claim, no ops error", async () => {
+	const demo = row(null);
+	mockFindUnique.mockResolvedValue({ ...demo, space: { ...demo.space, isDemo: true } });
+	await notifyCounterpart("inq_1", "RENTER", now);
+	expect(mockSend).not.toHaveBeenCalled();
+	expect(mockUpdateMany).not.toHaveBeenCalled();
+	expect(errorSpy).not.toHaveBeenCalled();
 });
 
 it("emails an unlinked host at contactEmail with sign-in wording", async () => {
@@ -128,6 +138,7 @@ it("reads only what the email needs: no names, no message", async () => {
 			renter: { select: { email: true } },
 			space: {
 				select: {
+					isDemo: true,
 					title: true,
 					host: { select: { userId: true, verifiedAt: true, contactEmail: true, user: { select: { email: true } } } },
 				},

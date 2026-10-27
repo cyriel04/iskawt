@@ -19,9 +19,25 @@
 	aspect-ratio: 2 / 1;
 }
 
+// Fills a sized parent, e.g. a cell of the listing gallery grid.
+.fill {
+	height: 100%;
+}
+
 .empty {
 	position: absolute;
 	inset: 0;
 	display: grid;
 	place-items: center;
+}
+
+// Solid surface and strong ink, so it reads over any photo.
+.badge {
+	position: absolute;
+	top: space(2);
+	left: space(2);
+	padding: space(1) space(2);
+	border-radius: $radius-sm;
+	background: $color-paper;
+	color: $color-ink;
 }

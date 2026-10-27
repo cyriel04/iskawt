@@ -33,6 +33,7 @@
 	flex-wrap: wrap;
 	justify-content: flex-end;
 	min-width: 0;
-	gap: space(2);
+	column-gap: space(6);
+	row-gap: space(1);
 	margin-inline-start: auto;
 }

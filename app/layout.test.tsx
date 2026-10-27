@@ -12,7 +12,9 @@ jest.mock("next/navigation", () => ({
 
 import RootLayout from "@/app/layout";
 
-beforeEach(() => mockGetCurrentUser.mockReset());
+beforeEach(() => {
+	mockGetCurrentUser.mockReset();
+});
 
 describe("RootLayout", () => {
 	it("still renders the page with a Sign in link when reading the user fails", async () => {

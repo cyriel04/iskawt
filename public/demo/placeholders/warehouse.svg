@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" role="img">
+	<title>Demo placeholder</title>
+	<rect width="1200" height="600" fill="#e4e2de"/>
+	<rect x="120" y="360" width="960" height="180" fill="#c8c4bc"/>
+	<rect x="860" y="400" width="180" height="140" fill="#aaa59b"/>
+	<line x1="860" y1="430" x2="1040" y2="430" stroke="#e4e2de" stroke-width="6"/>
+	<line x1="860" y1="460" x2="1040" y2="460" stroke="#e4e2de" stroke-width="6"/>
+	<line x1="860" y1="490" x2="1040" y2="490" stroke="#e4e2de" stroke-width="6"/>
+	<text x="600" y="330" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="96" font-weight="700" letter-spacing="12" fill="#4f4c47">DEMO</text>
+</svg>

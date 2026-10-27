@@ -85,6 +85,10 @@ These bite on every fresh clone and every new machine. Do not work around them.
   yourself rather than stopping: `open -a Docker`, wait until `docker info`
   succeeds, then `docker compose up -d` (container `iskawt-db`, port 5432).
   Agents and the main session may both do this without asking.
+- **Vercel builds with `pnpm vercel-build`** (`scripts/vercel-build.sh`, chosen by
+  `vercel.json`). It runs `prisma migrate deploy`, and the demo seed when
+  `DEMO_SEED=true`, in production only. Migrations run before the new code goes
+  live, so keep them additive; a rename or drop ships in two deploys.
 - **pnpm blocks dependency build scripts.** Approvals live in `pnpm-workspace.yaml`
   at the repo root, never in a `"pnpm"` block in `package.json` — current pnpm does
   not read that field. Use `pnpm approve-builds`; never
@@ -198,7 +202,11 @@ worse than useless.
   human has not confirmed the space is actually theirs to list.
 - `HostApplication` rows never become listings automatically. A human reviews.
 - Never invent a listing, a rate, a host, or a photo. Demo data is labelled as demo
-  data, in the seed file and in the README.
+  data, in the seed file and in the README. **Demo-phase exception:** AI-generated
+  photos are allowed only on `isDemo` spaces, and only while the site marks them as
+  demo (a badge on every browse card, one badge on the listing gallery, and the
+  disclaimer strip under it). Real spaces get real photos from their host.
+- A space with no photo is not public: `publishedWhere` requires one.
 
 ## Address convention
 

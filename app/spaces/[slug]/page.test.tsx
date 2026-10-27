@@ -89,6 +89,18 @@ describe("SpacePage", () => {
 		expect(screen.getByRole("img", { name: "Second demo photo" })).toBeInTheDocument();
 	});
 
+	it("shows the demo disclaimer strip only on a demo listing", async () => {
+		const text = "Demo listing, for internal use only. Photos, rates and host are not real.";
+		mockGet.mockResolvedValue({ ...demoDetail, isDemo: true });
+		const { unmount } = renderWithTheme(await SpacePage({ params }));
+		expect(screen.getByText(text)).toBeInTheDocument();
+		unmount();
+
+		mockGet.mockResolvedValue({ ...demoDetail, isDemo: false });
+		renderWithTheme(await SpacePage({ params }));
+		expect(screen.queryByText(text)).not.toBeInTheDocument();
+	});
+
 	it("has a breadcrumb back to browse, through the city, to the current space", async () => {
 		mockGet.mockResolvedValue(demoDetail);
 

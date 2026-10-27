@@ -22,6 +22,7 @@ export const demoCard: SpaceCard = {
 	floorAreaSqm: 68,
 	maxCrew: 12,
 	naturalLight: "ABUNDANT",
+	isDemo: true,
 };
 
 export const demoDetail: SpaceDetail = {
