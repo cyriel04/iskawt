@@ -75,7 +75,7 @@ Never scope the Neon URLs to Preview. If previews are ever switched back on, a p
 ## 5. First deploy
 
 1. Redeploy (or push to `main`). In the build log, check for, in order: `prisma generate`, `prisma migrate deploy` with every migration applied, the seed finishing, then `next build`.
-2. If the seed stops with a guard error, read it. It refuses to overwrite a non-demo space with a demo slug, and it refuses a demo space with no photo.
+2. If the seed stops with `Refusing to seed: these slugs belong to non-demo spaces`, a real listing already uses a demo slug. The seed never overwrites a real listing. A demo space with no photo files gets an SVG placeholder, not an error.
 
 ## 6. Smoke check
 

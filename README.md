@@ -39,7 +39,7 @@ A listing is about someone's home or business. The rules below are enforced in t
 - **Inquiries are relayed.** Neither side sees the other's email or phone unless they type it into a message.
 - **Emails carry no typed text.** Notification emails contain the space title and a link: no sender name, no message body. Someone can't use Iskawt's domain to deliver their own words to a stranger's inbox. Requester names that impersonate Iskawt, or contain URLs, emails or mixed-script lookalikes, are rejected.
 - **Every public space has a verified host and at least one photo.** A person confirms that a host really controls the space before it's published.
-- **Error monitoring sees an allowlist.** Every Sentry event passes through one pure, tested function (`app/_lib/sentryScrub.ts`). It keeps error types, stack frames and a fixed set of ops messages, and drops everything else: no request bodies, headers, queries, cookies or IPs. Tracing and replay are off. The user is an opaque id or nothing.
+- **Error monitoring sees an allowlist.** Every Sentry event passes through one pure, tested function (`app/_lib/sentryScrub.ts`). It keeps error types, stack frames, the request method and path, opaque ids and a fixed set of ops messages, and drops everything else: no request bodies, headers, queries, cookies or IPs. Tracing and replay are off. The user is an opaque id or nothing.
 
 ## How it's built
 
@@ -81,7 +81,7 @@ pnpm db:seed                      # loads the 8 demo spaces; safe to re-run
 pnpm dev                          # http://localhost:3000
 ```
 
-**Seed refuses with "not a demo space"?** Your local database is older than the `isDemo` flag. Mark the old demo rows, then re-run the seed:
+**Seed stops with "Refusing to seed: these slugs belong to non-demo spaces"?** Your local database is older than the `isDemo` flag. Mark the old demo rows, then re-run the seed:
 
 ```bash
 docker exec iskawt-db psql -U iskawt -d iskawt -c "UPDATE \"Space\" SET \"isDemo\" = true WHERE slug LIKE 'demo-%';"
