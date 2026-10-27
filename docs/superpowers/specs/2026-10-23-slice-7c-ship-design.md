@@ -4,6 +4,13 @@
 **Branch:** `feat/slice-7c-ship`
 **Splits into:** 7c-1 "deployable" (code) and 7c-2 "the story" (docs, after the site is live)
 
+> **Amended 2026-10-26** (approved by the human, branch `feat/listing-gallery`): the
+> site-wide banner and `hasPublicDemoSpaces()` are removed as redundant. The listing
+> gallery becomes one big photo with two stacked beside it (Next/Previous rotate them),
+> carrying **one** "Demo photos · not a real space" badge on the big photo. The final
+> tile becomes a full-width disclaimer strip under the gallery. Browse cards keep their
+> per-photo badge. Sections below describe the original 7c-1 design.
+
 ## Intent
 
 Put Iskawt on the public internet as a **portfolio demo** for hiring readers. Production

@@ -3,8 +3,8 @@ import PhotoFrame from "@/app/_components/PhotoFrame";
 import { demoPhoto, renderWithTheme } from "@/app/_components/testing";
 
 describe("PhotoFrame", () => {
-	it("marks a demo photo with a visible badge", () => {
-		renderWithTheme(<PhotoFrame photo={demoPhoto} sizes="100vw" shape="card" demo />);
+	it("shows the badge text it is given", () => {
+		renderWithTheme(<PhotoFrame photo={demoPhoto} sizes="100vw" shape="card" badge="Demo photo · not a real space" />);
 		expect(screen.getByText("Demo photo · not a real space")).toBeInTheDocument();
 		expect(screen.getByRole("img", { name: demoPhoto.alt })).toBeInTheDocument();
 	});
@@ -15,7 +15,7 @@ describe("PhotoFrame", () => {
 	});
 
 	it("shows no badge when there is no photo", () => {
-		renderWithTheme(<PhotoFrame photo={null} sizes="100vw" shape="card" demo />);
+		renderWithTheme(<PhotoFrame photo={null} sizes="100vw" shape="card" badge="Demo photo · not a real space" />);
 		expect(screen.getByText("No photos yet")).toBeInTheDocument();
 		expect(screen.queryByText("Demo photo · not a real space")).not.toBeInTheDocument();
 	});

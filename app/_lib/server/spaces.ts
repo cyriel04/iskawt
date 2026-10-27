@@ -263,12 +263,3 @@ export const getPublishedSpaceBySlug = cache(
 		return row ? toSpaceDetail(row) : null;
 	},
 );
-
-// For the site-wide demo banner: is any demo space public right now?
-export async function hasPublicDemoSpaces(): Promise<boolean> {
-	const row = await prisma.space.findFirst({
-		where: { ...publishedWhere, isDemo: true },
-		select: { id: true },
-	});
-	return row !== null;
-}

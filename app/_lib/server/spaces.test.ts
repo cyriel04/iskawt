@@ -20,7 +20,6 @@ import {
 	cardSelect,
 	detailSelect,
 	getPublishedSpaceBySlug,
-	hasPublicDemoSpaces,
 	matchLabels,
 	publishedWhere,
 	searchPublishedSpaces,
@@ -646,21 +645,5 @@ describe("isDemo", () => {
 		mockCount.mockResolvedValue(1);
 		const result = await searchPublishedSpaces(noFilters);
 		expect(result.spaces[0].isDemo).toBe(false);
-	});
-});
-
-describe("hasPublicDemoSpaces", () => {
-	it("looks for a public demo space and selects only its id", async () => {
-		mockFindFirst.mockResolvedValue({ id: "space_1" });
-		await expect(hasPublicDemoSpaces()).resolves.toBe(true);
-		expect(mockFindFirst).toHaveBeenCalledWith({
-			where: { ...publishedWhere, isDemo: true },
-			select: { id: true },
-		});
-	});
-
-	it("is false when there is none", async () => {
-		mockFindFirst.mockResolvedValue(null);
-		await expect(hasPublicDemoSpaces()).resolves.toBe(false);
 	});
 });
