@@ -1,7 +1,7 @@
 import Typography from "@mui/material/Typography";
 import styles from "./DemoListingTile.module.scss";
 
-// Last tile of a demo listing's gallery, the same shape as a gallery photo.
+// Full-width strip directly under a demo listing's gallery.
 export default function DemoListingTile() {
 	return (
 		<div className={styles.tile}>

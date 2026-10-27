@@ -19,6 +19,11 @@
 	aspect-ratio: 2 / 1;
 }
 
+// Fills a sized parent, e.g. a cell of the listing gallery grid.
+.fill {
+	height: 100%;
+}
+
 .empty {
 	position: absolute;
 	inset: 0;

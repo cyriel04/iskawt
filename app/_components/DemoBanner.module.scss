@@ -1,9 +1,0 @@
-@use "../_styles/tokens" as *;
-
-.banner {
-	padding: space(1) space(2);
-	text-align: center;
-	background: $color-canvas;
-	color: $color-ink-muted;
-	border-bottom: 1px solid $color-hairline;
-}

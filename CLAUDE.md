@@ -204,8 +204,8 @@ worse than useless.
 - Never invent a listing, a rate, a host, or a photo. Demo data is labelled as demo
   data, in the seed file and in the README. **Demo-phase exception:** AI-generated
   photos are allowed only on `isDemo` spaces, and only while the site marks them as
-  demo (photo badge, final gallery tile, banner). Real spaces get real photos from
-  their host.
+  demo (a badge on every browse card, one badge on the listing gallery, and the
+  disclaimer strip under it). Real spaces get real photos from their host.
 - A space with no photo is not public: `publishedWhere` requires one.
 
 ## Address convention

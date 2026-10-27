@@ -7,7 +7,7 @@ import Chip from "@mui/material/Chip";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 import InquiryPanel from "@/app/_components/InquiryPanel";
-import PhotoFrame from "@/app/_components/PhotoFrame";
+import ListingGallery from "@/app/_components/ListingGallery";
 import DemoListingTile from "@/app/_components/DemoListingTile";
 import RatePanel from "@/app/_components/RatePanel";
 import SpaceFacts from "@/app/_components/SpaceFacts";
@@ -59,22 +59,8 @@ export default async function SpacePage({ params }: Props) {
 				</Typography>
 			</header>
 
-			<div className={styles.gallery}>
-				{space.photos.length > 0 ? (
-					space.photos.map((photo) => (
-						<PhotoFrame
-							shape="gallery"
-							key={photo.url}
-							photo={photo}
-							demo={space.isDemo}
-							sizes="(min-width: 900px) 50vw, 100vw"
-						/>
-					))
-				) : (
-					<PhotoFrame shape="gallery" photo={null} sizes="100vw" />
-				)}
-				{space.isDemo && <DemoListingTile />}
-			</div>
+			<ListingGallery photos={space.photos} demo={space.isDemo} />
+			{space.isDemo && <DemoListingTile />}
 
 			<div className={styles.columns}>
 				<div className={styles.main}>
