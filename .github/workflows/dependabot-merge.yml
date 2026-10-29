@@ -2,9 +2,10 @@ name: Merge Dependabot PRs
 
 on:
   schedule:
-    # 07:17 UTC, Monday to Friday. Off the hour, when GitHub's scheduler is
-    # less busy and runs are less likely to be delayed or dropped.
-    - cron: "17 7 * * 1-5"
+    # 02:40 Asia/Manila (18:40 UTC the day before), Monday to Friday local
+    # time. Off the hour, when GitHub's scheduler is less busy and runs are
+    # less likely to be delayed or dropped.
+    - cron: "40 18 * * 0-4"
   workflow_dispatch:
 
 concurrency:
