@@ -1,0 +1,135 @@
+name: Merge Dependabot PRs
+
+on:
+  schedule:
+    # 07:17 UTC, Monday to Friday. Off the hour, when GitHub's scheduler is
+    # less busy and runs are less likely to be delayed or dropped.
+    - cron: "17 7 * * 1-5"
+  workflow_dispatch:
+
+concurrency:
+  group: dependabot-merge
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge:
+    name: merge
+    runs-on: ubuntu-latest
+    env:
+      # A personal access token makes the merges count as your own GitHub
+      # activity and lets the merge push trigger CI on main. GITHUB_TOKEN
+      # merges as github-actions[bot] and does neither, and it can't merge the
+      # GitHub Actions group PR because that PR edits .github/workflows/.
+      # Fine-grained PAT scopes: Contents, Pull requests, Workflows (read & write).
+      GH_TOKEN: ${{ secrets.DEPENDABOT_MERGE_TOKEN || github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Merge one passing Dependabot PR
+        run: |
+          prs=$(gh pr list --author "app/dependabot" --base main --state open --json number --jq '.[].number')
+
+          # Major version bumps are left open for a manual review. The summary
+          # lines ("Bumps x from 1.2.3 to 2.0.0", "Updates `x` from 4 to 5") are
+          # read instead of the whole body, which quotes upstream changelogs.
+          # Fails closed: a body that can't be read or parsed counts as major.
+          # Under 1.0, a minor bump (0.5 -> 0.6) counts as major too.
+          is_major() {
+            body=$(gh pr view "$1" --json body --jq .body) || return 0
+            # grep exits 1 on no match, which pipefail would turn into "not major".
+            versions=$(printf '%s\n' "$body" \
+              | grep -E '^(Bumps|Updates) ' \
+              | grep -oE ' from v?[0-9]+[^ ]* to v?[0-9]+[^ ]*') || return 0
+            printf '%s\n' "$versions" \
+              | awk '{ sub(/^v/, "", $2); sub(/^v/, "", $4); split($2, a, "."); split($4, b, "."); n++
+                       if (a[1] != b[1] || (a[1] == "0" && a[2] != b[2])) found = 1 }
+                     END { exit !(found || n == 0) }'
+          }
+
+          # Majors CI fully exercises are still merged: GitHub Actions (CI runs on
+          # them) and dev-only packages (they never reach users). Reads the
+          # metadata Dependabot puts in its commit message; fails closed.
+          major_allowed() {
+            branch=$(gh pr view "$1" --json headRefName --jq .headRefName) || return 1
+            case "$branch" in
+              dependabot/github_actions/*) return 0 ;;
+            esac
+            message=$(gh pr view "$1" --json commits --jq '.commits[0].messageBody // ""') || return 1
+            types=$(printf '%s\n' "$message" | grep -oE 'dependency-type: [a-z:]+' | sort -u) || return 1
+            [ "$types" = "dependency-type: direct:development" ]
+          }
+
+          candidates=""
+          for pr in $prs; do
+            if ! is_major "$pr"; then
+              candidates="$candidates $pr"
+            elif major_allowed "$pr"; then
+              echo "Including #$pr (major bump of GitHub Actions or dev-only packages)"
+              candidates="$candidates $pr"
+            else
+              echo "Skipping #$pr (major version bump, merge by hand)"
+            fi
+          done
+          prs=$candidates
+
+          if [ -z "$prs" ]; then
+            echo "No Dependabot PRs to merge."
+            exit 0
+          fi
+
+          merge_state() {
+            # GitHub computes the state lazily, so the first read can be UNKNOWN.
+            for attempt in 1 2 3; do
+              state=$(gh pr view "$1" --json mergeStateStatus,isDraft --jq 'if .isDraft then "DRAFT" else .mergeStateStatus end') || state="ERROR"
+              [ "$state" != "UNKNOWN" ] && break
+              sleep 10
+            done
+            echo "$state"
+          }
+
+          checks_pass() {
+            gh pr view "$1" --json statusCheckRollup --jq \
+              '[.statusCheckRollup[] | .conclusion // .state] | length > 0 and all(. == "SUCCESS" or . == "SKIPPED" or . == "NEUTRAL")'
+          }
+
+          merged=""
+          for pr in $prs; do
+            state=$(merge_state "$pr")
+
+            if [ "$state" = "CLEAN" ]; then
+              echo "Merging #$pr"
+              # main requires branches to be up to date, so after one merge the
+              # rest are BEHIND. Stop at one per run.
+              if gh pr merge "$pr" --merge --delete-branch; then
+                merged="$pr"
+                break
+              fi
+              echo "Merge of #$pr failed, trying the next one."
+            else
+              # BLOCKED = checks pending or failing, DIRTY = conflicts,
+              # BEHIND = not up to date with main.
+              echo "Skipping #$pr ($state)"
+            fi
+          done
+
+          # Dependabot only rebases on its own when there are conflicts, not when
+          # a PR is just behind main. Ask it to rebase the next passing PR so it
+          # is CLEAN by the next run.
+          for pr in $prs; do
+            [ "$pr" = "$merged" ] && continue
+            [ "$(checks_pass "$pr")" = "true" ] || continue
+            # Don't repeat the request every day if Dependabot hasn't acted on it.
+            last=$(gh pr view "$pr" --json comments --jq '.comments[-1].body // ""') || last=""
+            if [ "$last" = "@dependabot rebase" ]; then
+              echo "Rebase already requested on #$pr"
+              break
+            fi
+            if [ -n "$merged" ] || [ "$(merge_state "$pr")" = "BEHIND" ]; then
+              echo "Asking Dependabot to rebase #$pr"
+              gh pr comment "$pr" --body "@dependabot rebase" || echo "Comment on #$pr failed."
+              break
+            fi
+          done

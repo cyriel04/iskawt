@@ -234,8 +234,11 @@ be listed, so brackets are the default and removing them is a deliberate act.
 - Never edit: `prisma/migrations/**`, lockfiles, `.env*`, `.next/`, `node_modules/`.
 - Dependabot PRs (`.github/dependabot.yml`) are the one exception to the
   lockfile and new-dependency rules: they bump versions of packages already
-  here, never add new ones, and merge only when CI is green. A major bump is
-  read against its changelog before merging, not waved through.
+  here, never add new ones, and merge only when CI is green.
+  `.github/workflows/dependabot-merge.yml` merges one passing PR per weekday.
+  It also merges majors of GitHub Actions and dev-only packages, which CI
+  fully exercises. Any other major bump stays open and is read against its
+  changelog before merging, not waved through.
 - Never run `git push` or `git rebase`. The human pushes.
 - **Always work on a feature branch** (`feat/<slice-or-topic>`), never on `main`.
   On that branch, agents and the main session **commit locally** at each plan
