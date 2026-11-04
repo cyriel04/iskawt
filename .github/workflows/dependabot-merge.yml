@@ -2,10 +2,10 @@ name: Merge Dependabot PRs
 
 on:
   schedule:
-    # 02:40 Asia/Manila (18:40 UTC the day before), Monday to Friday local
-    # time. Off the hour, when GitHub's scheduler is less busy and runs are
-    # less likely to be delayed or dropped.
-    - cron: "40 18 * * 0-4"
+    # Every 3 hours, off the hour. GitHub often starts scheduled runs hours late
+    # or drops them, so several tries a day make sure one gets through. The
+    # script itself limits merging to one a day on Asia/Manila weekdays.
+    - cron: "40 */3 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -31,6 +31,25 @@ jobs:
     steps:
       - name: Merge one passing Dependabot PR
         run: |
+          # Scheduled runs only: weekdays in Manila, and once a day. Manual runs
+          # skip both checks.
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            if [ "$(TZ=Asia/Manila date +%u)" -gt 5 ]; then
+              echo "Weekend in Manila, nothing to do."
+              exit 0
+            fi
+            today=$(TZ=Asia/Manila date +%F)
+            # The plain list, not --search/--author: search can lag a fresh merge
+            # by seconds, letting a queued run merge a second PR the same day.
+            since=$(date -u -d "${today}T00:00:00+08:00" +%Y-%m-%dT%H:%M:%SZ)
+            merged_today=$(gh pr list --state merged --limit 100 --json author,mergedAt \
+              --jq "[.[] | select(.author.login == \"app/dependabot\" and .mergedAt >= \"$since\")] | length")
+            if [ "$merged_today" -gt 0 ]; then
+              echo "A Dependabot PR was already merged today ($today, Manila)."
+              exit 0
+            fi
+          fi
+
           prs=$(gh pr list --author "app/dependabot" --base main --state open --json number --jq '.[].number')
 
           # Major version bumps are left open for a manual review. The summary
@@ -96,6 +115,14 @@ jobs:
               '[.statusCheckRollup[] | .conclusion // .state] | length > 0 and all(. == "SUCCESS" or . == "SKIPPED" or . == "NEUTRAL")'
           }
 
+          # ISO 8601 UTC timestamps compare correctly as strings.
+          rebase_pending() {
+            requested=$(gh pr view "$1" --json comments --jq '[.comments[] | select(.body == "@dependabot rebase") | .createdAt] | max // ""') || return 1
+            pushed=$(gh pr view "$1" --json commits --jq '.commits[-1].committedDate') || return 1
+            day_ago=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+            [ -n "$requested" ] && [[ "$requested" > "$pushed" ]] && [[ "$requested" > "$day_ago" ]]
+          }
+
           merged=""
           for pr in $prs; do
             state=$(merge_state "$pr")
@@ -122,9 +149,10 @@ jobs:
           for pr in $prs; do
             [ "$pr" = "$merged" ] && continue
             [ "$(checks_pass "$pr")" = "true" ] || continue
-            # Don't repeat the request every day if Dependabot hasn't acted on it.
-            last=$(gh pr view "$pr" --json comments --jq '.comments[-1].body // ""') || last=""
-            if [ "$last" = "@dependabot rebase" ]; then
+            # Don't ask again while a request is still waiting on Dependabot: it
+            # is newer than the PR's latest commit and under a day old.
+            # Dependabot answers by pushing, so a newer commit means it acted.
+            if rebase_pending "$pr"; then
               echo "Rebase already requested on #$pr"
               break
             fi
