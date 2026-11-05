@@ -1,0 +1,91 @@
+@use "../_styles/tokens" as *;
+
+// Sits inside the browse page's <main>, which already applies the page gutter,
+// so no padding-inline here. A hairline separates it from the results above.
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: $stack;
+	margin-block-start: $stack;
+	padding-block-start: $gutter;
+	border-top: 1px solid $color-hairline;
+	scroll-margin-block-start: $stack;
+}
+
+// Renters and hosts side by side when there is room, stacked when not.
+.groups {
+	display: grid;
+	gap: $stack $gutter;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+	align-items: start;
+}
+
+.group {
+	display: flex;
+	flex-direction: column;
+	gap: space(2);
+}
+
+.list {
+	border-top: 1px solid $color-hairline;
+}
+
+// Flat: a hairline under each question instead of the theme's bordered Paper.
+.item {
+	border: 0;
+	border-bottom: 1px solid $color-hairline;
+	border-radius: 0;
+	background: transparent;
+
+	&::before {
+		display: none;
+	}
+}
+
+.summary {
+	min-height: space(11); // 44px touch target
+	padding-inline: 0;
+
+	&:focus-visible {
+		outline: 2px solid $color-stamp;
+		outline-offset: 2px;
+		border-radius: $radius-sm;
+	}
+}
+
+.icon {
+	width: space(5);
+	height: space(5);
+	color: $color-ink-muted;
+}
+
+.details {
+	padding: 0 0 space(4);
+}
+
+.contact {
+	display: flex;
+	flex-direction: column;
+	gap: space(1);
+}
+
+.contactLine {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	column-gap: space(1);
+}
+
+.link {
+	display: inline-flex;
+	align-items: center;
+	min-height: space(11); // 44px touch target
+	color: $color-stamp;
+	text-decoration: underline;
+
+	&:focus-visible {
+		outline: 2px solid $color-stamp;
+		outline-offset: 2px;
+		border-radius: $radius-sm;
+	}
+}
