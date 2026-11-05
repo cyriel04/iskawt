@@ -1,8 +1,32 @@
 @use "../_styles/tokens" as *;
 
+// Copyright and the FAQ link on one centred row, wrapping when narrow.
 .footer {
 	@include gutter-inline;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	column-gap: space(6);
 	padding-block: $stack;
 	border-top: 1px solid $color-hairline;
 	text-align: center;
+}
+
+.link {
+	display: inline-flex;
+	align-items: center;
+	min-height: space(11); // 44px touch target
+	color: $color-ink-muted;
+	font: var(--mui-font-caption);
+
+	&:hover {
+		color: $color-ink;
+	}
+
+	&:focus-visible {
+		outline: 2px solid $color-stamp;
+		outline-offset: 2px;
+		border-radius: $radius-sm;
+	}
 }
