@@ -68,6 +68,13 @@ answers them in one place, worded to match how the product actually behaves.
   to report it, which a person reviews, or to block them. A blocked person can't
   message you or send you new inquiries, and isn't told they were blocked.
 
+### Closing line (added 2026-11-05)
+
+After both groups: "Still have questions?" then "Email us at <CONTACT_EMAIL>",
+the address a `mailto:` link. `CONTACT_EMAIL` is a new export in
+`app/_lib/constants/site.ts`, currently `placeholder@example.com` — a placeholder the
+human replaces before launch.
+
 The permit answer gives no advice about LGU or barangay rules, deliberately —
 permits are out of scope (CLAUDE.md).
 
