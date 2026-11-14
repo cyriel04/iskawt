@@ -27,7 +27,7 @@
 		"@prisma/client": "^7.10.1",
 		"@sentry/nextjs": "11.4.0",
 		"better-auth": "^1.7.14",
-		"next": "16.4.2",
+		"next": "16.4.5",
 		"react": "19.3.1",
 		"react-dom": "19.3.1"
 	},
@@ -43,7 +43,7 @@
 		"babel-plugin-react-compiler": "1.0.0",
 		"dotenv": "^18.0.9",
 		"eslint": "^9",
-		"eslint-config-next": "16.4.3",
+		"eslint-config-next": "16.4.5",
 		"jest": "^30.5.2",
 		"jest-environment-jsdom": "^30.5.2",
 		"prisma": "7.10.1",
