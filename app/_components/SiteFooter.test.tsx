@@ -13,4 +13,9 @@ describe("SiteFooter", () => {
 		const footer = screen.getByRole("contentinfo");
 		expect(footer).toHaveTextContent("© 2031 Iskawt");
 	});
+
+	it("links to the FAQ", () => {
+		renderWithTheme(<SiteFooter />);
+		expect(screen.getByRole("link", { name: "FAQ" })).toHaveAttribute("href", "/#faq");
+	});
 });

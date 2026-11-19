@@ -6,3 +6,5 @@ export const SITE_DESCRIPTION = "Private spaces across Metro Manila for film and
 
 export const INDICATIVE_RATES_NOTE =
 	"Rates are indicative and agreed directly with the host. Iskawt takes no payment.";
+
+export const CONTACT_EMAIL = "placeholder@example.com"; // PLACEHOLDER — replace with the real Iskawt inbox before launch

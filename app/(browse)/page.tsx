@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 import BrowseView from "@/app/_components/BrowseView";
+import FaqSection from "@/app/_components/FaqSection";
 import { cityLabels, spaceTypePluralLabels } from "@/app/_lib/constants/labels";
 import { INDICATIVE_RATES_NOTE, SITE_DESCRIPTION, SITE_NAME, SITE_TITLE } from "@/app/_lib/constants/site";
 import { searchPublishedSpaces } from "@/app/_lib/server/spaces";
@@ -47,6 +48,7 @@ export default async function BrowsePage({
 				<Typography color="text.secondary">{INDICATIVE_RATES_NOTE}</Typography>
 			</header>
 			<BrowseView filters={filters} result={result} />
+			<FaqSection />
 		</Container>
 	);
 }

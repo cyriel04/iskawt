@@ -36,7 +36,7 @@ describe("BrowsePage", () => {
 
 		renderWithTheme(await render());
 
-		expect(screen.getByText(/Rates are indicative/)).toBeInTheDocument();
+		expect(screen.getByText(/Rates are indicative and agreed directly with the host/)).toBeInTheDocument();
 	});
 
 	it("shows the empty state when nothing is published", async () => {
@@ -75,6 +75,24 @@ describe("BrowsePage", () => {
 		renderWithTheme(await render({ city: "pateros" }));
 
 		expect(screen.getByRole("heading", { name: "No spaces match these filters" })).toBeInTheDocument();
+	});
+
+	it("shows the FAQ below the results", async () => {
+		mockSearch.mockResolvedValue(resultOf([demoCard]));
+
+		renderWithTheme(await render());
+
+		const faq = screen.getByRole("region", { name: "Questions" });
+		const card = screen.getByRole("link", { name: /Corner loft/ });
+		expect(card.compareDocumentPosition(faq)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+	});
+
+	it("shows the FAQ when nothing matches", async () => {
+		mockSearch.mockResolvedValue(resultOf([]));
+
+		renderWithTheme(await render({ city: "pateros" }));
+
+		expect(screen.getByRole("region", { name: "Questions" })).toBeInTheDocument();
 	});
 });
 
