@@ -13,6 +13,7 @@ type DataCollection = NonNullable<InitOptions["dataCollection"]>;
 type DataCollectionOff = Required<DataCollection> & {
 	graphQL: Required<NonNullable<DataCollection["graphQL"]>>;
 	genAI: Required<NonNullable<DataCollection["genAI"]>>;
+	mcp: Required<NonNullable<DataCollection["mcp"]>>;
 };
 
 const DATA_COLLECTION_OFF = {
@@ -23,6 +24,7 @@ const DATA_COLLECTION_OFF = {
 	urlQueryParams: false,
 	graphQL: { document: false, variables: false },
 	genAI: { inputs: false, outputs: false },
+	mcp: { inputs: false, outputs: false },
 	databaseQueryData: false,
 	queues: false,
 	stackFrameVariables: false,
@@ -45,7 +47,7 @@ export function sentryOptions(dsn: string | undefined): SharedSentryOptions {
 		enabled: Boolean(dsn),
 		environment: process.env.VERCEL_ENV ?? "development",
 		// A fresh copy per call, so no runtime can mutate another's settings.
-		dataCollection: { ...DATA_COLLECTION_OFF, httpBodies: [], graphQL: { ...DATA_COLLECTION_OFF.graphQL }, genAI: { ...DATA_COLLECTION_OFF.genAI } },
+		dataCollection: { ...DATA_COLLECTION_OFF, httpBodies: [], graphQL: { ...DATA_COLLECTION_OFF.graphQL }, genAI: { ...DATA_COLLECTION_OFF.genAI }, mcp: { ...DATA_COLLECTION_OFF.mcp } },
 		// Not `tracesSampleRate: 0`: a zero rate still continues a sampled incoming
 		// trace and sends its spans, which skip beforeSend. A sampler's 0 always wins.
 		tracesSampler: () => 0,
